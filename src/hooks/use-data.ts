@@ -1,0 +1,176 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useSession } from 'next-auth/react';
+
+// ==================== Stages Hook ====================
+
+interface Stage {
+  id: number;
+  name: string;
+  description: string;
+}
+
+interface UseStagesReturn {
+  stages: Stage[];
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
+
+export function useStages(): UseStagesReturn {
+  const { data: session } = useSession();
+  const [stages, setStages] = useState<Stage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchStages = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/stages');
+      const result = await response.json();
+
+      if (result.success) {
+        setStages(result.data);
+      } else {
+        setError(result.error || 'فشل في تحميل المراحل');
+      }
+    } catch (err) {
+      setError('حدث خطأ أثناء تحميل المراحل');
+      console.error('Error fetching stages:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchStages();
+  }, [fetchStages]);
+
+  return {
+    stages,
+    isLoading,
+    error,
+    refetch: fetchStages,
+  };
+}
+
+// ==================== Levels Hook ====================
+
+interface Level {
+  id: number;
+  name: string;
+  stage_id: number;
+  stage?: {
+    id: number;
+    name: string;
+  };
+}
+
+interface UseLevelsParams {
+  stageId?: number;
+}
+
+interface UseLevelsReturn {
+  levels: Level[];
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
+
+export function useLevels(params?: UseLevelsParams): UseLevelsReturn {
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchLevels = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const queryParams = new URLSearchParams();
+      if (params?.stageId) queryParams.append('stageId', params.stageId.toString());
+
+      const response = await fetch(`/api/levels?${queryParams.toString()}`);
+      const result = await response.json();
+
+      if (result.success) {
+        setLevels(result.data);
+      } else {
+        setError(result.error || 'فشل في تحميل المستويات');
+      }
+    } catch (err) {
+      setError('حدث خطأ أثناء تحميل المستويات');
+      console.error('Error fetching levels:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [params?.stageId]);
+
+  useEffect(() => {
+    fetchLevels();
+  }, [fetchLevels]);
+
+  return {
+    levels,
+    isLoading,
+    error,
+    refetch: fetchLevels,
+  };
+}
+
+// ==================== Subjects Hook ====================
+
+interface Subject {
+  id: number;
+  name: string;
+  description: string | null;
+  icon: string | null;
+}
+
+interface UseSubjectsReturn {
+  subjects: Subject[];
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => void;
+}
+
+export function useSubjects(): UseSubjectsReturn {
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSubjects = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/subjects');
+      const result = await response.json();
+
+      if (result.success) {
+        // API returns { success: true, data: { subjects: [...] } }
+        const subjectsData = result.subjects || result.data?.subjects || result.data || [];
+        setSubjects(subjectsData);
+      } else {
+        setError(result.error || 'فشل في تحميل المواد');
+      }
+    } catch (err) {
+      setError('حدث خطأ أثناء تحميل المواد');
+      console.error('Error fetching subjects:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSubjects();
+  }, [fetchSubjects]);
+
+  return {
+    subjects,
+    isLoading,
+    error,
+    refetch: fetchSubjects,
+  };
+}
