@@ -3,6 +3,9 @@ import { SidebarNav } from "@/components/layout/SidebarNav";
 import { Header } from "@/components/layout/Header";
 import PromotionGuard from "@/components/PromotionGuard";
 
+// Force dynamic rendering for all dashboard pages
+export const dynamic = 'force-dynamic';
+
 export default function DashboardLayout({
   children,
 }: {

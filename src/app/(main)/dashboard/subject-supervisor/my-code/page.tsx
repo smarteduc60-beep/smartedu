@@ -8,6 +8,8 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+
+export const dynamic = 'force-dynamic';
 import { getTeacher, getUserById } from "@/lib/mock-data";
 import { Input } from "@/components/ui/input";
 import { Copy, RefreshCw } from "lucide-react";

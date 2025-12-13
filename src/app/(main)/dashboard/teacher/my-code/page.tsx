@@ -7,6 +7,8 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
+
+export const dynamic = 'force-dynamic';
 import { Button } from "@/components/ui/button";
 import { getTeacher, getUserById } from "@/lib/mock-data";
 import { Input } from "@/components/ui/input";
