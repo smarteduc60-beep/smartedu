@@ -1,3 +1,4 @@
+'use client';
 
 import DirecteurDashboard from "./_components/DirecteurDashboard";
 
