@@ -12,4 +12,4 @@ export { useSubjects } from './use-subjects';
 
 // Re-export existing hooks
 export { useToast } from './use-toast';
-export { useMobile } from './use-mobile';
+export { useIsMobile } from './use-mobile';
