@@ -3,24 +3,28 @@ import { useSession } from 'next-auth/react';
 
 interface Exercise {
   id: number;
-  title: string;
-  description: string | null;
-  question: string;
-  correctAnswer: string | null;
-  points: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  type: 'multiple_choice' | 'true_false' | 'short_answer' | 'essay' | 'code';
   lessonId: number;
+  type: string;
+  question?: string | null;
+  questionFileUrl?: string | null;
+  questionRichContent?: string | null;
+  modelAnswer?: string | null;
+  modelAnswerImage?: string | null;
+  expectedResults?: any;
+  maxScore: number;
+  allowRetry: boolean;
+  maxAttempts: number;
+  displayOrder: number;
   createdAt: string;
   updatedAt: string;
   lesson?: {
     id: number;
     title: string;
-    subject: {
+    subject?: {
       id: number;
       name: string;
     };
-    level: {
+    level?: {
       id: number;
       name: string;
     };
@@ -32,6 +36,7 @@ interface Exercise {
 
 interface UseExercisesParams {
   lessonId?: number;
+  authorId?: string;
   difficulty?: 'easy' | 'medium' | 'hard';
   type?: 'multiple_choice' | 'true_false' | 'short_answer' | 'essay' | 'code';
   page?: number;
@@ -86,6 +91,7 @@ export function useExercises(params?: UseExercisesParams): UseExercisesReturn {
     try {
       const queryParams = new URLSearchParams();
       if (params?.lessonId) queryParams.append('lessonId', params.lessonId.toString());
+      if (params?.authorId) queryParams.append('authorId', params.authorId);
       if (params?.difficulty) queryParams.append('difficulty', params.difficulty);
       if (params?.type) queryParams.append('type', params.type);
       if (params?.page) queryParams.append('page', params.page.toString());
@@ -107,7 +113,7 @@ export function useExercises(params?: UseExercisesParams): UseExercisesReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [session, params?.lessonId, params?.difficulty, params?.type, params?.page, params?.limit]);
+  }, [session, params?.lessonId, params?.authorId, params?.difficulty, params?.type, params?.page, params?.limit]);
 
   useEffect(() => {
     fetchExercises();
@@ -138,7 +144,7 @@ export function useExercises(params?: UseExercisesParams): UseExercisesReturn {
   const updateExercise = async (id: number, data: UpdateExerciseData) => {
     try {
       const response = await fetch(`/api/exercises/${id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });

@@ -3,17 +3,25 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/api-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
 
-// GET /api/exercises?lessonId=1
+// GET /api/exercises?lessonId=1&authorId=xxx
 export async function GET(request: NextRequest) {
   try {
     await requireAuth();
 
     const { searchParams } = new URL(request.url);
     const lessonId = searchParams.get('lessonId');
+    const authorId = searchParams.get('authorId');
 
     const where: any = {};
     if (lessonId) {
       where.lessonId = parseInt(lessonId);
+    }
+    
+    // تصفية حسب مؤلف الدروس
+    if (authorId) {
+      where.lesson = {
+        authorId: authorId,
+      };
     }
 
     const exercises = await prisma.exercise.findMany({

@@ -1,5 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { UserNav } from "@/components/layout/UserNav";
+import NotificationBell from "@/components/layout/NotificationBell";
 
 export function Header() {
   return (
@@ -7,7 +8,8 @@ export function Header() {
       <div className="md:hidden">
         <SidebarTrigger />
       </div>
-      <div className="flex w-full items-center justify-end">
+      <div className="flex w-full items-center justify-end gap-2">
+        <NotificationBell />
         <UserNav />
       </div>
     </header>

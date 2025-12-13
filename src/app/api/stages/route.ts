@@ -6,8 +6,7 @@ import { successResponse, errorResponse } from '@/lib/api-response';
 // GET /api/stages
 export async function GET() {
   try {
-    await requireAuth();
-
+    // No auth required for signup page
     const stages = await prisma.stage.findMany({
       orderBy: { displayOrder: 'asc' },
       include: {
@@ -20,7 +19,7 @@ export async function GET() {
       },
     });
 
-    return successResponse({ stages });
+    return successResponse(stages, `تم جلب ${stages.length} مرحلة`);
   } catch (error: any) {
     return errorResponse(error.message || 'فشل في جلب المراحل', 500);
   }
@@ -28,6 +27,7 @@ export async function GET() {
 
 // POST /api/stages
 export async function POST(request: NextRequest) {
+  await requireAuth();
   try {
     const session = await requireAuth();
 

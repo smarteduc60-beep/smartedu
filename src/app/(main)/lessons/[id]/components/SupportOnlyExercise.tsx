@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen } from "lucide-react";
+import MathContent from "@/components/MathContent";
 
 interface SupportOnlyExerciseProps {
   exercise: {
@@ -33,10 +34,7 @@ export default function SupportOnlyExercise({ exercise }: SupportOnlyExercisePro
         </CardHeader>
         <CardContent>
           {exercise.questionRichContent ? (
-            <div 
-              className="tiptap prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: exercise.questionRichContent }}
-            />
+            <MathContent content={exercise.questionRichContent} />
           ) : (
             <p className="whitespace-pre-wrap">{exercise.question}</p>
           )}

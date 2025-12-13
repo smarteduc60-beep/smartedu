@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { RichTextEditor } from "@/components/editor";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import MathContent from "@/components/MathContent";
 
 interface MainExerciseProps {
   exercise: {
@@ -166,10 +167,7 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
         </CardHeader>
         <CardContent>
           {exercise.questionRichContent ? (
-            <div 
-              className="tiptap prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: exercise.questionRichContent }}
-            />
+            <MathContent content={exercise.questionRichContent} />
           ) : (
             <p className="whitespace-pre-wrap">{exercise.question}</p>
           )}
@@ -260,10 +258,7 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
               <div className="space-y-2">
                 <h4 className="font-semibold text-lg">الإجابة النموذجية:</h4>
                 <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div 
-                    className="tiptap prose max-w-none"
-                    dangerouslySetInnerHTML={{ __html: exercise.modelAnswer }}
-                  />
+                  <MathContent content={exercise.modelAnswer} />
                 </div>
               </div>
             )}

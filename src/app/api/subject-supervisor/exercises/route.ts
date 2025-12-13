@@ -34,10 +34,11 @@ export async function GET(request: NextRequest) {
     const subjectId = supervisor.userDetails.subjectId;
     const levelId = supervisor.userDetails.levelId;
 
-    // Get all exercises for lessons in this level
+    // Get only exercises for lessons created by this supervisor
     const exercises = await prisma.exercise.findMany({
       where: {
         lesson: {
+          authorId: supervisorId, // فقط الدروس التي أنشأها المشرف
           subjectId,
           levelId,
         },
@@ -64,10 +65,7 @@ export async function GET(request: NextRequest) {
       },
     }));
 
-    return successResponse({
-      data: formattedExercises,
-      total: formattedExercises.length,
-    });
+    return successResponse(formattedExercises, `تم جلب ${formattedExercises.length} تمرين`);
   } catch (error: any) {
     console.error('Error fetching exercises:', error);
     return errorResponse(error.message || 'فشل في جلب التمارين', 500);

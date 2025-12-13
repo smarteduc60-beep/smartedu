@@ -48,9 +48,12 @@ export function useLevels(params?: UseLevelsParams): UseLevelsReturn {
       }
 
       const data = await response.json();
-      // Handle both response formats: { levels: [...] } or { data: { levels: [...] } }
-      const levelsData = data.levels || data.data?.levels || [];
-      setLevels(levelsData);
+      if (data.success) {
+        const levelsData = data.data?.levels || data.levels || data.data || [];
+        setLevels(Array.isArray(levelsData) ? levelsData : []);
+      } else {
+        throw new Error(data.error || 'Failed to fetch levels');
+      }
     } catch (err) {
       console.error('Error fetching levels:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');

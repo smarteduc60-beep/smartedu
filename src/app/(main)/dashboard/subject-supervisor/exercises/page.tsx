@@ -61,10 +61,16 @@ export default function SupervisorExercisesPage() {
       const response = await fetch('/api/subject-supervisor/exercises');
       const result = await response.json();
 
+      console.log('📥 Exercises API response:', result);
+
       if (result.success) {
-        setExercises(result.data);
-        setFilteredExercises(result.data);
+        // البيانات الآن مباشرة في result.data
+        const exercisesData = Array.isArray(result.data) ? result.data : [];
+        console.log('✅ Exercises data:', exercisesData);
+        setExercises(exercisesData);
+        setFilteredExercises(exercisesData);
       } else {
+        console.error('❌ API returned error:', result.error);
         toast({
           title: 'خطأ',
           description: result.error || 'فشل في جلب التمارين',
@@ -72,7 +78,7 @@ export default function SupervisorExercisesPage() {
         });
       }
     } catch (error) {
-      console.error('Error fetching exercises:', error);
+      console.error('❌ Error fetching exercises:', error);
       toast({
         title: 'خطأ',
         description: 'حدث خطأ أثناء جلب التمارين',
@@ -133,6 +139,12 @@ export default function SupervisorExercisesPage() {
             قم بإدارة جميع التمارين في دروس المادة.
           </p>
         </div>
+        <Link href="/dashboard/subject-supervisor/exercises/create">
+          <Button>
+            <PlusCircle className="ml-2 h-4 w-4" />
+            إضافة تمرين جديد
+          </Button>
+        </Link>
       </div>
 
       <Card>
@@ -173,8 +185,8 @@ export default function SupervisorExercisesPage() {
                         <TableCell>{exercise.lesson.title}</TableCell>
                         <TableCell className="text-center">
                             <div className="flex justify-center gap-2">
-                                <Link href={`/dashboard/subject-supervisor/exercises/${exercise.id}`}>
-                                    <Button variant="ghost" size="icon" title="عرض">
+                                <Link href={`/dashboard/subject-supervisor/exercises/${exercise.id}/edit`}>
+                                    <Button variant="ghost" size="icon" title="تعديل">
                                         <FilePenLine className="h-4 w-4" />
                                     </Button>
                                 </Link>

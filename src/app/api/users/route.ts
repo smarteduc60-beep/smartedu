@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 // GET /api/users - قائمة المستخدمين (المدير فقط)
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔵 Starting GET /api/users');
     await requireRole(['directeur']);
 
     const { searchParams } = new URL(request.url);
@@ -23,6 +24,7 @@ export async function GET(request: NextRequest) {
     // Role filter
     if (role) {
       const roleRecord = await prisma.role.findFirst({ where: { name: role } });
+      console.log('Role record:', roleRecord);
       if (roleRecord) {
         where.roleId = roleRecord.id;
       }
@@ -37,28 +39,48 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        include: {
-          role: true,
-          userDetails: {
-            include: {
-              stage: true,
-              level: true,
-              subject: true,
-            },
-          },
-        },
-        skip,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-      }),
-      prisma.user.count({ where }),
-    ]);
+    console.log('Where clause:', JSON.stringify(where));
+    console.log('🔵 Fetching users from database...');
 
-    // Format response to match frontend expectations
-    const formattedUsers = users.map(user => ({
+    // خطوة 1: جلب المستخدمين بدون includes معقدة
+    const users = await prisma.user.findMany({
+      where,
+      include: {
+        role: true,
+      },
+      skip,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    console.log(`✅ Found ${users.length} users`);
+
+    // خطوة 2: جلب userDetails بشكل منفصل
+    const userIds = users.map(u => u.id);
+    const userDetails = await prisma.userDetails.findMany({
+      where: {
+        userId: { in: userIds }
+      },
+      include: {
+        stage: true,
+        level: true,
+        subject: true,
+      },
+    });
+
+    console.log(`✅ Found ${userDetails.length} user details`);
+
+    // خطوة 3: ربط البيانات يدوياً
+    const usersWithDetails = users.map(user => {
+      const details = userDetails.find(d => d.userId === user.id);
+      return {
+        ...user,
+        userDetails: details || null,
+      };
+    });
+
+    // خطوة 4: تنسيق النتائج
+    const formattedUsers = usersWithDetails.map(user => ({
       id: user.id,
       email: user.email,
       name: `${user.firstName} ${user.lastName}`,
@@ -66,6 +88,8 @@ export async function GET(request: NextRequest) {
       role: user.role.name,
       profileComplete: user.profileComplete,
       isBanned: user.userDetails?.isBanned || false,
+      lessonsCount: 0, // لا توجد علاقة مباشرة
+      exercisesCount: 0, // سنضيفها لاحقاً إذا لزم الأمر
       createdAt: user.createdAt.toISOString(),
       updatedAt: user.updatedAt.toISOString(),
       details: user.userDetails ? {
@@ -73,17 +97,19 @@ export async function GET(request: NextRequest) {
         address: user.userDetails.address,
         bio: user.userDetails.bio,
         stageId: user.userDetails.stageId,
-        subjectId: user.userDetails.subjectId,
         levelId: user.userDetails.levelId,
+        subjectId: user.userDetails.subjectId,
         parentCode: user.userDetails.parentCode,
         teacherCode: user.userDetails.teacherCode,
+        stage: user.userDetails.stage,
+        level: user.userDetails.level,
         subject: user.userDetails.subject,
-        level: user.userDetails.level ? {
-          ...user.userDetails.level,
-          stage: user.userDetails.level.stage
-        } : undefined,
-      } : undefined,
+      } : null,
     }));
+
+    const total = await prisma.user.count({ where });
+
+    console.log('✅ Returning response');
 
     return NextResponse.json({
       success: true,
@@ -97,7 +123,19 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    return errorResponse(error.message || 'فشل في جلب المستخدمين', 500);
+    console.error('❌❌❌ CRITICAL ERROR in GET /api/users ❌❌❌');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Full error object:', JSON.stringify(error, null, 2));
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: error.message || 'فشل في جلب المستخدمين',
+        error: error.toString(),
+      },
+      { status: 500 }
+    );
   }
 }
 

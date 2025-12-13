@@ -26,13 +26,13 @@ export default function MyExercisesPage() {
   const { data: session } = useSession();
   const { toast } = useToast();
   
-  const { lessons } = useLessons({ authorId: session?.user?.id });
-  const { exercises, isLoading, deleteExercise } = useExercises();
+  // جلب التمارين الخاصة بالأستاذ مباشرة من API
+  const { exercises: myExercises, isLoading, deleteExercise } = useExercises({
+    authorId: session?.user?.id,
+  });
   
-  // Filter exercises to only show those from teacher's lessons
-  const myExercises = exercises.filter(ex => 
-    lessons.some(l => l.id === ex.lessonId)
-  );
+  // جلب الدروس للحصول على تفاصيلها
+  const { lessons } = useLessons({ authorId: session?.user?.id });
 
   const handleDelete = async (id: number) => {
     if (!confirm('هل أنت متأكد من حذف هذا التمرين؟')) return;
@@ -95,19 +95,29 @@ export default function MyExercisesPage() {
             </TableHeader>
             <TableBody>
               {myExercises.length > 0 ? (
-                myExercises.map((exercise) => (
-                  <TableRow key={exercise.id}>
-                    <TableCell className="font-medium truncate max-w-md">
-                      {exercise.title}
-                    </TableCell>
-                    <TableCell>{exercise.lesson?.title}</TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex justify-center gap-2">
-                        <Link href={`/dashboard/teacher/exercises/${exercise.id}/edit`} passHref>
-                          <Button variant="ghost" size="icon" title="تعديل">
-                            <FilePenLine className="h-4 w-4" />
-                          </Button>
-                        </Link>
+                myExercises.map((exercise) => {
+                  // استخراج نص السؤال من HTML
+                  const getPlainText = (html: string) => {
+                    if (!html) return '';
+                    return html.replace(/<[^>]*>/g, '').substring(0, 100);
+                  };
+                  const questionText = exercise.questionRichContent 
+                    ? getPlainText(exercise.questionRichContent) + '...'
+                    : (exercise.question || 'سؤال بدون نص').substring(0, 100) + '...';
+                  
+                  return (
+                    <TableRow key={exercise.id}>
+                      <TableCell className="font-medium truncate max-w-md">
+                        {questionText}
+                      </TableCell>
+                      <TableCell>{exercise.lesson?.title || 'غير محدد'}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-2">
+                          <Link href={`/dashboard/teacher/exercises/${exercise.id}/edit`} passHref>
+                            <Button variant="ghost" size="icon" title="تعديل">
+                              <FilePenLine className="h-4 w-4" />
+                            </Button>
+                          </Link>
                         <Button 
                           variant="ghost" 
                           size="icon" 
@@ -120,7 +130,8 @@ export default function MyExercisesPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center h-24">

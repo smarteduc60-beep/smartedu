@@ -314,6 +314,7 @@ export default function UserManagement() {
                 <TableHead>المستخدم</TableHead>
                 <TableHead>الدور</TableHead>
                 <TableHead>التفاصيل</TableHead>
+                <TableHead>الإحصائيات</TableHead>
                 <TableHead>البريد الإلكتروني</TableHead>
                 <TableHead className="text-center">الإجراءات</TableHead>
               </TableRow>
@@ -357,6 +358,18 @@ export default function UserManagement() {
                         )}
                       </div>
                     </TableCell>
+                    <TableCell>
+                      {(user.role === 'teacher' || user.role === 'supervisor_specific') && (
+                        <div className="flex flex-col gap-1 text-sm">
+                          <span className="text-muted-foreground">
+                            📚 {user.lessonsCount || 0} درس
+                          </span>
+                          <span className="text-muted-foreground">
+                            ✏️ {user.exercisesCount || 0} تمرين
+                          </span>
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-2">
@@ -383,7 +396,7 @@ export default function UserManagement() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center h-24">
+                  <TableCell colSpan={6} className="text-center h-24">
                     لم يتم العثور على مستخدمين.
                   </TableCell>
                 </TableRow>

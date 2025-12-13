@@ -13,9 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Save, Loader2 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { RichTextEditor } from "@/components/editor";
 
 interface SupervisorInfo {
   subject: { id: number; name: string };
@@ -32,6 +32,8 @@ export default function CreateLessonPage() {
     title: '',
     content: '',
     videoUrl: '',
+    imageUrl: '',
+    pdfUrl: '',
     isPublic: false,
   });
 
@@ -41,14 +43,38 @@ export default function CreateLessonPage() {
         const response = await fetch('/api/subject-supervisor/dashboard');
         const result = await response.json();
         
+        console.log('Supervisor API Response:', result);
+        
         if (result.success && result.data?.supervisor) {
+          const { subject, level } = result.data.supervisor;
+          
+          if (!subject || !level) {
+            toast({
+              title: 'خطأ في البيانات',
+              description: 'يرجى التواصل مع المدير لإعداد المادة والمستوى الخاص بك',
+              variant: 'destructive',
+            });
+            return;
+          }
+          
           setSupervisorInfo({
-            subject: result.data.supervisor.subject,
-            level: result.data.supervisor.level,
+            subject,
+            level,
+          });
+        } else {
+          toast({
+            title: 'خطأ',
+            description: result.error || 'فشل في جلب معلومات المشرف',
+            variant: 'destructive',
           });
         }
       } catch (error) {
         console.error('Error fetching supervisor info:', error);
+        toast({
+          title: 'خطأ',
+          description: 'فشل في الاتصال بالخادم',
+          variant: 'destructive',
+        });
       } finally {
         setLoading(false);
       }
@@ -60,10 +86,29 @@ export default function CreateLessonPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!supervisorInfo || !formData.title || !formData.content) {
+    // Validation
+    if (!formData.title.trim()) {
       toast({
         title: 'خطأ',
-        description: 'يرجى ملء جميع الحقول المطلوبة',
+        description: 'يرجى إدخال عنوان الدرس',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!formData.content.trim()) {
+      toast({
+        title: 'خطأ',
+        description: 'يرجى إدخال محتوى الدرس',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!supervisorInfo) {
+      toast({
+        title: 'خطأ',
+        description: 'لم يتم العثور على معلومات المشرف',
         variant: 'destructive',
       });
       return;
@@ -72,18 +117,30 @@ export default function CreateLessonPage() {
     setSubmitting(true);
 
     try {
+      const payload: any = {
+        title: formData.title.trim(),
+        content: formData.content,
+        videoUrl: formData.videoUrl?.trim() || null,
+        imageUrl: formData.imageUrl?.trim() || null,
+        pdfUrl: formData.pdfUrl?.trim() || null,
+        subjectId: supervisorInfo.subject.id,
+        levelId: supervisorInfo.level.id,
+        type: formData.isPublic ? 'public' : 'private',
+      };
+
+      console.log('Sending payload size:', JSON.stringify(payload).length, 'bytes');
+
       const response = await fetch('/api/lessons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: formData.title,
-          content: formData.content,
-          videoUrl: formData.videoUrl || null,
-          subjectId: supervisorInfo.subject.id,
-          levelId: supervisorInfo.level.id,
-          type: formData.isPublic ? 'public' : 'private',
-        }),
+        body: JSON.stringify(payload),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error:', errorText);
+        throw new Error(`فشل في الحفظ: ${response.status} - ${errorText.substring(0, 100)}`);
+      }
 
       const result = await response.json();
 
@@ -97,9 +154,10 @@ export default function CreateLessonPage() {
         throw new Error(result.error);
       }
     } catch (error: any) {
+      console.error('Submit error:', error);
       toast({
         title: 'خطأ',
-        description: error.message || 'فشل في إنشاء الدرس',
+        description: error.message || 'فشل في إنشاء الدرس. قد يكون الملف كبيراً جداً',
         variant: 'destructive',
       });
     } finally {
@@ -169,14 +227,14 @@ export default function CreateLessonPage() {
 
             <div className="space-y-2">
               <Label htmlFor="content">محتوى الدرس *</Label>
-              <Textarea 
-                id="content" 
-                placeholder="اكتب محتوى الدرس هنا..." 
-                rows={10}
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                required
+              <RichTextEditor 
+                content={formData.content}
+                onChange={(content) => setFormData({ ...formData, content })}
+                placeholder="اكتب محتوى الدرس هنا..."
               />
+              <p className="text-xs text-muted-foreground">
+                استخدم شريط الأدوات لتنسيق النص وإضافة معادلات رياضية
+              </p>
             </div>
             
             <div className="flex items-center space-x-2 space-x-reverse">
@@ -189,13 +247,41 @@ export default function CreateLessonPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="video-url">رابط الفيديو (يوتيوب)</Label>
+              <Label htmlFor="video-url">رابط الفيديو (يوتيوب) - اختياري</Label>
               <Input 
                 id="video-url" 
                 placeholder="https://www.youtube.com/watch?v=..." 
                 value={formData.videoUrl}
                 onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
               /> 
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="image-url">رابط صورة الدرس - اختياري</Label>
+              <Input 
+                id="image-url" 
+                type="url"
+                placeholder="https://example.com/image.jpg" 
+                value={formData.imageUrl}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                أدخل رابط صورة توضيحية (JPG, PNG, GIF)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pdf-url">رابط ملف PDF - اختياري</Label>
+              <Input 
+                id="pdf-url" 
+                type="url"
+                placeholder="https://example.com/document.pdf" 
+                value={formData.pdfUrl}
+                onChange={(e) => setFormData({ ...formData, pdfUrl: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                أدخل رابط ملف PDF مباشر
+              </p>
             </div>
 
             <div className="flex justify-end gap-2">

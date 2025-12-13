@@ -1,4 +1,73 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+
+// Helper function to notify parent
+async function notifyParent(prisma: PrismaClient, studentId: string, submissionId: number) {
+  try {
+    // Get parent link
+    const parentLink = await prisma.parentChildLink.findFirst({
+      where: { childId: studentId },
+      select: { parentId: true },
+    });
+
+    if (parentLink) {
+      // Get submission details
+      const submission = await prisma.submission.findUnique({
+        where: { id: submissionId },
+        include: {
+          exercise: {
+            include: {
+              lesson: {
+                include: { subject: true },
+              },
+            },
+          },
+          student: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      });
+
+      if (submission) {
+        const score = Number(submission.finalScore || submission.aiScore || 0);
+        const maxScore = Number(submission.exercise.maxScore || 20);
+        const percentage = Math.round((score / maxScore) * 100);
+        const studentName = `${submission.student.firstName} ${submission.student.lastName}`;
+        const subjectName = submission.exercise.lesson.subject.name;
+        const lessonTitle = submission.exercise.lesson.title;
+
+        let message = '';
+        if (percentage >= 80) {
+          message = `🎉 أحسنت! حصل ${studentName} على ${score}/${maxScore} (${percentage}%) في ${subjectName} - ${lessonTitle}`;
+        } else if (percentage >= 60) {
+          message = `✅ حصل ${studentName} على ${score}/${maxScore} (${percentage}%) في ${subjectName} - ${lessonTitle}`;
+        } else {
+          message = `⚠️ يحتاج ${studentName} إلى مزيد من التدريب. حصل على ${score}/${maxScore} (${percentage}%) في ${subjectName} - ${lessonTitle}`;
+        }
+
+        // Create notification (you can extend this to send email/SMS later)
+        await prisma.notification.create({
+          data: {
+            userId: parentLink.parentId,
+            title: 'نتيجة جديدة',
+            message,
+            type: 'submission_graded',
+            relatedId: submissionId,
+            isRead: false,
+          },
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error notifying parent:', error);
+    // Don't throw - notification failure shouldn't break the main flow
+  }
+}
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/api-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
@@ -82,6 +151,11 @@ export async function POST(
         },
       },
     });
+
+    console.log('✅ Submission updated successfully');
+
+    // Send notification to parent
+    await notifyParent(prisma, submission.studentId, submissionId);
 
     return successResponse(updatedSubmission, 'تم تقييم الإجابة بنجاح');
   } catch (error: any) {

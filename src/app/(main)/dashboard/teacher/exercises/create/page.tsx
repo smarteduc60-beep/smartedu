@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -19,8 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useLessons } from "@/hooks";
-import { Save, Loader2, Plus, Trash2 } from "lucide-react";
+import { useLessons, Lesson } from "@/hooks/use-lessons";
+import { useLevels } from "@/hooks/use-data";
+import { Save, Loader2, Plus, Trash2, Sparkles } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/editor";
@@ -38,8 +39,18 @@ export default function CreateExercisePage() {
   const router = useRouter();
   const { data: session } = useSession();
   const { toast } = useToast();
+  
+  // جلب المستويات حسب مرحلة الأستاذ (فقط عندما تكون الجلسة جاهزة)
+  const { levels, isLoading: levelsLoading } = useLevels(
+    session?.user?.stage_id ? { stageId: session.user.stage_id } : undefined
+  );
+  const [selectedLevelId, setSelectedLevelId] = useState<number | undefined>(undefined);
+  
+  // جلب الدروس مع معلومات المادة والمستوى
   const { lessons, isLoading: lessonsLoading } = useLessons({
     authorId: session?.user?.id,
+    levelId: selectedLevelId,
+    include: { subject: true, level: true },
   });
 
   const [lessonId, setLessonId] = useState<string>("");
@@ -54,6 +65,63 @@ export default function CreateExercisePage() {
     { question: "1", result: "" }
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
+
+  // 2. Improved function to generate AI answer with context
+  const handleGenerateAnswer = async () => {
+    if (!questionContent.trim()) {
+      toast({
+        title: "خطأ",
+        description: "يرجى كتابة نص السؤال أولاً قبل توليد الإجابة.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!lessonId) {
+      toast({
+        title: "اختر الدرس أولاً",
+        description: "يجب اختيار الدرس لتوفير سياق أفضل للذكاء الاصطناعي.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedLesson = lessons.find(l => String(l.id) === lessonId);
+
+    setIsGeneratingAnswer(true);
+    try {
+      const response = await fetch('/api/ai/generate-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: questionContent,
+          subject: selectedLesson?.subject?.name, // Pass subject for context
+          level: selectedLesson?.level?.name,     // Pass level for context
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setModelAnswer(result.data.answer);
+        toast({
+          title: "تم بنجاح",
+          description: "تم توليد الإجابة النموذجية. يمكنك مراجعتها وتعديلها.",
+        });
+      } else {
+        throw new Error(result.error || "فشل في توليد الإجابة من الذكاء الاصطناعي");
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الذكاء الاصطناعي",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingAnswer(false);
+    }
+  };
 
   const handleAddResult = () => {
     setExpectedResults([
@@ -110,7 +178,7 @@ export default function CreateExercisePage() {
     try {
       const response = await fetch(`/api/exercises?lessonId=${lessonId}`);
       const result = await response.json();
-      const existingExercises = result.success ? (result.exercises || []) : [];
+      const existingExercises = result.success ? (result.data || []) : [];
       const displayOrder = existingExercises.length + 1;
 
       const exerciseData: any = {
@@ -143,7 +211,7 @@ export default function CreateExercisePage() {
           title: "نجح",
           description: "تم إنشاء التمرين بنجاح",
         });
-        router.push("/dashboard/teacher/exercises");
+        router.push("/dashboard/teacher/lessons"); // Redirect to lessons list to see the new exercise within its lesson
       } else {
         throw new Error(createResult.error || "فشل في إنشاء التمرين");
       }
@@ -157,8 +225,8 @@ export default function CreateExercisePage() {
       setIsSubmitting(false);
     }
   };
-
-  const getExerciseTypeLabel = (type: ExerciseType) => {
+  
+    const getExerciseTypeLabel = (type: ExerciseType) => {
     switch (type) {
       case 'main':
         return 'تمرين رئيسي (تصحيح ذكي)';
@@ -179,6 +247,7 @@ export default function CreateExercisePage() {
         return 'عرض فقط - لا يمكن للتلميذ الإجابة';
     }
   };
+
 
   if (lessonsLoading) {
     return (
@@ -207,17 +276,44 @@ export default function CreateExercisePage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
+              <Label htmlFor="level">المستوى (اختياري - لتصفية الدروس)</Label>
+              <Select 
+                value={selectedLevelId?.toString() || "all"} 
+                onValueChange={(value) => setSelectedLevelId(value === "all" ? undefined : parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="جميع المستويات" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع المستويات</SelectItem>
+                  {levels && Array.isArray(levels) && levels.map((level) => (
+                    <SelectItem key={level.id} value={String(level.id)}>
+                      {level.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="lesson">الدرس *</Label>
               <Select value={lessonId} onValueChange={setLessonId}>
                 <SelectTrigger>
                   <SelectValue placeholder="اختر الدرس" />
                 </SelectTrigger>
                 <SelectContent>
-                  {lessons.map((lesson) => (
-                    <SelectItem key={lesson.id} value={String(lesson.id)}>
-                      {lesson.title}
+                  {lessons.length === 0 ? (
+                    <SelectItem value="none" disabled>
+                      {lessonsLoading ? "جاري التحميل..." : "لا توجد دروس متاحة"}
                     </SelectItem>
-                  ))}
+                  ) : (
+                    lessons.map((lesson) => (
+                      <SelectItem key={lesson.id} value={String(lesson.id)}>
+                        {lesson.title}
+                        {lesson.subject && lesson.level && ` (${lesson.subject.name} - ${lesson.level.name})`}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -267,11 +363,27 @@ export default function CreateExercisePage() {
             {exerciseType === 'main' && (
               <>
                 <div className="space-y-2">
-                  <Label>الحل النموذجي *</Label>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label>الحل النموذجي *</Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateAnswer}
+                      disabled={isGeneratingAnswer || !lessonId}
+                    >
+                      {isGeneratingAnswer ? (
+                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="ml-2 h-4 w-4" />
+                      )}
+                      توليد بالذكاء الاصطناعي
+                    </Button>
+                  </div>
                   <RichTextEditor
                     content={modelAnswer}
                     onChange={setModelAnswer}
-                    placeholder="اكتب الحل النموذجي هنا..."
+                    placeholder="اكتب الحل النموذجي هنا، أو قم بتوليده تلقائياً..."
                   />
                 </div>
 

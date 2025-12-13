@@ -8,12 +8,16 @@ interface User {
   image: string | null;
   role: string;
   profileComplete: boolean;
+  isBanned?: boolean;
+  lessonsCount?: number;
+  exercisesCount?: number;
   createdAt: string;
   updatedAt: string;
   details?: {
     phone: string | null;
     address: string | null;
     bio: string | null;
+    stageId: number | null;
     subjectId: number | null;
     levelId: number | null;
     parentCode: string | null;

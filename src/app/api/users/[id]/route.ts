@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 // GET /api/users/[id] - جلب معلومات مستخدم
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getSession();
@@ -15,7 +15,7 @@ export async function GET(
       return errorResponse('يجب تسجيل الدخول أولاً', 401);
     }
 
-    const userId = params.id;
+    const { id: userId } = await params;
 
     // المستخدم يمكنه رؤية معلوماته أو المدير يمكنه رؤية الجميع
     if (session.user.id !== userId && session.user.role !== 'directeur') {

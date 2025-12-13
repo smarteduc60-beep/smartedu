@@ -29,6 +29,9 @@ import {
   Book,
   Repeat,
   Database,
+  GraduationCap,
+  HardDrive,
+  ScrollText,
 } from "lucide-react";
 
 import {
@@ -88,6 +91,9 @@ const directeurNavItems = [
     { href: "/dashboard/directeur", icon: LayoutDashboard, label: "لوحة التحكم" },
     { href: "/dashboard/directeur/users", icon: Users, label: "إدارة المستخدمين" },
     { href: "/dashboard/directeur/content", icon: BookCopy, label: "إدارة المحتوى" },
+    { href: "/dashboard/directeur/promotions", icon: GraduationCap, label: "الترقيات السنوية" },
+    { href: "/dashboard/directeur/backup", icon: HardDrive, label: "النسخ الاحتياطي" },
+    { href: "/dashboard/directeur/logs", icon: ScrollText, label: "سجلات النظام" },
     { href: "/messages", icon: MessageSquare, label: "الرسائل" },
     { href: "/dashboard/directeur/database", icon: Database, label: "قاعدة البيانات" },
     { href: "/dashboard/directeur/settings", icon: Settings, label: "الإعدادات" },
@@ -280,7 +286,6 @@ export function SidebarNav() {
       <SidebarFooter className="border-t border-sidebar-border p-2 space-y-2">
           <div className="p-2 flex items-center gap-3">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.image || undefined} alt={user?.name || ''} />
                 <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col truncate">

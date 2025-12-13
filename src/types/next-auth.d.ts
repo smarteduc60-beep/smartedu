@@ -9,6 +9,7 @@ declare module 'next-auth' {
       image?: string | null;
       role: string;
       roleId: number;
+      stage_id?: number;
       needsProfileCompletion?: boolean;
     };
   }
@@ -20,6 +21,7 @@ declare module 'next-auth' {
     image?: string | null;
     role?: string;
     roleId?: number;
+    stage_id?: number;
   }
 }
 
@@ -28,6 +30,7 @@ declare module 'next-auth/jwt' {
     id: string;
     role: string;
     roleId: number;
+    stage_id?: number;
     needsProfileCompletion?: boolean;
   }
 }

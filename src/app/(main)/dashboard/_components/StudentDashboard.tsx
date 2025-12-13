@@ -25,6 +25,7 @@ export default function StudentDashboard() {
     averageScore: 0,
     pendingExercises: 0,
   });
+  const [studentInfo, setStudentInfo] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [teacherCode, setTeacherCode] = useState('');
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -33,9 +34,23 @@ export default function StudentDashboard() {
   useEffect(() => {
     if (session?.user) {
       fetchStudentStats();
+      fetchStudentInfo();
       fetchTeachers();
     }
   }, [session]);
+
+  const fetchStudentInfo = async () => {
+    try {
+      const response = await fetch(`/api/users/${session?.user?.id}`);
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setStudentInfo(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching student info:', error);
+    }
+  };
 
   const fetchStudentStats = async () => {
     try {
@@ -163,7 +178,11 @@ export default function StudentDashboard() {
                 أهلاً بك مجدداً، {session.user.name}!
             </h1>
             <p className="text-muted-foreground">
-                لنواصل رحلتنا التعليمية ونحقق المزيد من التقدم.
+                {studentInfo?.userDetails?.level?.name ? (
+                  <span>المستوى الدراسي: <strong>{studentInfo.userDetails.level.name}</strong> • لنواصل رحلتنا التعليمية ونحقق المزيد من التقدم.</span>
+                ) : (
+                  <span>لنواصل رحلتنا التعليمية ونحقق المزيد من التقدم.</span>
+                )}
             </p>
         </div>
       </div>

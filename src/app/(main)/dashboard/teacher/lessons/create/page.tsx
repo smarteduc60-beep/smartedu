@@ -20,11 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { useStages, useLevels, useLessons } from "@/hooks";
-import { Save, UploadCloud, Loader2 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
+import { Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { RichTextEditor } from "@/components/editor";
 
 export default function CreateLessonPage() {
   const router = useRouter();
@@ -36,11 +35,12 @@ export default function CreateLessonPage() {
   
   const [teacherSubject, setTeacherSubject] = useState<any>(null);
   const [teacherStage, setTeacherStage] = useState<any>(null);
+  const [availableLevels, setAvailableLevels] = useState<any[]>([]);
 
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [pdfUrl, setPdfUrl] = useState("");
   const [levelId, setLevelId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,12 +56,12 @@ export default function CreateLessonPage() {
         
         if (result.success && result.data) {
           const userData = result.data;
-          if (userData.details?.subjectId) {
+          if (userData.userDetails?.subjectId) {
             // Fetch the subject details
             const subjectRes = await fetch(`/api/subjects`);
             const subjectData = await subjectRes.json();
             const subjects = subjectData.data?.subjects || subjectData.subjects || [];
-            const subject = subjects.find((s: any) => s.id === userData.details.subjectId);
+            const subject = subjects.find((s: any) => s.id === userData.userDetails.subjectId);
             
             if (subject) {
               setTeacherSubject(subject);
@@ -69,6 +69,9 @@ export default function CreateLessonPage() {
               const stage = stages.find((st: any) => st.id === subject.stageId || st.id === subject.stage_id);
               if (stage) {
                 setTeacherStage(stage);
+                // Filter levels for this stage
+                const stageLevels = levels.filter((l: any) => l.stageId === stage.id);
+                setAvailableLevels(stageLevels);
               }
             }
           }
@@ -78,10 +81,10 @@ export default function CreateLessonPage() {
       }
     };
     
-    if (session?.user && stages.length > 0) {
+    if (session?.user && stages.length > 0 && levels.length > 0) {
       fetchTeacherInfo();
     }
-  }, [session, stages]);
+  }, [session, stages, levels]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,9 +101,9 @@ export default function CreateLessonPage() {
     setIsSubmitting(true);
     const result = await createLesson({
       title,
-      description,
       content,
       videoUrl: videoUrl || undefined,
+      imageUrl: imageUrl || undefined,
       pdfUrl: pdfUrl || undefined,
       subjectId: teacherSubject.id,
       levelId: parseInt(levelId),
@@ -131,7 +134,7 @@ export default function CreateLessonPage() {
       <div className="grid gap-1">
         <h1 className="text-3xl font-bold tracking-tight">إنشاء درس جديد</h1>
         <p className="text-muted-foreground">
-          املأ النموذج أدناه لإضافة درس جديد إلى المنصة. ستكون كل الدروس التي تنشئها خاصة بطلابك المرتبطين بك.
+          املأ النموذج أدناه لإضافة درس جديد. ستكون كل الدروس التي تنشئها خاصة بطلابك المرتبطين بك.
         </p>
       </div>
 
@@ -139,7 +142,7 @@ export default function CreateLessonPage() {
         <CardHeader>
           <CardTitle>تفاصيل الدرس</CardTitle>
           <CardDescription>
-            أدخل المعلومات الأساسية لدرسك.
+            {teacherSubject && teacherStage && `${teacherSubject.name} - ${teacherStage.name}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -155,74 +158,58 @@ export default function CreateLessonPage() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="description">الوصف (اختياري)</Label>
-              <Input 
-                id="description" 
-                placeholder="وصف مختصر للدرس" 
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="subject">المادة *</Label>
+                <Label htmlFor="subject">المادة</Label>
                 <Input 
                   id="subject" 
                   value={teacherSubject?.name || 'جاري التحميل...'}
+                  readOnly
                   disabled
                   className="bg-muted"
                 />
-                <p className="text-xs text-muted-foreground">
-                  المادة الخاصة بك (تم تحديدها عند التسجيل)
-                </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="stage">المرحلة *</Label>
+                <Label htmlFor="stage">المرحلة</Label>
                 <Input 
                   id="stage" 
                   value={teacherStage?.name || 'جاري التحميل...'}
+                  readOnly
                   disabled
                   className="bg-muted"
                 />
-                <p className="text-xs text-muted-foreground">
-                  المرحلة المرتبطة بمادتك
-                </p>
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="level">المستوى الدراسي *</Label>
-              <Select value={levelId} onValueChange={setLevelId} disabled={levelsLoading || !teacherStage}>
+              <Select value={levelId} onValueChange={setLevelId} disabled={!teacherStage || availableLevels.length === 0}>
                 <SelectTrigger id="level">
-                  <SelectValue placeholder={levelsLoading ? "جاري التحميل..." : "اختر المستوى"} />
+                  <SelectValue placeholder={!teacherStage ? "جاري التحميل..." : "اختر المستوى"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.isArray(levels) && levels
-                    .filter(l => l && l.id && l.stageId === teacherStage?.id)
-                    .map((level) => (
-                      <SelectItem key={level.id} value={String(level.id)}>
-                        {level.name}
-                      </SelectItem>
-                    ))}
+                  {availableLevels.map((level) => (
+                    <SelectItem key={level.id} value={String(level.id)}>
+                      {level.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                المستويات المتاحة في {teacherStage?.name || 'مرحلتك'}
+                اختر المستوى الدراسي المناسب لهذا الدرس
               </p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="content">محتوى الدرس *</Label>
-              <Textarea 
-                id="content" 
-                placeholder="اكتب محتوى الدرس هنا..." 
-                rows={10}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                required
+              <RichTextEditor 
+                content={content}
+                onChange={(newContent) => setContent(newContent)}
+                placeholder="اكتب محتوى الدرس هنا..."
               />
+              <p className="text-xs text-muted-foreground">
+                استخدم شريط الأدوات لتنسيق النص وإضافة معادلات رياضية
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -236,27 +223,31 @@ export default function CreateLessonPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pdf-url">رابط PDF - اختياري</Label>
+              <Label htmlFor="image-url">رابط صورة الدرس - اختياري</Label>
+              <Input 
+                id="image-url" 
+                type="url"
+                placeholder="https://example.com/image.jpg" 
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                أدخل رابط صورة مباشر (JPG, PNG, GIF)
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pdf-url">رابط ملف PDF - اختياري</Label>
               <Input 
                 id="pdf-url" 
+                type="url"
                 placeholder="https://example.com/document.pdf" 
                 value={pdfUrl}
                 onChange={(e) => setPdfUrl(e.target.value)}
               />
-            </div>
-            
-            <div className="space-y-2">
-                <Label>المرفقات (اختياري)</Label>
-                <div className="flex items-center justify-center w-full">
-                    <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">انقر للرفع</span> أو اسحب وأفلت الملفات</p>
-                            <p className="text-xs text-muted-foreground">PDF, PNG, JPG (بحد أقصى 5 ميجابايت)</p>
-                        </div>
-                        <Input id="dropzone-file" type="file" className="hidden" multiple />
-                    </Label>
-                </div> 
+              <p className="text-xs text-muted-foreground">
+                أدخل رابط ملف PDF مباشر
+              </p>
             </div>
 
             <div className="flex justify-end gap-4">

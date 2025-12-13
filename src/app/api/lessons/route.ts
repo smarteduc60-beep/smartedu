@@ -3,6 +3,15 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth, requireRole } from '@/lib/api-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
 
+// Configure API route to accept larger payloads
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
+
 // GET /api/lessons - قائمة الدروس
 export async function GET(request: NextRequest) {
   try {
@@ -57,6 +66,7 @@ export async function GET(request: NextRequest) {
       console.log('Student Level ID:', userDetails.levelId);
       console.log('Teacher Links:', teacherLinks);
       console.log('Teacher IDs:', teacherIds);
+      console.log('Subject ID Filter:', subjectId);
 
       // إعادة بناء شرط WHERE للطلاب
       const studentWhere: any = {
@@ -65,22 +75,54 @@ export async function GET(request: NextRequest) {
           { 
             type: 'public', 
             levelId: userDetails.levelId,
+            ...(subjectId && { subjectId: parseInt(subjectId) }),
           },
           // 2. جميع دروس أساتذة التلميذ (عامة أو خاصة)
-          ...(teacherIds.length > 0 ? [{ authorId: { in: teacherIds } }] : []),
+          ...(teacherIds.length > 0 ? [{
+            authorId: { in: teacherIds },
+            ...(subjectId && { subjectId: parseInt(subjectId) }),
+          }] : []),
         ],
       };
 
       console.log('Student WHERE condition:', JSON.stringify(studentWhere, null, 2));
 
-      // تطبيق الفلاتر الإضافية إذا كانت موجودة
-      if (subjectId) {
-        studentWhere.subjectId = parseInt(subjectId);
-      }
-
       // استبدال where بالشرط الجديد
       Object.keys(where).forEach(key => delete where[key]);
       Object.assign(where, studentWhere);
+    }
+    
+    // مشرف المادة يرى فقط دروسه لمادته ومستواه
+    if (session.user.role === 'supervisor_specific') {
+      const userDetails = await prisma.userDetails.findUnique({
+        where: { userId: session.user.id },
+        select: { 
+          subjectId: true,
+          levelId: true,
+        },
+      });
+
+      if (!userDetails?.subjectId || !userDetails?.levelId) {
+        return successResponse({
+          lessons: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+        });
+      }
+
+      // تصفية بناءً على المؤلف والمادة والمستوى
+      where.authorId = session.user.id;
+      where.subjectId = userDetails.subjectId;
+      where.levelId = userDetails.levelId;
+    }
+    
+    // المعلم يرى فقط دروسه
+    if (session.user.role === 'teacher') {
+      where.authorId = session.user.id;
     }
 
     const [lessons, total] = await Promise.all([
@@ -134,7 +176,8 @@ export async function POST(request: NextRequest) {
       title,
       content,
       videoUrl,
-      pdfUrl,
+      imageBase64,
+      pdfBase64,
       subjectId,
       levelId,
       type = 'private',
@@ -152,7 +195,8 @@ export async function POST(request: NextRequest) {
         title,
         content: content || '',
         videoUrl: videoUrl || null,
-        pdfUrl: pdfUrl || null,
+        imageUrl: imageBase64 || null,
+        pdfUrl: pdfBase64 || null,
         subjectId: parseInt(subjectId),
         levelId: parseInt(levelId),
         authorId: session.user.id,

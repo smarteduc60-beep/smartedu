@@ -71,38 +71,27 @@ export default function DatabasePage() {
     // Fetch counts for all tables
     useEffect(() => {
         const fetchCounts = async () => {
-            const newCounts = { ...tableCounts };
-            for (const table of Object.keys(apiEndpoints) as TableName[]) {
-                try {
-                    const res = await fetch(apiEndpoints[table]);
-                    if (res.ok) {
-                        const data = await res.json();
-                        // Handle different API response formats
-                        let count = 0;
-                        if (Array.isArray(data)) {
-                            count = data.length;
-                        } else if (data.data?.stages && Array.isArray(data.data.stages)) {
-                            count = data.data.stages.length;
-                        } else if (data.data?.levels && Array.isArray(data.data.levels)) {
-                            count = data.data.levels.length;
-                        } else if (data.data?.subjects && Array.isArray(data.data.subjects)) {
-                            count = data.data.subjects.length;
-                        } else if (data.stages && Array.isArray(data.stages)) {
-                            count = data.stages.length;
-                        } else if (data.levels && Array.isArray(data.levels)) {
-                            count = data.levels.length;
-                        } else if (data.subjects && Array.isArray(data.subjects)) {
-                            count = data.subjects.length;
-                        } else if (data.data && Array.isArray(data.data)) {
-                            count = data.data.length;
-                        }
-                        newCounts[table] = count;
+            try {
+                // استخدام API الجديد للحصول على جميع الإحصائيات
+                const res = await fetch('/api/database/inspect');
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result.success && result.data) {
+                        setTableCounts({
+                            users: result.data.users || 0,
+                            lessons: result.data.lessons || 0,
+                            subjects: result.data.subjects || 0,
+                            exercises: result.data.exercises || 0,
+                            submissions: result.data.submissions || 0,
+                            stages: result.data.stages || 0,
+                            levels: result.data.levels || 0,
+                            messages: result.data.messages || 0,
+                        });
                     }
-                } catch (error) {
-                    console.error(`Error fetching ${table}:`, error);
                 }
+            } catch (error) {
+                console.error('Error fetching database stats:', error);
             }
-            setTableCounts(newCounts);
         };
         fetchCounts();
     }, []);

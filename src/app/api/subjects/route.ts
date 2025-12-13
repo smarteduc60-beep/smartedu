@@ -6,8 +6,7 @@ import { successResponse, errorResponse } from '@/lib/api-response';
 // GET /api/subjects?levelId=1&stageId=1
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth();
-
+    // No auth required for signup page
     const { searchParams } = new URL(request.url);
     const levelId = searchParams.get('levelId');
     const stageId = searchParams.get('stageId');
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
       orderBy: { id: 'asc' },
     });
 
-    return successResponse({ subjects });
+    return successResponse(subjects, `تم جلب ${subjects.length} مادة`);
   } catch (error: any) {
     return errorResponse(error.message || 'فشل في جلب المواد', 500);
   }

@@ -14,9 +14,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Save, Loader2 } from "lucide-react";
 import { notFound, useRouter } from "next/navigation";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { RichTextEditor } from "@/components/editor";
+import { FileUpload } from "@/components/FileUpload";
 
 interface Lesson {
   id: string;
@@ -39,6 +40,8 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
     title: '',
     content: '',
     videoUrl: '',
+    imageBase64: '',
+    pdfBase64: '',
     isPublic: false,
   });
 
@@ -57,6 +60,8 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
             title: result.data.title,
             content: result.data.content || '',
             videoUrl: result.data.videoUrl || '',
+            imageBase64: result.data.imageUrl || '',
+            pdfBase64: result.data.pdfUrl || '',
             isPublic: result.data.type === 'public',
           });
         } else {
@@ -76,10 +81,20 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title || !formData.content) {
+    // Validation
+    if (!formData.title.trim()) {
       toast({
         title: 'خطأ',
-        description: 'يرجى ملء جميع الحقول المطلوبة',
+        description: 'يرجى إدخال عنوان الدرس',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!formData.content.trim()) {
+      toast({
+        title: 'خطأ',
+        description: 'يرجى إدخال محتوى الدرس',
         variant: 'destructive',
       });
       return;
@@ -88,16 +103,34 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
     setSubmitting(true);
 
     try {
+      const payload: any = {
+        title: formData.title.trim(),
+        content: formData.content,
+        videoUrl: formData.videoUrl?.trim() || null,
+        type: formData.isPublic ? 'public' : 'private',
+      };
+
+      // Only add base64 files if they exist
+      if (formData.imageBase64) {
+        payload.imageBase64 = formData.imageBase64;
+      }
+      if (formData.pdfBase64) {
+        payload.pdfBase64 = formData.pdfBase64;
+      }
+
+      console.log('Sending payload size:', JSON.stringify(payload).length, 'bytes');
+
       const response = await fetch(`/api/lessons/${lessonId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: formData.title,
-          content: formData.content,
-          videoUrl: formData.videoUrl || null,
-          type: formData.isPublic ? 'public' : 'private',
-        }),
+        body: JSON.stringify(payload),
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error:', errorText);
+        throw new Error(`فشل في الحفظ: ${response.status}`);
+      }
 
       const result = await response.json();
 
@@ -111,9 +144,10 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
         throw new Error(result.error);
       }
     } catch (error: any) {
+      console.error('Submit error:', error);
       toast({
         title: 'خطأ',
-        description: error.message || 'فشل في تحديث الدرس',
+        description: error.message || 'فشل في تحديث الدرس. قد يكون الملف كبيراً جداً',
         variant: 'destructive',
       });
     } finally {
@@ -187,14 +221,14 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
 
             <div className="space-y-2">
               <Label htmlFor="content">محتوى الدرس *</Label>
-              <Textarea 
-                id="content" 
+              <RichTextEditor 
+                content={formData.content}
+                onChange={(content) => setFormData({ ...formData, content })}
                 placeholder="اكتب محتوى الدرس هنا..."
-                rows={10}
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                required
               />
+              <p className="text-xs text-muted-foreground">
+                استخدم شريط الأدوات لتنسيق النص وإضافة معادلات رياضية
+              </p>
             </div>
 
             <div className="flex items-center space-x-2 space-x-reverse">
@@ -215,6 +249,25 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
                 onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
               />
             </div>
+
+            <FileUpload
+              label="صورة توضيحية للدرس (اختياري)"
+              accept="image/*"
+              maxSizeMB={2}
+              value={formData.imageBase64}
+              onChange={(base64) => setFormData({ ...formData, imageBase64: base64 || '' })}
+              description="يمكنك رفع صورة توضيحية للدرس (JPG, PNG, GIF - حتى 2 ميجابايت)"
+            />
+
+            <FileUpload
+              label="ملف PDF إضافي (اختياري)"
+              accept=".pdf,application/pdf"
+              maxSizeMB={5}
+              value={formData.pdfBase64}
+              onChange={(base64) => setFormData({ ...formData, pdfBase64: base64 || '' })}
+              preview={false}
+              description="يمكنك إرفاق ملف PDF للدرس (حتى 5 ميجابايت)"
+            />
 
             <div className="flex justify-end gap-2">
               <Button 

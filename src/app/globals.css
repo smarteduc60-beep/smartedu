@@ -189,3 +189,56 @@ body {
 .tiptap[dir="ltr"] td {
   text-align: left;
 }
+
+/* Math Content Styles */
+.math-content-rtl {
+  direction: rtl;
+}
+
+.math-block {
+  text-align: center;
+  margin: 1rem 0;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+.math-inline {
+  display: inline-block;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* KaTeX math rendering - force LTR */
+.katex,
+.katex-display,
+.katex-html {
+  direction: ltr !important;
+  unicode-bidi: embed !important;
+}
+
+/* Ensure math symbols display correctly in RTL context */
+.tiptap .math-node,
+.tiptap span[data-type="math"] {
+  direction: ltr;
+  unicode-bidi: embed;
+  display: inline-block;
+}
+
+/* Fix for math in prose/content */
+.prose .katex,
+.prose .math-inline,
+.prose .math-block {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* Specific fix for integral and other math operators */
+.katex .mord,
+.katex .mop,
+.katex .mbin,
+.katex .mrel,
+.katex .mopen,
+.katex .mclose,
+.katex .mpunct {
+  direction: ltr !important;
+}

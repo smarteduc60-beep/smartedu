@@ -6,8 +6,7 @@ import { successResponse, errorResponse } from '@/lib/api-response';
 // GET /api/levels?stageId=1
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth();
-
+    // No auth required for signup page
     const { searchParams } = new URL(request.url);
     const stageId = searchParams.get('stageId');
 
@@ -29,7 +28,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return successResponse({ levels });
+    return successResponse(levels, `تم جلب ${levels.length} مستوى`);
   } catch (error: any) {
     return errorResponse(error.message || 'فشل في جلب المستويات', 500);
   }

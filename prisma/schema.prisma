@@ -86,6 +86,12 @@ model User {
   authoredSubmissions Submission[] @relation("StudentSubmissions")
   sentMessages        Message[]    @relation("SentMessages")
   receivedMessages    Message[]    @relation("ReceivedMessages")
+  notifications       Notification[] @relation("UserNotifications")
+  logs                Log[]        @relation("UserLogs")
+  backups             Backup[]     @relation("UserBackups")
+
+  studentPromotions StudentPromotion[] @relation("StudentPromotions")
+  parentPromotions  StudentPromotion[] @relation("ParentPromotions")
 
   parentLinks ParentChildLink[] @relation("ParentUser")
   childLinks  ParentChildLink[] @relation("ChildUser")
@@ -141,6 +147,9 @@ model Level {
   lessons     Lesson[]
   userDetails UserDetails[]
 
+  promotionsFrom StudentPromotion[] @relation("PromotionFromLevel")
+  promotionsTo   StudentPromotion[] @relation("PromotionToLevel")
+
   @@map("levels")
 }
 
@@ -168,7 +177,8 @@ model Lesson {
   title     String   @db.VarChar(255)
   content   String?  @db.Text
   videoUrl  String?  @map("video_url") @db.VarChar(255)
-  pdfUrl    String?  @map("pdf_url") @db.VarChar(255)
+  imageUrl  String?  @map("image_url") @db.Text
+  pdfUrl    String?  @map("pdf_url") @db.Text
   authorId  String   @map("author_id")
   subjectId Int      @map("subject_id")
   levelId   Int      @map("level_id")
@@ -303,4 +313,108 @@ model Message {
   recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id])
 
   @@map("messages")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  title     String   @db.VarChar(255)
+  message   String   @db.Text
+  type      String   @db.VarChar(50) // submission_graded, message_received, etc
+  relatedId Int?     @map("related_id") // ID of related submission/message
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ============================================
+// System Management Tables
+// ============================================
+
+model Log {
+  id         String   @id @default(cuid())
+  level      String   @db.VarChar(20)  // INFO, WARNING, ERROR, SUCCESS, DEBUG
+  category   String   @db.VarChar(50)  // AUTH, USER, LESSON, EXERCISE, etc
+  action     String   @db.VarChar(255) // USER_LOGIN, EXERCISE_CREATED, etc
+  userId     String?  @map("user_id")
+  targetId   String?  @map("target_id") // ID of affected resource
+  details    String?  @db.Text         // JSON string with additional data
+  ipAddress  String?  @db.VarChar(50)  @map("ip_address")
+  userAgent  String?  @db.Text         @map("user_agent")
+  timestamp  DateTime @default(now())
+
+  user User? @relation("UserLogs", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([level])
+  @@index([category])
+  @@index([userId])
+  @@index([timestamp])
+  @@map("logs")
+}
+
+model Backup {
+  id          String   @id @default(cuid())
+  filename    String   @db.VarChar(255)
+  filepath    String   @db.VarChar(500)
+  size        BigInt   // File size in bytes
+  type        String   @db.VarChar(20)  // FULL, INCREMENTAL, DIFFERENTIAL
+  status      String   @db.VarChar(20)  // PENDING, COMPLETED, FAILED
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now())  @map("created_at")
+
+  createdBy User @relation("UserBackups", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@map("backups")
+}
+
+// ============================================
+// Academic Year & Student Promotion
+// ============================================
+
+model AcademicYear {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(100)  // "2024-2025"
+  startDate DateTime @map("start_date") // September 1st
+  endDate   DateTime @map("end_date")   // June 30th
+  isCurrent Boolean  @default(false) @map("is_current")
+  status    String   @default("active") @db.VarChar(20) // active, ended, archived
+  createdAt DateTime @default(now()) @map("created_at")
+
+  promotions StudentPromotion[]
+
+  @@index([isCurrent])
+  @@index([status])
+  @@map("academic_years")
+}
+
+model StudentPromotion {
+  id             String   @id @default(cuid())
+  academicYearId String   @map("academic_year_id")
+  studentId      String   @map("student_id")
+  parentId       String   @map("parent_id")
+  fromLevelId    Int      @map("from_level_id")
+  toLevelId      Int?     @map("to_level_id")
+  status         String   @default("pending") @db.VarChar(20) // pending, approved, rejected, completed
+  parentResponse String?  @db.VarChar(10) // yes, no
+  messageId      Int?     @map("message_id") // Link to parent message
+  notifiedAt     DateTime? @map("notified_at")
+  respondedAt    DateTime? @map("responded_at")
+  promotedAt     DateTime? @map("promoted_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  student      User         @relation("StudentPromotions", fields: [studentId], references: [id], onDelete: Cascade)
+  parent       User         @relation("ParentPromotions", fields: [parentId], references: [id], onDelete: Cascade)
+  fromLevel    Level        @relation("PromotionFromLevel", fields: [fromLevelId], references: [id])
+  toLevel      Level?       @relation("PromotionToLevel", fields: [toLevelId], references: [id])
+
+  @@unique([academicYearId, studentId])
+  @@index([status])
+  @@index([parentResponse])
+  @@map("student_promotions")
 }

@@ -43,21 +43,29 @@ export default function LoginPage() {
       if (result?.error) {
         toast({
           title: "خطأ في تسجيل الدخول",
-          description: result.error || "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+          description: result.error === 'CredentialsSignin' 
+            ? "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+            : result.error || "حدث خطأ أثناء تسجيل الدخول",
           variant: "destructive",
         });
-      } else {
+      } else if (result?.ok) {
         toast({
           title: "تم تسجيل الدخول بنجاح",
           description: "جاري تحويلك...",
+        });
+        // Force a session update before redirecting
+        await fetch('/api/auth/session', { 
+          method: 'GET',
+          cache: 'no-store'
         });
         router.push('/dashboard');
         router.refresh();
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء تسجيل الدخول",
+        description: "حدث خطأ أثناء تسجيل الدخول. الرجاء المحاولة مرة أخرى.",
         variant: "destructive",
       });
     } finally {

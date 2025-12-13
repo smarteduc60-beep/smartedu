@@ -35,9 +35,13 @@ import {
   AlignJustify,
   Sigma,
   Upload,
+  MoveLeft,
+  MoveRight,
 } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import 'katex/dist/katex.min.css';
+import MathSymbolsToolbar from './MathSymbolsToolbar';
+import MathPreviewBox from './MathPreviewBox';
 
 interface RichTextEditorProps {
   content: string;
@@ -85,9 +89,6 @@ export default function RichTextEditor({
         multicolor: true,
       }),
       Mathematics.configure({
-        HTMLAttributes: {
-          class: 'math-node',
-        },
         katexOptions: {
           throwOnError: false,
           displayMode: false,
@@ -105,6 +106,13 @@ export default function RichTextEditor({
       },
     },
   });
+
+  // تحديث محتوى المحرر عندما يتغير content من الخارج (مثل توليد AI)
+  useEffect(() => {
+    if (editor && content !== editor.getHTML()) {
+      editor.commands.setContent(content);
+    }
+  }, [content, editor]);
 
   const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -158,9 +166,35 @@ export default function RichTextEditor({
     }
   }, [editor]);
 
+  // دالة لإدراج رمز رياضي من الشريط
+  const insertMathSymbol = useCallback((latex: string) => {
+    if (editor) {
+      editor.chain().focus().insertContent(` ${latex} `).run();
+    }
+  }, [editor]);
+
   const addTable = useCallback(() => {
     if (editor) {
       editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    }
+  }, [editor]);
+
+  const setTextDirection = useCallback((direction: 'ltr' | 'rtl') => {
+    if (editor) {
+      // الحصول على العنصر الرئيسي للمحرر
+      const editorElement = editor.view.dom;
+      
+      // تطبيق الاتجاه على المحرر بالكامل
+      if (direction === 'rtl') {
+        editorElement.setAttribute('dir', 'rtl');
+        editorElement.style.textAlign = 'right';
+      } else {
+        editorElement.setAttribute('dir', 'ltr');
+        editorElement.style.textAlign = 'left';
+      }
+      
+      // إعادة التركيز على المحرر
+      editor.commands.focus();
     }
   }, [editor]);
 
@@ -176,6 +210,7 @@ export default function RichTextEditor({
         accept="image/*"
         className="hidden"
         onChange={handleImageUpload}
+        aria-label="تحميل صورة"
       />
       {editable && (
         <div className="flex flex-wrap gap-1 p-2 border-b bg-muted/50">
@@ -338,8 +373,33 @@ export default function RichTextEditor({
             <AlignJustify className="h-4 w-4" />
           </Button>
 
+          {/* Text Direction */}
+          <div className="w-px h-8 bg-border mx-1" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setTextDirection('ltr')}
+            title="اتجاه من اليسار لليمين (LTR)"
+          >
+            <MoveRight className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setTextDirection('rtl')}
+            title="اتجاه من اليمين لليسار (RTL)"
+          >
+            <MoveLeft className="h-4 w-4" />
+          </Button>
+
           {/* Insert */}
           <div className="w-px h-8 bg-border mx-1" />
+          
+          {/* Math Symbols Toolbar */}
+          <MathSymbolsToolbar onInsert={insertMathSymbol} />
+          
           <Button
             type="button"
             variant="ghost"
@@ -410,6 +470,9 @@ export default function RichTextEditor({
         </div>
       )}
       <EditorContent editor={editor} className="min-h-[200px]" />
+      
+      {/* مربع المعاينة المباشرة */}
+      {editable && <MathPreviewBox content={content} />}
     </div>
   );
 }

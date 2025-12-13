@@ -54,6 +54,8 @@ export default function SignupPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        console.log('Fetching stages, levels, subjects...');
+        
         const [stagesRes, levelsRes, subjectsRes] = await Promise.all([
           fetch('/api/stages'),
           fetch('/api/levels'),
@@ -64,10 +66,18 @@ export default function SignupPage() {
         const levelsData = await levelsRes.json();
         const subjectsData = await subjectsRes.json();
         
-        // Handle API response format: { data: { stages/levels/subjects: [...] } }
-        setStages(Array.isArray(stagesData) ? stagesData : (stagesData.data?.stages || stagesData.stages || []));
-        setLevels(Array.isArray(levelsData) ? levelsData : (levelsData.data?.levels || levelsData.levels || []));
-        setSubjects(Array.isArray(subjectsData) ? subjectsData : (subjectsData.data?.subjects || subjectsData.subjects || []));
+        console.log('Stages response:', stagesData);
+        console.log('Levels response:', levelsData);
+        console.log('Subjects response:', subjectsData);
+        
+        // Handle API response format: { success: true, data: [...] }
+        setStages(stagesData.success ? stagesData.data : []);
+        setLevels(levelsData.success ? levelsData.data : []);
+        setSubjects(subjectsData.success ? subjectsData.data : []);
+        
+        console.log('Stages set:', stagesData.success ? stagesData.data.length : 0);
+        console.log('Levels set:', levelsData.success ? levelsData.data.length : 0);
+        console.log('Subjects set:', subjectsData.success ? subjectsData.data.length : 0);
       } catch (error) {
         console.error('Failed to fetch data:', error);
       }

@@ -22,12 +22,17 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { useSession } from "next-auth/react";
 
 interface Lesson {
   id: string;
   title: string;
   description: string | null;
   type: 'public' | 'private';
+  subject?: {
+    id: number;
+    name: string;
+  };
   level?: {
     id: number;
     name: string;
@@ -40,13 +45,16 @@ interface Lesson {
 
 export default function SupervisorLessonsPage() {
   const { toast } = useToast();
+  const { data: session } = useSession();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [supervisorInfo, setSupervisorInfo] = useState<{ subject: string; level: string } | null>(null);
 
   useEffect(() => {
     const fetchLessons = async () => {
       try {
+        // جلب الدروس - الـ API سيصفي تلقائياً حسب المشرف
         const response = await fetch('/api/lessons');
         const result = await response.json();
 
@@ -54,6 +62,14 @@ export default function SupervisorLessonsPage() {
           // API returns lessons in result.data.lessons
           const lessonsData = result.data?.lessons || result.lessons || [];
           setLessons(lessonsData);
+          
+          // جلب معلومات المشرف للعرض
+          if (lessonsData.length > 0 && lessonsData[0].subject && lessonsData[0].level) {
+            setSupervisorInfo({
+              subject: lessonsData[0].subject.name,
+              level: lessonsData[0].level.name,
+            });
+          }
         }
       } catch (error) {
         console.error('Error fetching lessons:', error);
@@ -62,8 +78,10 @@ export default function SupervisorLessonsPage() {
       }
     };
 
-    fetchLessons();
-  }, []);
+    if (session?.user) {
+      fetchLessons();
+    }
+  }, [session]);
 
   const handleDelete = async (lessonId: string) => {
     if (!confirm('هل أنت متأكد من حذف هذا الدرس؟')) return;
@@ -111,7 +129,9 @@ export default function SupervisorLessonsPage() {
         <div className="grid gap-1">
           <h1 className="text-3xl font-bold tracking-tight">إدارة الدروس</h1>
           <p className="text-muted-foreground">
-            قم بإدارة جميع الدروس التي قمت بإنشائها
+            {supervisorInfo 
+              ? `دروس ${supervisorInfo.subject} - ${supervisorInfo.level}` 
+              : 'قم بإدارة جميع الدروس التي قمت بإنشائها'}
           </p>
         </div>
         <Link href="/dashboard/subject-supervisor/lessons/create">
@@ -128,7 +148,7 @@ export default function SupervisorLessonsPage() {
             <div>
               <CardTitle>قائمة الدروس</CardTitle>
               <CardDescription>
-                هذه هي جميع الدروس التي قمت بإنشائها ({filteredLessons.length})
+                دروسك فقط ({filteredLessons.length})
               </CardDescription>
             </div>
             <div className="relative w-64">

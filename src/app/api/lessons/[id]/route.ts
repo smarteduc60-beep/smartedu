@@ -3,6 +3,15 @@ import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/api-auth';
 import { successResponse, errorResponse, notFoundResponse } from '@/lib/api-response';
 
+// Configure API route to accept larger payloads
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
+  },
+};
+
 // GET /api/lessons/[id]
 export async function GET(
   request: NextRequest,
@@ -75,13 +84,14 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { title, content, videoUrl, pdfUrl, type, isLocked, status } = body;
+    const { title, content, videoUrl, imageBase64, pdfBase64, type, isLocked, status } = body;
 
     const updateData: any = {};
     if (title !== undefined) updateData.title = title;
     if (content !== undefined) updateData.content = content;
     if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
-    if (pdfUrl !== undefined) updateData.pdfUrl = pdfUrl;
+    if (imageBase64 !== undefined) updateData.imageUrl = imageBase64;
+    if (pdfBase64 !== undefined) updateData.pdfUrl = pdfBase64;
     if (type !== undefined) updateData.type = type;
     if (isLocked !== undefined) updateData.isLocked = isLocked;
     

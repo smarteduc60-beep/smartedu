@@ -31,7 +31,8 @@ export function useStages(): UseStagesReturn {
       const result = await response.json();
 
       if (result.success) {
-        setStages(result.data);
+        const stagesData = result.data?.stages || result.data || [];
+        setStages(Array.isArray(stagesData) ? stagesData : []);
       } else {
         setError(result.error || 'فشل في تحميل المراحل');
       }
@@ -95,7 +96,9 @@ export function useLevels(params?: UseLevelsParams): UseLevelsReturn {
       const result = await response.json();
 
       if (result.success) {
-        setLevels(result.data);
+        // التعامل مع حالتين: data.levels أو data مباشرة
+        const levelsData = result.data.levels || result.data;
+        setLevels(Array.isArray(levelsData) ? levelsData : []);
       } else {
         setError(result.error || 'فشل في تحميل المستويات');
       }
@@ -149,9 +152,8 @@ export function useSubjects(): UseSubjectsReturn {
       const result = await response.json();
 
       if (result.success) {
-        // API returns { success: true, data: { subjects: [...] } }
-        const subjectsData = result.subjects || result.data?.subjects || result.data || [];
-        setSubjects(subjectsData);
+        const subjectsData = result.data?.subjects || result.data || [];
+        setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
       } else {
         setError(result.error || 'فشل في تحميل المواد');
       }

@@ -34,9 +34,12 @@ export function useStages(): UseStagesReturn {
       }
 
       const data = await response.json();
-      // Handle both response formats: { stages: [...] } or { data: { stages: [...] } }
-      const stagesData = data.stages || data.data?.stages || [];
-      setStages(stagesData);
+      if (data.success) {
+        const stagesData = data.data?.stages || data.stages || data.data || [];
+        setStages(Array.isArray(stagesData) ? stagesData : []);
+      } else {
+        throw new Error(data.error || 'Failed to fetch stages');
+      }
     } catch (err) {
       console.error('Error fetching stages:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');

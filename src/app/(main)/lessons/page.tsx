@@ -13,20 +13,29 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { ArrowLeft, Lock, Loader2 } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, BookOpen } from "lucide-react";
 import { useLessons } from "@/hooks";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function LessonsPage() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
   const subjectId = searchParams.get('subject');
+  const [subjectName, setSubjectName] = useState<string>('');
   
   const { lessons, isLoading, error } = useLessons({
     subjectId: subjectId ? parseInt(subjectId) : undefined,
     status: 'approved',
   });
+
+  // جلب اسم المادة
+  useEffect(() => {
+    if (subjectId && lessons.length > 0) {
+      setSubjectName(lessons[0]?.subject?.name || '');
+    }
+  }, [subjectId, lessons]);
 
 
   const getLessonImage = (id: number) => {
@@ -56,10 +65,23 @@ export default function LessonsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">قائمة الدروس</h1>
+      <div className="mb-6">
+        <Link href="/subjects">
+          <Button variant="outline" size="sm" className="mb-4">
+            <ArrowLeft className="ml-2 h-4 w-4" />
+            <span>العودة للمواد</span>
+          </Button>
+        </Link>
+        <div className="flex items-center gap-3 mb-2">
+          <BookOpen className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold tracking-tight">
+            {subjectName ? `دروس ${subjectName}` : 'قائمة الدروس'}
+          </h1>
+        </div>
         <p className="text-muted-foreground">
-          تصفح جميع الدروس المتاحة لك وابدأ رحلتك التعليمية.
+          {subjectName 
+            ? `تصفح جميع دروس مادة ${subjectName} المتاحة لك`
+            : 'تصفح جميع الدروس المتاحة لك وابدأ رحلتك التعليمية.'}
         </p>
       </div>
 

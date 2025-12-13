@@ -1,4 +1,6 @@
 
+'use client';
+
 import { Button } from "@/components/ui/button";
 import { School, ArrowLeft, Bot, BarChart, Users, Star, BookCopy, FileQuestion } from "lucide-react";
 import Link from "next/link";
@@ -7,18 +9,46 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { USERS, LESSONS, EXERCISES, LEVELS, getUserById } from "@/lib/mock-data";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
 
 export default function LandingPage() {
+  const [stats, setStats] = useState({
+    studentCount: 0,
+    teacherCount: 0,
+    lessonCount: 0,
+    exerciseCount: 0,
+  });
 
-  const studentCount = USERS.filter(u => u.role === 'student').length;
-  const teacherCount = USERS.filter(u => u.role === 'teacher' || u.role === 'supervisor_specific').length;
-  const lessonCount = LESSONS.length;
-  const exerciseCount = EXERCISES.length;
+  const [topStudents, setTopStudents] = useState<Array<{
+    id: string;
+    firstName: string;
+    lastName: string;
+    levelName: string;
+    averageScore: number;
+  }>>([]);
 
-  const topStudents = [
-    { levelId: 1, studentId: 1, score: 95 },
-    { levelId: 3, studentId: 5, score: 92 },
-  ]
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('/api/statistics/public');
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+          if (data.topStudents) {
+            setTopStudents(data.topStudents);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  const studentCount = stats.studentCount;
+  const teacherCount = stats.teacherCount;
+  const lessonCount = stats.lessonCount;
+  const exerciseCount = stats.exerciseCount;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -151,33 +181,32 @@ export default function LandingPage() {
                     <p className="text-muted-foreground mt-2">نحتفي بالطلاب المتفوقين في كل مستوى دراسي.</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                    {topStudents.map(({ levelId, studentId, score }) => {
-                        const level = LEVELS.find(l => l.id === levelId);
-                        const student = getUserById(studentId);
-                        if (!level || !student) return null;
-
-                        return (
-                            <Card key={level.id} className="overflow-hidden">
+                    {topStudents.length > 0 ? (
+                        topStudents.map((student) => (
+                            <Card key={student.id} className="overflow-hidden">
                                 <CardHeader className="bg-primary/5 p-4">
-                                    <CardTitle className="text-center text-primary">{level.name}</CardTitle>
+                                    <CardTitle className="text-center text-primary">{student.levelName}</CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6 flex flex-col items-center text-center">
                                     <div className="relative mb-4">
                                         <Avatar className="h-24 w-24 border-4 border-primary">
-                                            <AvatarImage src={student.avatar} alt={student.name} />
-                                            <AvatarFallback>{student.prenom.charAt(0)}</AvatarFallback>
+                                            <AvatarFallback>{student.firstName.charAt(0)}</AvatarFallback>
                                         </Avatar>
                                         <Badge className="absolute -bottom-2 -right-2 text-lg p-2" variant="destructive">
                                             <Star className="ml-1 h-5 w-5 fill-current" />
                                             <span>#1</span>
                                         </Badge>
                                     </div>
-                                    <h4 className="text-xl font-semibold">{student.name}</h4>
-                                    <p className="text-muted-foreground">متوسط الدرجات: <span className="font-bold text-primary">{score}%</span></p>
+                                    <h4 className="text-xl font-semibold">{student.firstName} {student.lastName}</h4>
+                                    <p className="text-muted-foreground">متوسط الدرجات: <span className="font-bold text-primary">{student.averageScore.toFixed(1)}%</span></p>
                                 </CardContent>
                             </Card>
-                        )
-                    })}
+                        ))
+                    ) : (
+                        <div className="col-span-full text-center text-muted-foreground">
+                            <p>لا توجد بيانات للطلاب المتفوقين حاليًا</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </section>

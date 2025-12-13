@@ -36,9 +36,12 @@ export function useSubjects(): UseSubjectsReturn {
       }
 
       const data = await response.json();
-      // Handle both response formats: { subjects: [...] } or { data: { subjects: [...] } }
-      const subjectsData = data.subjects || data.data?.subjects || [];
-      setSubjects(subjectsData);
+      if (data.success) {
+        const subjectsData = data.data?.subjects || data.subjects || data.data || [];
+        setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
+      } else {
+        throw new Error(data.error || 'Failed to fetch subjects');
+      }
     } catch (err) {
       console.error('Error fetching subjects:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');

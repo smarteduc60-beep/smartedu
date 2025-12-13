@@ -108,15 +108,37 @@ export async function GET(request: NextRequest) {
     // Calculate statistics
     const totalSubmissions = allSubmissions.length;
     
-    // Calculate average score (assuming scores are out of 10)
+    // Calculate average score with proper percentage calculation
     let totalScore = 0;
+    let totalMaxScore = 0;
     
-    allSubmissions.forEach((sub) => {
-      totalScore += Number(sub.finalScore || sub.aiScore || 0);
+    // Get max scores for each submission
+    const submissionsWithExercises = await prisma.submission.findMany({
+      where: {
+        studentId: { in: childrenIds },
+        status: 'graded',
+      },
+      select: {
+        finalScore: true,
+        aiScore: true,
+        exercise: {
+          select: {
+            maxScore: true,
+          },
+        },
+      },
     });
     
+    submissionsWithExercises.forEach((sub) => {
+      const score = Number(sub.finalScore || sub.aiScore || 0);
+      const maxScore = Number(sub.exercise.maxScore || 20);
+      totalScore += score;
+      totalMaxScore += maxScore;
+    });
+    
+    // Calculate percentage properly
     const averageScore =
-      totalSubmissions > 0 ? Math.round((totalScore / totalSubmissions)) : 0;
+      totalMaxScore > 0 ? Math.round((totalScore / totalMaxScore) * 100) : 0;
 
     // Get unread messages count
     const unreadMessages = await prisma.message.count({

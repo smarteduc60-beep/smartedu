@@ -27,7 +27,11 @@ export const authOptions: NextAuthOptions = {
             userDetails: {
               include: {
                 stage: true,
-                level: true,
+                level: {
+                  include: {
+                    stage: true,
+                  },
+                },
                 subject: true,
               },
             },
@@ -47,6 +51,9 @@ export const authOptions: NextAuthOptions = {
           throw new Error('بيانات الدخول غير صحيحة');
         }
 
+        // Get stage_id from level if available, otherwise from userDetails
+        const stageId = user.userDetails?.level?.stageId || user.userDetails?.stageId;
+
         return {
           id: user.id,
           email: user.email,
@@ -54,6 +61,7 @@ export const authOptions: NextAuthOptions = {
           image: user.image,
           role: user.role.name,
           roleId: user.roleId,
+          stage_id: stageId,
         };
       },
     }),
@@ -79,18 +87,31 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.roleId = user.roleId;
+        token.stage_id = user.stage_id;
       }
 
       // إذا كان التسجيل عبر Google ولأول مرة
       if (account?.provider === 'google' && profile) {
         const existingUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          include: { role: true, userDetails: true },
+          include: { 
+            role: true, 
+            userDetails: {
+              include: {
+                level: {
+                  include: {
+                    stage: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
         if (existingUser) {
           token.role = existingUser.role.name;
           token.roleId = existingUser.roleId;
+          token.stage_id = existingUser.userDetails?.level?.stageId || existingUser.userDetails?.stageId;
           
           // إذا لم يكمل المستخدم ملفه الشخصي، نوجهه لصفحة الإكمال
           if (!existingUser.userDetails) {
@@ -107,6 +128,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
         session.user.roleId = token.roleId as number;
+        session.user.stage_id = token.stage_id as number | undefined;
         session.user.needsProfileCompletion = token.needsProfileCompletion as boolean;
       }
       return session;
