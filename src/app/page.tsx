@@ -1,4 +1,9 @@
 
+// app/page.tsx
+export default function Home() {
+  return <h1>SmartEdu Home OK</h1>
+}
+
 'use client';
 
 import { Button } from "@/components/ui/button";
