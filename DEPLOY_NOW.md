@@ -46,19 +46,22 @@
 ⏳ انتظر حتى يكتمل الإنشاء
 ```
 
-### 3️⃣ إعداد المتغيرات (3 دقائق)
+### 3️⃣ إعداد المتغيرات (3 دقائق) - **مهم جداً!**
 ```
 ⚙️ اذهب إلى Variables
 📝 اضغط "Raw Editor"
-📋 انسخ هذا:
+📋 انسخ هذا (قبل أي Deploy):
 ```
 
 ```env
 DATABASE_URL=${MYSQL_URL}
-NEXTAUTH_URL=https://temporary-url.com
+NEXTAUTH_URL=https://temporary.railway.app
 NEXTAUTH_SECRET=PASTE_SECRET_HERE
 GOOGLE_GENAI_API_KEY=PASTE_KEY_HERE
+NODE_ENV=production
 ```
+
+**⚠️ مهم: يجب إضافة المتغيرات قبل أول Deploy!**
 
 **🔑 احصل على NEXTAUTH_SECRET:**
 ```powershell
@@ -74,10 +77,12 @@ GOOGLE_GENAI_API_KEY=PASTE_KEY_HERE
 ⏳ Railway ستقوم بـ:
   ✓ npm install
   ✓ npx prisma generate
-  ✓ npx prisma db push (إنشاء الجداول)
   ✓ next build
-  ✓ npm run seed (بيانات تجريبية)
+  ✓ npx prisma db push (عند أول start)
+  ✓ npm start
 ```
+
+**📝 ملاحظة:** إذا فشل Build بسبب DATABASE_URL، تأكد أنك أضفت المتغيرات أولاً!
 
 ### 5️⃣ تحديث NEXTAUTH_URL (دقيقة واحدة)
 ```
@@ -98,6 +103,23 @@ GOOGLE_GENAI_API_KEY=PASTE_KEY_HERE
    🔑 password123
 
 ✅ يعمل!
+```
+
+### 7️⃣ إضافة البيانات التجريبية (اختياري)
+```
+🔧 في Railway → Service → Settings
+⚙️ اذهب إلى Deploy → Custom Start Command
+📝 أضف مرة واحدة فقط:
+   npm run seed && npm start
+
+🔄 Redeploy
+✅ بعد اكتمال Seed، أعد Start Command إلى:
+   npm start
+```
+
+**أو استخدم Railway CLI:**
+```bash
+railway run npm run seed
 ```
 
 ---
