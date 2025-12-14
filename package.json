@@ -7,7 +7,8 @@
     "dev:turbo": "next dev --turbopack -p 9002",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
-    "build": "next build",
+    "build": "npx prisma generate && npx prisma db push && next build",
+    "postinstall": "npx prisma generate",
     "start": "next start -p 9002",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -15,7 +16,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "seed": "tsx prisma/seed.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
