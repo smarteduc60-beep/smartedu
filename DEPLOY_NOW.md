@@ -75,14 +75,17 @@ NODE_ENV=production
 ### 4️⃣ انتظر Build (5 دقائق)
 ```
 ⏳ Railway ستقوم بـ:
-  ✓ npm install
-  ✓ npx prisma generate
-  ✓ next build
-  ✓ npx prisma db push (عند أول start)
-  ✓ npm start
+  ✓ npm ci (install dependencies)
+  ✓ npx prisma generate (generate client)
+  ✓ npm run build (build Next.js)
+  
+⏳ عند أول Deploy:
+  ✓ npx prisma db push (create tables)
+  ✓ npm run seed (add demo data)
+  ✓ npm start (start server)
 ```
 
-**📝 ملاحظة:** إذا فشل Build بسبب DATABASE_URL، تأكد أنك أضفت المتغيرات أولاً!
+**✅ الآن Build سينجح لأن prisma db push يعمل في Deploy وليس Build!**
 
 ### 5️⃣ تحديث NEXTAUTH_URL (دقيقة واحدة)
 ```
@@ -98,28 +101,13 @@ NODE_ENV=production
 ### 6️⃣ اختبر التطبيق! ✅
 ```
 🌐 افتح رابط التطبيق
-🔐 سجل دخول:
+⏳ انتظر حتى ينتهي Seed (دقيقة واحدة)
+
+🔐 سجل دخول بحساب تجريبي:
    📧 Lakhdar.director@sep.com
    🔑 password123
 
-✅ يعمل!
-```
-
-### 7️⃣ إضافة البيانات التجريبية (اختياري)
-```
-🔧 في Railway → Service → Settings
-⚙️ اذهب إلى Deploy → Custom Start Command
-📝 أضف مرة واحدة فقط:
-   npm run seed && npm start
-
-🔄 Redeploy
-✅ بعد اكتمال Seed، أعد Start Command إلى:
-   npm start
-```
-
-**أو استخدم Railway CLI:**
-```bash
-railway run npm run seed
+✅ يعمل مع البيانات التجريبية!
 ```
 
 ---
@@ -139,13 +127,12 @@ railway run npm run seed
 
 ### في Railway Logs يجب أن ترى:
 ```
-✓ Dependencies installed
-✓ Prisma Client generated
-✓ Database schema pushed
-✓ Tables created
-✓ Seeding database...
-✓ Build completed
-✓ Starting server...
+✓ npm ci
+✓ npx prisma generate  
+✓ npm run build (Next.js compiled)
+✓ npx prisma db push (21 tables created)
+✓ npm run seed (demo data added)
+✓ Server started on port 3000
 ```
 
 ### في التطبيق:
