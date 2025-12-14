@@ -2,10 +2,10 @@
 # https://nixpacks.com/docs/configuration/file
 
 [phases.setup]
-nixPkgs = ["nodejs_18"]
+nixPkgs = ["nodejs_18", "openssl"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm ci"]
 
 [phases.build]
 cmds = [
@@ -14,4 +14,4 @@ cmds = [
 ]
 
 [start]
-cmd = "npx prisma db push --accept-data-loss && npm start"
+cmd = "npx prisma db push --accept-data-loss && npm run seed && npm start"
