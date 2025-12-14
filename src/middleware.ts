@@ -1,5 +1,65 @@
-// src/middleware.ts
-import { withAuth } from 'next-auth/middleware';
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server"; // أضف النوع
+
+export function middleware(req: NextRequest) {
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [], // لا يحمي أي شيء مؤقتًا
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
 
 export default withAuth(
@@ -72,7 +132,7 @@ export const config = {
     '/profile/:path*',
     '/subjects/:path*',
   ],
-};
+};*/
 
 
 
