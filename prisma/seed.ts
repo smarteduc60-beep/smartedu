@@ -90,8 +90,6 @@ async function main() {
   console.log('📊 إنشاء المستويات...');
   await prisma.level.createMany({
     data: [
-      { id: 1, name: 'الصف الأول الابتدائي', stageId: stage1.id, displayOrder: 1 },
-      { id: 2, name: 'الصف الثاني الابتدائي', stageId: stage1.id, displayOrder: 2 },
       { id: 3, name: 'أولى متوسط', stageId: stage2.id, displayOrder: 1 },
       { id: 4, name: 'ثانية متوسط', stageId: stage2.id, displayOrder: 2 },
       { id: 5, name: 'ثالثة متوسط', stageId: stage2.id, displayOrder: 3 },
@@ -125,12 +123,12 @@ async function main() {
 
   // المدير
   const director = await prisma.user.upsert({
-    where: { email: 'aisha.director@example.com' },
+    where: { email: 'Ladj.director@smartedu.com' },
     update: {},
     create: {
-      firstName: 'Aisha',
-      lastName: 'Khan',
-      email: 'aisha.director@example.com',
+      firstName: 'لخضر',
+      lastName: 'جديد',
+      email: 'Ladj.director@smartedu.com',
       password: hashedPassword,
       image: 'https://placehold.co/200x200/3F51B5/FFFFFF?text=AK',
       roleId: roleMap.directeur,
@@ -139,12 +137,12 @@ async function main() {
 
   // مشرف المادة
   const supervisor = await prisma.user.upsert({
-    where: { email: 'youssef.supervisor@example.com' },
+    where: { email: 'Nassir.supervisor@smartedu.com' },
     update: {},
     create: {
-      firstName: 'Youssef',
-      lastName: 'Al-Farsi',
-      email: 'youssef.supervisor@example.com',
+      firstName: 'ناصر',
+      lastName: 'عنتري',
+      email: 'Nassir.supervisor@smartedu.com',
       password: hashedPassword,
       image: 'https://placehold.co/200x200/7E57C2/FFFFFF?text=YF',
       roleId: roleMap.supervisor_specific,
@@ -159,12 +157,12 @@ async function main() {
 
   // معلم
   const teacher = await prisma.user.upsert({
-    where: { email: 'ahmed.teacher@example.com' },
+    where: { email: 'ahmed.teacher@smartedu.com' },
     update: {},
     create: {
       firstName: 'Ahmed',
       lastName: 'Mahmoud',
-      email: 'ahmed.teacher@example.com',
+      email: 'ahmed.teacher@smartedu.com',
       password: hashedPassword,
       image: 'https://placehold.co/200x200/2196F3/FFFFFF?text=AM',
       roleId: roleMap.teacher,
@@ -179,12 +177,12 @@ async function main() {
 
   // ولي أمر
   const parent = await prisma.user.upsert({
-    where: { email: 'khalid.parent@example.com' },
+    where: { email: 'khaled.parent@example.com' },
     update: {},
     create: {
-      firstName: 'Khalid',
-      lastName: 'Al-Ghamdi',
-      email: 'khalid.parent@example.com',
+      firstName: 'خالد',
+      lastName: 'جديد',
+      email: 'khaled.parent@smartedu.com',
       password: hashedPassword,
       image: 'https://placehold.co/200x200/FF9800/FFFFFF?text=KG',
       roleId: roleMap.parent,
@@ -198,12 +196,12 @@ async function main() {
 
   // طالب 1
   const student1 = await prisma.user.upsert({
-    where: { email: 'fatima.student@example.com' },
+    where: { email: 'aya.student@smartedu.com' },
     update: {},
     create: {
       firstName: 'Fatima',
       lastName: 'Al-Ghamdi',
-      email: 'fatima.student@example.com',
+      email: 'aya.student@smartedu.com',
       password: hashedPassword,
       image: 'https://placehold.co/200x200/4CAF50/FFFFFF?text=FG',
       roleId: roleMap.student,
@@ -218,12 +216,12 @@ async function main() {
 
   // طالب 2
   const student2 = await prisma.user.upsert({
-    where: { email: 'omar.student@example.com' },
+    where: { email: 'omar.student@smartedu.com' },
     update: {},
     create: {
       firstName: 'Omar',
-      lastName: 'Al-Ghamdi',
-      email: 'omar.student@example.com',
+      lastName: 'Hassan',
+      email: 'omar.student@smartedu.com',
       password: hashedPassword,
       image: 'https://placehold.co/200x200/F44336/FFFFFF?text=OG',
       roleId: roleMap.student,
@@ -265,16 +263,16 @@ async function main() {
   console.log('\n📋 بيانات الدخول التجريبية:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('المدير:');
-  console.log('  البريد: aisha.director@example.com');
-  console.log('  كلمة المرور: password123');
+  console.log('  البريد: Ladj.director@smartedu.com');
+  console.log('  كلمة المرور: Lakhdar14013@Djedid');
   console.log('\nالمعلم:');
-  console.log('  البريد: ahmed.teacher@example.com');
+  console.log('  البريد: ahmed.teacher@smartedu.com');
   console.log('  كلمة المرور: password123');
   console.log('\nالطالب:');
-  console.log('  البريد: fatima.student@example.com');
+  console.log('  البريد: aya.student@smartedu.com');
   console.log('  كلمة المرور: password123');
   console.log('\nولي الأمر:');
-  console.log('  البريد: khalid.parent@example.com');
+  console.log('  البريد: khaled.parent@smartedu.com');
   console.log('  كلمة المرور: password123');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 }
