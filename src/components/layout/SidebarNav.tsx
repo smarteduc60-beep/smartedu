@@ -157,7 +157,10 @@ export function SidebarNav() {
   useEffect(() => {
     // This is a hack for the prototype to persist the "context"
     // of which dashboard the user is in.
-    if (typeof window !== 'undefined') {
+    // Only run on client-side after mount
+    if (typeof window === 'undefined') return;
+    
+    try {
         if (pathname.startsWith('/dashboard/directeur')) {
             sessionStorage.setItem('currentRolePath', '/dashboard/directeur');
         } else if (pathname.startsWith('/dashboard/subject-supervisor')) {
@@ -173,6 +176,9 @@ export function SidebarNav() {
         } else if (pathname.startsWith('/dashboard/student') || pathname === '/dashboard') {
              sessionStorage.setItem('currentRolePath', '/dashboard/student');
         }
+    } catch (error) {
+        // Silently fail if sessionStorage is not available
+        console.error('sessionStorage not available:', error);
     }
   }, [pathname]);
 
