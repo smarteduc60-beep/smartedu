@@ -90,6 +90,8 @@ async function main() {
   console.log('📊 إنشاء المستويات...');
   await prisma.level.createMany({
     data: [
+      { id: 1, name: 'الصف الأول الابتدائي', stageId: stage1.id, displayOrder: 1 },
+      { id: 2, name: 'الصف الثاني الابتدائي', stageId: stage1.id, displayOrder: 2 },
       { id: 3, name: 'أولى متوسط', stageId: stage2.id, displayOrder: 1 },
       { id: 4, name: 'ثانية متوسط', stageId: stage2.id, displayOrder: 2 },
       { id: 5, name: 'ثالثة متوسط', stageId: stage2.id, displayOrder: 3 },
