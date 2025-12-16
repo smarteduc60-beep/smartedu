@@ -1,7 +1,6 @@
-import type {NextConfig} from 'next';
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
   output: 'standalone',
   typescript: {
     ignoreBuildErrors: true,
@@ -11,31 +10,24 @@ const nextConfig: NextConfig = {
   },
   images: {
     remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**',
-      },
+      { protocol: 'https', hostname: 'placehold.co', pathname: '/**' },
+      { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'picsum.photos', pathname: '/**' },
     ],
   },
   experimental: {
+    appDir: true, // تفعيل App Router
     serverActions: {
       bodySizeLimit: '10mb',
     },
   },
+  // ✅ تحديد مجلد src كمصدر رئيسي
+  // هذا يضمن أن Next.js يتعرف على src/app دون الحاجة لنقل المجلد
+  srcDir: 'src',
 };
 
 export default nextConfig;
+
+
+
+
