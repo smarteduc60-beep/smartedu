@@ -15,74 +15,55 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'البريد الإلكتروني', type: 'email' },
         password: { label: 'كلمة المرور', type: 'password' },
       },
-
-
-
-
-
-
       async authorize(credentials) {
-  if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error('البريد الإلكتروني وكلمة المرور مطلوبان');
+        }
 
-  const user = await prisma.user.findUnique({
-    where: { email: credentials.email },
-  });
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+          include: {
+            role: true,
+            userDetails: {
+              include: {
+                stage: true,
+                level: {
+                  include: {
+                    stage: true,
+                  },
+                },
+                subject: true,
+              },
+            },
+          },
+        });
 
-  if (!user || !user.password) {
-    console.log('❌ user not found or no password');
-    return null;
-  }
+        if (!user || !user.password) {
+          throw new Error('بيانات الدخول غير صحيحة');
+        }
 
-  const isValid = await bcrypt.compare(credentials.password, user.password);
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
 
-  if (!isValid) {
-    console.log('❌ password mismatch');
-    return null;
-  }
+        if (!isPasswordValid) {
+          throw new Error('بيانات الدخول غير صحيحة');
+        }
 
-  console.log('✅ LOGIN SUCCESS');
+        // Get stage_id from level if available, otherwise from userDetails
+        const stageId = user.userDetails?.level?.stageId || user.userDetails?.stageId;
 
-  return {
-    id: String(user.id),
-    email: user.email,
-    name: `${user.firstName} ${user.lastName}`,
-    roleId: user.roleId, 
-  };
-}
-      
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        return {
+          id: user.id,
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`,
+          image: user.image,
+          role: user.role.name,
+          roleId: user.roleId,
+          stage_id: stageId,
+        };
+      },
     }),
 
     // تسجيل الدخول عبر Google
@@ -104,10 +85,8 @@ export const authOptions: NextAuthOptions = {
       // عند تسجيل الدخول لأول مرة
       if (user) {
         token.id = user.id;
-        token.role = user.role ?? '';
-        if (user.roleId !== undefined) {
-          token.roleId = user.roleId;
-        }
+        token.role = user.role;
+        token.roleId = user.roleId;
         token.stage_id = user.stage_id;
       }
 
@@ -132,8 +111,7 @@ export const authOptions: NextAuthOptions = {
         if (existingUser) {
           token.role = existingUser.role.name;
           token.roleId = existingUser.roleId;
-          // normalize possible null to undefined so the type becomes number | undefined
-          token.stage_id = (existingUser.userDetails?.level?.stageId ?? existingUser.userDetails?.stageId) ?? undefined;
+          token.stage_id = existingUser.userDetails?.level?.stageId || existingUser.userDetails?.stageId;
           
           // إذا لم يكمل المستخدم ملفه الشخصي، نوجهه لصفحة الإكمال
           if (!existingUser.userDetails) {
@@ -212,114 +190,3 @@ export const authOptions: NextAuthOptions = {
 
   secret: process.env.NEXTAUTH_SECRET,
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*async authorize(credentials, req) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('البريد الإلكتروني وكلمة المرور مطلوبان');
-        }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-          include: {
-            role: true,
-            userDetails: {
-              include: {
-                stage: true,
-                level: {
-                  include: {
-                    stage: true,
-                  },
-                },
-                subject: true,
-              },
-            },
-          },
-        });
-
-        if (!user || !user.password) {
-          throw new Error('بيانات الدخول غير صحيحة');
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
-
-        if (!isPasswordValid) {
-          throw new Error('بيانات الدخول غير صحيحة');
-        }
-
-        // Get stage_id from level if available, otherwise from userDetails
-        // ensure null is converted to undefined to match expected User type
-        const rawStageId = user.userDetails?.level?.stageId ?? user.userDetails?.stageId;
-        const stageId = rawStageId ?? undefined;
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: `${user.firstName} ${user.lastName}`,
-          image: user.image,
-          role: user.role.name,
-          roleId: user.roleId,
-          stage_id: stageId,
-        };
-      },*/
