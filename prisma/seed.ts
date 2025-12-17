@@ -179,7 +179,7 @@ async function main() {
 
   // ولي أمر
   const parent = await prisma.user.upsert({
-    where: { email: 'khaled.parent@example.com' },
+    where: { email: 'khaled.parent@smartedu.com' },
     update: {},
     create: {
       firstName: 'خالد',
