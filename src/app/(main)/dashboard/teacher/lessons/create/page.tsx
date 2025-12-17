@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useStages, useLevels, useLessons } from "@/hooks";
+import { useStages, useLevels, useLessons, useSubjects } from "@/hooks";
 import { Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/editor";
@@ -30,11 +30,12 @@ export default function CreateLessonPage() {
   const { toast } = useToast();
   const { data: session } = useSession();
   const { stages, isLoading: stagesLoading } = useStages();
-  const { levels, isLoading: levelsLoading } = useLevels();
-  const { createLesson } = useLessons();
-  
   const [teacherSubject, setTeacherSubject] = useState<any>(null);
   const [teacherStage, setTeacherStage] = useState<any>(null);
+  const { subjects, isLoading: subjectsLoading } = useSubjects();
+  // Pass stageId to the levels hook so it fetches only the levels for the current stage
+  const { levels, isLoading: levelsLoading } = useLevels({ stageId: teacherStage?.id });
+  const { createLesson } = useLessons();
   const [availableLevels, setAvailableLevels] = useState<any[]>([]);
 
   const [title, setTitle] = useState("");
@@ -53,25 +54,20 @@ export default function CreateLessonPage() {
       try {
         const response = await fetch(`/api/users/${session.user.id}`);
         const result = await response.json();
-        
+
         if (result.success && result.data) {
           const userData = result.data;
           if (userData.userDetails?.subjectId) {
-            // Fetch the subject details
-            const subjectRes = await fetch(`/api/subjects`);
-            const subjectData = await subjectRes.json();
-            const subjects = subjectData.data?.subjects || subjectData.subjects || [];
+            // Use subjects from the hook (already fetched) to find the subject
             const subject = subjects.find((s: any) => s.id === userData.userDetails.subjectId);
-            
+
             if (subject) {
               setTeacherSubject(subject);
               // Find the stage for this subject
               const stage = stages.find((st: any) => st.id === subject.stageId || st.id === subject.stage_id);
               if (stage) {
                 setTeacherStage(stage);
-                // Filter levels for this stage
-                const stageLevels = levels.filter((l: any) => l.stageId === stage.id);
-                setAvailableLevels(stageLevels);
+                // availableLevels will be populated from the levels hook when it fetches
               }
             }
           }
@@ -81,10 +77,19 @@ export default function CreateLessonPage() {
       }
     };
     
-    if (session?.user && stages.length > 0 && levels.length > 0) {
+    if (session?.user && stages.length > 0 && subjects.length > 0) {
       fetchTeacherInfo();
     }
-  }, [session, stages, levels]);
+  }, [session, stages, subjects]);
+
+  // When the hook provides levels for the selected stage, use them
+  useEffect(() => {
+    if (teacherStage && levels && levels.length > 0) {
+      setAvailableLevels(levels);
+    } else {
+      setAvailableLevels([]);
+    }
+  }, [teacherStage, levels]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
