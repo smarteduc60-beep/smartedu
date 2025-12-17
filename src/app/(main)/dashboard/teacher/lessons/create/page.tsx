@@ -45,33 +45,51 @@ export default function CreateLessonPage() {
   const [levelId, setLevelId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Auto-select first available level to improve UX when levels are present
+  useEffect(() => {
+    if (!levelId && availableLevels.length > 0) {
+      setLevelId(String(availableLevels[0].id));
+    }
+  }, [availableLevels, levelId]);
+
   // Fetch teacher's subject and stage
   useEffect(() => {
     const fetchTeacherInfo = async () => {
       if (!session?.user?.id) return;
-      
+
       try {
-        const response = await fetch(`/api/users/${session.user.id}`);
+        console.log('[debug] fetching teacher info for user', session.user.id);
+        const response = await fetch(`/api/users/${session.user.id}`, { credentials: 'same-origin' });
+        console.log('[debug] /api/users response status', response.status);
         const result = await response.json();
-        
+        console.log('[debug] /api/users result', result);
+
         if (result.success && result.data) {
           const userData = result.data;
           if (userData.userDetails?.subjectId) {
             // Fetch the subject details
-            const subjectRes = await fetch(`/api/subjects`);
+            const subjectRes = await fetch(`/api/subjects`, { credentials: 'same-origin' });
+            console.log('[debug] /api/subjects status', subjectRes.status);
             const subjectData = await subjectRes.json();
-            const subjects = subjectData.data?.subjects || subjectData.subjects || [];
+            const subjects = subjectData.data?.subjects || subjectData.subjects || subjectData.data || [];
             const subject = subjects.find((s: any) => s.id === userData.userDetails.subjectId);
-            
+
             if (subject) {
               setTeacherSubject(subject);
-              // Find the stage for this subject
-              const stage = stages.find((st: any) => st.id === subject.stageId || st.id === subject.stage_id);
+              // Fetch stages directly (avoid race with hooks)
+              const stagesRes = await fetch(`/api/stages`, { credentials: 'same-origin' });
+              console.log('[debug] /api/stages status', stagesRes.status);
+              const stagesJson = await stagesRes.json();
+              const fetchedStages = stagesJson.data?.stages || stagesJson.stages || stagesJson.data || [];
+              const stage = fetchedStages.find((st: any) => st.id === subject.stageId || st.id === subject.stage_id);
               if (stage) {
                 setTeacherStage(stage);
-                // Filter levels for this stage
-                const stageLevels = levels.filter((l: any) => l.stageId === stage.id);
-                setAvailableLevels(stageLevels);
+                // Fetch levels for this stage directly
+                const levelsRes = await fetch(`/api/levels?stageId=${stage.id}`, { credentials: 'same-origin' });
+                console.log('[debug] /api/levels status', levelsRes.status);
+                const levelsJson = await levelsRes.json();
+                const stageLevels = levelsJson.data?.levels || levelsJson.levels || levelsJson.data || [];
+                setAvailableLevels(Array.isArray(stageLevels) ? stageLevels : []);
               }
             }
           }
@@ -80,11 +98,11 @@ export default function CreateLessonPage() {
         console.error('Error fetching teacher info:', error);
       }
     };
-    
-    if (session?.user && stages.length > 0 && levels.length > 0) {
+
+    if (session?.user) {
       fetchTeacherInfo();
     }
-  }, [session, stages, levels]);
+  }, [session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,6 +154,7 @@ export default function CreateLessonPage() {
         <p className="text-muted-foreground">
           املأ النموذج أدناه لإضافة درس جديد. ستكون كل الدروس التي تنشئها خاصة بطلابك المرتبطين بك.
         </p>
+        {/* Removed dev-only debug panel */}
       </div>
 
       <Card>
