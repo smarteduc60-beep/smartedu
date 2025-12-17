@@ -46,14 +46,24 @@ export default function CreateLessonPage() {
   const [levelId, setLevelId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Fetch teacher's subje  // Auto-select first available level to improve UX when levels are present
+  useEffect(() => {
+    if (!levelId && availableLevels.length > 0) {
+      setLevelId(String(availableLevels[0].id));
+    }
+  }, [availableLevels, levelId]);
+
   // Fetch teacher's subject and stage
   useEffect(() => {
     const fetchTeacherInfo = async () => {
       if (!session?.user?.id) return;
-      
+
       try {
-        const response = await fetch(`/api/users/${session.user.id}`);
+        console.log('[debug] fetching teacher info for user', session.user.id);
+        const response = await fetch(`/api/users/${session.user.id}`, { credentials: 'same-origin' });
+        console.log('[debug] /api/users response status', response.status);
         const result = await response.json();
+        console.log('[debug] /api/users result', result);
 
         if (result.success && result.data) {
           const userData = result.data;
@@ -63,7 +73,7 @@ export default function CreateLessonPage() {
 
             if (subject) {
               setTeacherSubject(subject);
-              // Find the stage for this subject
+              // Find the stage from the stages hook
               const stage = stages.find((st: any) => st.id === subject.stageId || st.id === subject.stage_id);
               if (stage) {
                 setTeacherStage(stage);
@@ -76,7 +86,7 @@ export default function CreateLessonPage() {
         console.error('Error fetching teacher info:', error);
       }
     };
-    
+
     if (session?.user && stages.length > 0 && subjects.length > 0) {
       fetchTeacherInfo();
     }
@@ -141,8 +151,7 @@ export default function CreateLessonPage() {
         <p className="text-muted-foreground">
           املأ النموذج أدناه لإضافة درس جديد. ستكون كل الدروس التي تنشئها خاصة بطلابك المرتبطين بك.
         </p>
-      </div>
-
+        {/* Removed dev-only debug panel */}
       <Card>
         <CardHeader>
           <CardTitle>تفاصيل الدرس</CardTitle>
