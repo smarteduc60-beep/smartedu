@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useStages, useLevels, useLessons } from "@/hooks";
+import { useStages, useLevels, useLessons, useSubjects } from "@/hooks";
 import { Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/editor";
@@ -30,11 +30,12 @@ export default function CreateLessonPage() {
   const { toast } = useToast();
   const { data: session } = useSession();
   const { stages, isLoading: stagesLoading } = useStages();
-  const { levels, isLoading: levelsLoading } = useLevels();
-  const { createLesson } = useLessons();
-  
   const [teacherSubject, setTeacherSubject] = useState<any>(null);
   const [teacherStage, setTeacherStage] = useState<any>(null);
+  const { subjects, isLoading: subjectsLoading } = useSubjects();
+  // Pass stageId to the levels hook so it fetches only the levels for the current stage
+  const { levels, isLoading: levelsLoading } = useLevels({ stageId: teacherStage?.id });
+  const { createLesson } = useLessons();
   const [availableLevels, setAvailableLevels] = useState<any[]>([]);
 
   const [title, setTitle] = useState("");
@@ -45,7 +46,11 @@ export default function CreateLessonPage() {
   const [levelId, setLevelId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+<<<<<<< HEAD
   // Auto-select first available level to improve UX when levels are present
+=======
+  // Fetch teacher's subje  // Auto-select first available level to improve UX when levels are present
+>>>>>>> e85805fa25e19bc5e5283e1cf373e3d2d711945f
   useEffect(() => {
     if (!levelId && availableLevels.length > 0) {
       setLevelId(String(availableLevels[0].id));
@@ -67,15 +72,20 @@ export default function CreateLessonPage() {
         if (result.success && result.data) {
           const userData = result.data;
           if (userData.userDetails?.subjectId) {
+<<<<<<< HEAD
             // Fetch the subject details
             const subjectRes = await fetch(`/api/subjects`, { credentials: 'same-origin' });
             console.log('[debug] /api/subjects status', subjectRes.status);
             const subjectData = await subjectRes.json();
             const subjects = subjectData.data?.subjects || subjectData.subjects || subjectData.data || [];
+=======
+            // Use subjects from the hook (already fetched) to find the subject
+>>>>>>> e85805fa25e19bc5e5283e1cf373e3d2d711945f
             const subject = subjects.find((s: any) => s.id === userData.userDetails.subjectId);
 
             if (subject) {
               setTeacherSubject(subject);
+<<<<<<< HEAD
               // Fetch stages directly (avoid race with hooks)
               const stagesRes = await fetch(`/api/stages`, { credentials: 'same-origin' });
               console.log('[debug] /api/stages status', stagesRes.status);
@@ -90,6 +100,13 @@ export default function CreateLessonPage() {
                 const levelsJson = await levelsRes.json();
                 const stageLevels = levelsJson.data?.levels || levelsJson.levels || levelsJson.data || [];
                 setAvailableLevels(Array.isArray(stageLevels) ? stageLevels : []);
+=======
+              // Find the stage from the stages hook
+              const stage = stages.find((st: any) => st.id === subject.stageId || st.id === subject.stage_id);
+              if (stage) {
+                setTeacherStage(stage);
+                // availableLevels will be populated from the levels hook when it fetches
+>>>>>>> e85805fa25e19bc5e5283e1cf373e3d2d711945f
               }
             }
           }
@@ -99,10 +116,26 @@ export default function CreateLessonPage() {
       }
     };
 
+<<<<<<< HEAD
     if (session?.user) {
       fetchTeacherInfo();
     }
   }, [session]);
+=======
+    if (session?.user && stages.length > 0 && subjects.length > 0) {
+      fetchTeacherInfo();
+    }
+  }, [session, stages, subjects]);
+
+  // When the hook provides levels for the selected stage, use them
+  useEffect(() => {
+    if (teacherStage && levels && levels.length > 0) {
+      setAvailableLevels(levels);
+    } else {
+      setAvailableLevels([]);
+    }
+  }, [teacherStage, levels]);
+>>>>>>> e85805fa25e19bc5e5283e1cf373e3d2d711945f
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -155,8 +188,11 @@ export default function CreateLessonPage() {
           املأ النموذج أدناه لإضافة درس جديد. ستكون كل الدروس التي تنشئها خاصة بطلابك المرتبطين بك.
         </p>
         {/* Removed dev-only debug panel */}
+<<<<<<< HEAD
       </div>
 
+=======
+>>>>>>> e85805fa25e19bc5e5283e1cf373e3d2d711945f
       <Card>
         <CardHeader>
           <CardTitle>تفاصيل الدرس</CardTitle>
