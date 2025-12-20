@@ -93,8 +93,10 @@ export default function LandingPage() {
             </div>
             <div className="lg:w-1/2">
               <Image
-                src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxlZHVjYXRpb24lMjB0ZWNobm9sb2d5fGVufDB8fHx8MTc2NTA2MTI4MHww&ixlib.rb-4.1.0&q=80&w=1080"
-                alt="طلاب سعداء يستخدمون التكنولوجيا في التعليم"
+                //src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxlZHVjYXRpb24lMjB0ZWNobm9sb2d5fGVufDB8fHx8MTc2NTA2MTI4MHww&ixlib.rb-4.1.0&q=80&w=1080"
+                //src="/images/landing/kenny-eliason.jpg"
+                src="/images/landing/kenny-eliason.jpg"
+                alt="طلاب سعداء يستخدمون التكنولوجيا في التعليم أو متعلم يستخدم الذكاء الصناعي أو طلاب داخل الفصل"
                 width={600}
                 height={400}
                 className="rounded-xl shadow-2xl"

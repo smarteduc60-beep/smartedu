@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth, requireRole } from '@/lib/api-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
+import { saveBase64ToFile } from '@/lib/file-handler';
 
 // Configure API route to accept larger payloads
 export const config = {
@@ -188,6 +189,30 @@ export async function POST(request: NextRequest) {
     if (!title || !subjectId || !levelId) {
       return errorResponse('العنوان والمادة والمستوى مطلوبة', 400);
     }
+    
+    let finalImageUrl: string | null = null;
+    if (imageBase64 && typeof imageBase64 === 'string') {
+      try {
+        const extensionMatch = imageBase64.match(/data:image\/(.*?);base64,/);
+        const extension = extensionMatch ? `.${extensionMatch[1]}` : '.png';
+        finalImageUrl = saveBase64ToFile(imageBase64, 'lessons-images', extension);
+      } catch (e: any) {
+        console.error("Failed to save image:", e.message);
+        // يمكنك اختيار إرجاع خطأ هنا إذا كان حفظ الصورة إلزاميًا
+      }
+    }
+    
+    let finalPdfUrl: string | null = null;
+    if (pdfBase64 && typeof pdfBase64 === 'string') {
+      try {
+        // Typically PDFs are application/pdf
+        const extensionMatch = pdfBase64.match(/data:application\/(.*?);base64,/);
+        const extension = extensionMatch ? `.${extensionMatch[1]}` : '.pdf';
+        finalPdfUrl = saveBase64ToFile(pdfBase64, 'lessons-pdfs', extension);
+      } catch (e: any) {
+        console.error("Failed to save PDF:", e.message);
+      }
+    }
 
     // إنشاء الدرس
     const lesson = await prisma.lesson.create({
@@ -195,8 +220,8 @@ export async function POST(request: NextRequest) {
         title,
         content: content || '',
         videoUrl: videoUrl || null,
-        imageUrl: imageBase64 || null,
-        pdfUrl: pdfBase64 || null,
+        imageUrl: finalImageUrl,
+        pdfUrl: finalPdfUrl,
         subjectId: parseInt(subjectId),
         levelId: parseInt(levelId),
         authorId: session.user.id,

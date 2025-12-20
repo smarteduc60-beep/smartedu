@@ -22,9 +22,22 @@ export interface Lesson {
   levelId: number;
   createdAt: string;
   updatedAt: string;
+  videoUrl?: string;
+  imageUrl?: string;
+  pdfUrl?: string;
   // تضمين الكائنات الكاملة للمادة والمستوى
   subject: Subject;
   level: Level;
+}
+
+interface CreateLessonData {
+  title: string;
+  content: string;
+  subjectId: number;
+  levelId: number;
+  videoUrl?: string;
+  imageUrl?: string;
+  pdfUrl?: string;
 }
 
 // 3. تحديث البارامترات للسماح بطلب التضمين
@@ -45,7 +58,7 @@ interface UseLessonsReturn {
   lessons: Lesson[];
   isLoading: boolean;
   error: string | null;
-  // ... (باقي الأنواع تبقى كما هي)
+  createLesson: (data: CreateLessonData) => Promise<{ success: boolean; data?: Lesson; error?: string }>;
 }
 
 export function useLessons(params?: UseLessonsParams): UseLessonsReturn {
@@ -106,12 +119,30 @@ export function useLessons(params?: UseLessonsParams): UseLessonsReturn {
     fetchLessons();
   }, [fetchLessons]);
 
-  // لا تغييرات على دوال الإنشاء، التحديث، الحذف
+  const createLesson = useCallback(async (lessonData: CreateLessonData) => {
+    try {
+      const response = await fetch('/api/lessons', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(lessonData),
+      });
+      const result = await response.json();
+      if (result.success) {
+        fetchLessons(); // Refetch lessons to show the new one
+      }
+      return result;
+    } catch (err) {
+      console.error('Error creating lesson:', err);
+      return { success: false, error: 'حدث خطأ أثناء إنشاء الدرس' };
+    }
+  }, [fetchLessons]);
 
   return {
     lessons,
     isLoading,
     error,
-    // ... باقي القيم
-  } as UseLessonsReturn; // تم التبسيط لسهولة القراءة
+    createLesson,
+  };
 }

@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useStages, useLevels, useLessons } from "@/hooks";
+import { useStages, useLevels, useSubjects, useLessons } from "@/hooks";
 import { Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/editor";
@@ -31,6 +31,7 @@ export default function CreateLessonPage() {
   const { data: session } = useSession();
   const { stages, isLoading: stagesLoading } = useStages();
   const { levels, isLoading: levelsLoading } = useLevels();
+  const { subjects, isLoading: subjectsLoading } = useSubjects();
   const { createLesson } = useLessons();
   
   const [teacherSubject, setTeacherSubject] = useState<any>(null);
@@ -45,34 +46,28 @@ export default function CreateLessonPage() {
   const [levelId, setLevelId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch teacher's subject and stage
+  // Set teacher's subject, stage and available levels
   useEffect(() => {
-    const fetchTeacherInfo = async () => {
-      if (!session?.user?.id) return;
-      
+    const setTeacherInfo = async () => {
+      if (!session?.user?.id || !subjects || !stages || !levels) return;
+      if (subjects.length === 0 || stages.length === 0 || levels.length === 0) return;
+
       try {
         const response = await fetch(`/api/users/${session.user.id}`);
         const result = await response.json();
-        
-        if (result.success && result.data) {
-          const userData = result.data;
-          if (userData.userDetails?.subjectId) {
-            // Fetch the subject details
-            const subjectRes = await fetch(`/api/subjects`);
-            const subjectData = await subjectRes.json();
-            const subjects = subjectData.data?.subjects || subjectData.subjects || [];
-            const subject = subjects.find((s: any) => s.id === userData.userDetails.subjectId);
+
+        if (result.success && result.data?.userDetails?.subjectId) {
+          const userSubjectId = result.data.userDetails.subjectId;
+          const subject = subjects.find((s: any) => s.id === userSubjectId);
+
+          if (subject) {
+            setTeacherSubject(subject);
+            const stage = stages.find((st: any) => st.id === subject.stageId || st.id === subject.stage_id);
             
-            if (subject) {
-              setTeacherSubject(subject);
-              // Find the stage for this subject
-              const stage = stages.find((st: any) => st.id === subject.stageId || st.id === subject.stage_id);
-              if (stage) {
-                setTeacherStage(stage);
-                // Filter levels for this stage
-                const stageLevels = levels.filter((l: any) => l.stageId === stage.id);
-                setAvailableLevels(stageLevels);
-              }
+            if (stage) {
+              setTeacherStage(stage);
+              const stageLevels = levels.filter((l: any) => l.stageId === stage.id);
+              setAvailableLevels(stageLevels);
             }
           }
         }
@@ -80,11 +75,9 @@ export default function CreateLessonPage() {
         console.error('Error fetching teacher info:', error);
       }
     };
-    
-    if (session?.user && stages.length > 0 && levels.length > 0) {
-      fetchTeacherInfo();
-    }
-  }, [session, stages, levels]);
+
+    setTeacherInfo();
+  }, [session, subjects, stages, levels]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/api-auth';
 import { successResponse, errorResponse, notFoundResponse } from '@/lib/api-response';
+import { saveBase64ToFile } from '@/lib/file-handler';
 
 // Configure API route to accept larger payloads
 export const config = {
@@ -84,20 +85,47 @@ export async function PATCH(
     }
 
     const body = await request.json();
-    const { title, content, videoUrl, imageBase64, pdfBase64, type, isLocked, status } = body;
-
+    
     const updateData: any = {};
-    if (title !== undefined) updateData.title = title;
-    if (content !== undefined) updateData.content = content;
-    if (videoUrl !== undefined) updateData.videoUrl = videoUrl;
-    if (imageBase64 !== undefined) updateData.imageUrl = imageBase64;
-    if (pdfBase64 !== undefined) updateData.pdfUrl = pdfBase64;
-    if (type !== undefined) updateData.type = type;
-    if (isLocked !== undefined) updateData.isLocked = isLocked;
+    if (body.title !== undefined) updateData.title = body.title;
+    if (body.content !== undefined) updateData.content = body.content;
+    if (body.videoUrl !== undefined) updateData.videoUrl = body.videoUrl;
+    if (body.type !== undefined) updateData.type = body.type;
+    if (body.isLocked !== undefined) updateData.isLocked = body.isLocked;
+
+    // Handle Image Upload
+    if (body.imageBase64 !== undefined) {
+      if (body.imageBase64 && typeof body.imageBase64 === 'string') {
+        try {
+          const extensionMatch = body.imageBase64.match(/data:image\/(.*?);base64,/);
+          const extension = extensionMatch ? `.${extensionMatch[1]}` : '.png';
+          updateData.imageUrl = saveBase64ToFile(body.imageBase64, 'lessons-images', extension);
+        } catch (e: any) {
+          console.error("Failed to save image during update:", e.message);
+        }
+      } else {
+        updateData.imageUrl = null;
+      }
+    }
+
+    // Handle PDF Upload
+    if (body.pdfBase64 !== undefined) {
+      if (body.pdfBase64 && typeof body.pdfBase64 === 'string') {
+        try {
+          const extensionMatch = body.pdfBase64.match(/data:application\/(.*?);base64,/);
+          const extension = extensionMatch ? `.${extensionMatch[1]}` : '.pdf';
+          updateData.pdfUrl = saveBase64ToFile(body.pdfBase64, 'lessons-pdfs', extension);
+        } catch (e: any) {
+          console.error("Failed to save PDF during update:", e.message);
+        }
+      } else {
+        updateData.pdfUrl = null;
+      }
+    }
     
     // فقط المدير أو المشرف يمكنه تغيير الحالة
-    if (status !== undefined && ['directeur', 'supervisor_specific', 'supervisor_general'].includes(session.user.role)) {
-      updateData.status = status;
+    if (body.status !== undefined && ['directeur', 'supervisor_specific', 'supervisor_general'].includes(session.user.role)) {
+      updateData.status = body.status;
     }
 
     const updatedLesson = await prisma.lesson.update({
