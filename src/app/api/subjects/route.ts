@@ -6,17 +6,33 @@ import { successResponse, errorResponse } from '@/lib/api-response';
 // GET /api/subjects?levelId=1&stageId=1
 export async function GET(request: NextRequest) {
   try {
-    // No auth required for signup page
+    const session = await requireAuth();
     const { searchParams } = new URL(request.url);
-    const levelId = searchParams.get('levelId');
-    const stageId = searchParams.get('stageId');
-
     const where: any = {};
-    if (levelId) {
-      where.levelId = parseInt(levelId);
-    }
-    if (stageId) {
-      where.stageId = parseInt(stageId);
+
+    if (session.user.role === 'student') {
+      // For students, ignore query params and fetch subjects for their level
+      const userDetails = await prisma.userDetails.findUnique({
+        where: { userId: session.user.id },
+        select: { levelId: true },
+      });
+
+      if (!userDetails?.levelId) {
+        // Student has no level assigned, return no subjects
+        return successResponse([], 'لم يتم تعيين مستوى للطالب');
+      }
+      where.levelId = userDetails.levelId;
+
+    } else {
+      // For other roles (admin, etc.), use query params for filtering
+      const levelId = searchParams.get('levelId');
+      const stageId = searchParams.get('stageId');
+      if (levelId) {
+        where.levelId = parseInt(levelId);
+      }
+      if (stageId) {
+        where.stageId = parseInt(stageId);
+      }
     }
 
     const subjects = await prisma.subject.findMany({
@@ -35,6 +51,9 @@ export async function GET(request: NextRequest) {
 
     return successResponse(subjects, `تم جلب ${subjects.length} مادة`);
   } catch (error: any) {
+    if (error.message.includes("No session found")) {
+      return errorResponse("تحتاج إلى تسجيل الدخول لعرض المواد", 401);
+    }
     return errorResponse(error.message || 'فشل في جلب المواد', 500);
   }
 }

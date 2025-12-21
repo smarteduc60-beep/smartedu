@@ -40,7 +40,7 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
     title: '',
     content: '',
     videoUrl: '',
-    imageBase64: '',
+    imageUrl: '',
     pdfBase64: '',
     isPublic: false,
   });
@@ -60,7 +60,7 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
             title: result.data.title,
             content: result.data.content || '',
             videoUrl: result.data.videoUrl || '',
-            imageBase64: result.data.imageUrl || '',
+            imageUrl: result.data.imageUrl || '',
             pdfBase64: result.data.pdfUrl || '',
             isPublic: result.data.type === 'public',
           });
@@ -107,13 +107,11 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
         title: formData.title.trim(),
         content: formData.content,
         videoUrl: formData.videoUrl?.trim() || null,
+        imageUrl: formData.imageUrl?.trim() || null,
         type: formData.isPublic ? 'public' : 'private',
       };
 
       // Only add base64 files if they exist
-      if (formData.imageBase64) {
-        payload.imageBase64 = formData.imageBase64;
-      }
       if (formData.pdfBase64) {
         payload.pdfBase64 = formData.pdfBase64;
       }
@@ -250,14 +248,19 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
               />
             </div>
 
-            <FileUpload
-              label="صورة توضيحية للدرس (اختياري)"
-              accept="image/*"
-              maxSizeMB={2}
-              value={formData.imageBase64}
-              onChange={(base64) => setFormData({ ...formData, imageBase64: base64 || '' })}
-              description="يمكنك رفع صورة توضيحية للدرس (JPG, PNG, GIF - حتى 2 ميجابايت)"
-            />
+            <div className="space-y-2">
+              <Label htmlFor="image-url">رابط صورة الدرس (اختياري)</Label>
+              <Input
+                id="image-url"
+                type="url"
+                placeholder="https://example.com/image.jpg"
+                value={formData.imageUrl}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground">
+                أدخل رابط صورة توضيحية (JPG, PNG, GIF).
+              </p>
+            </div>
 
             <FileUpload
               label="ملف PDF إضافي (اختياري)"

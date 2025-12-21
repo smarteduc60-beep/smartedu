@@ -93,8 +93,10 @@ export async function PATCH(
     if (body.type !== undefined) updateData.type = body.type;
     if (body.isLocked !== undefined) updateData.isLocked = body.isLocked;
 
-    // Handle Image Upload
-    if (body.imageBase64 !== undefined) {
+    // Handle Image URL directly or fall back to Base64 upload
+    if (body.imageUrl !== undefined) {
+      updateData.imageUrl = body.imageUrl;
+    } else if (body.imageBase64 !== undefined) {
       if (body.imageBase64 && typeof body.imageBase64 === 'string') {
         try {
           const extensionMatch = body.imageBase64.match(/data:image\/(.*?);base64,/);

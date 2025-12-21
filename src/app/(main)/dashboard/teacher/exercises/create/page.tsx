@@ -56,6 +56,7 @@ export default function CreateExercisePage() {
   const [lessonId, setLessonId] = useState<string>("");
   const [exerciseType, setExerciseType] = useState<ExerciseType>('main');
   const [questionContent, setQuestionContent] = useState("");
+  const [questionFileUrl, setQuestionFileUrl] = useState("");
   const [modelAnswer, setModelAnswer] = useState("");
   const [modelAnswerImage, setModelAnswerImage] = useState("");
   const [maxScore, setMaxScore] = useState("20");
@@ -185,6 +186,7 @@ export default function CreateExercisePage() {
         lessonId: parseInt(lessonId),
         type: exerciseType,
         questionRichContent: questionContent,
+        questionFileUrl: questionFileUrl || null,
         displayOrder,
       };
 
@@ -357,6 +359,17 @@ export default function CreateExercisePage() {
                 content={questionContent}
                 onChange={setQuestionContent}
                 placeholder="اكتب السؤال هنا... يمكنك إضافة صور وجداول"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="questionFileUrl">رابط ملف السؤال (PDF اختياري)</Label>
+              <Input
+                id="questionFileUrl"
+                type="url"
+                placeholder="https://example.com/question.pdf"
+                value={questionFileUrl}
+                onChange={(e) => setQuestionFileUrl(e.target.value)}
               />
             </div>
 

@@ -177,6 +177,8 @@ export async function POST(request: NextRequest) {
       title,
       content,
       videoUrl,
+      imageUrl, // Prioritize direct URL
+      pdfUrl,   // Prioritize direct URL
       imageBase64,
       pdfBase64,
       subjectId,
@@ -190,22 +192,20 @@ export async function POST(request: NextRequest) {
       return errorResponse('العنوان والمادة والمستوى مطلوبة', 400);
     }
     
-    let finalImageUrl: string | null = null;
-    if (imageBase64 && typeof imageBase64 === 'string') {
+    let finalImageUrl: string | null = imageUrl?.trim() || null;
+    if (!finalImageUrl && imageBase64 && typeof imageBase64 === 'string') {
       try {
         const extensionMatch = imageBase64.match(/data:image\/(.*?);base64,/);
         const extension = extensionMatch ? `.${extensionMatch[1]}` : '.png';
         finalImageUrl = saveBase64ToFile(imageBase64, 'lessons-images', extension);
       } catch (e: any) {
         console.error("Failed to save image:", e.message);
-        // يمكنك اختيار إرجاع خطأ هنا إذا كان حفظ الصورة إلزاميًا
       }
     }
     
-    let finalPdfUrl: string | null = null;
-    if (pdfBase64 && typeof pdfBase64 === 'string') {
+    let finalPdfUrl: string | null = pdfUrl?.trim() || null;
+    if (!finalPdfUrl && pdfBase64 && typeof pdfBase64 === 'string') {
       try {
-        // Typically PDFs are application/pdf
         const extensionMatch = pdfBase64.match(/data:application\/(.*?);base64,/);
         const extension = extensionMatch ? `.${extensionMatch[1]}` : '.pdf';
         finalPdfUrl = saveBase64ToFile(pdfBase64, 'lessons-pdfs', extension);

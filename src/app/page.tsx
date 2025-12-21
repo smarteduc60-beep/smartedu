@@ -55,7 +55,7 @@ export default function LandingPage() {
       <header className="container mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between sticky top-0 bg-background/80 backdrop-blur-sm z-50">
         <Link href="/" className="flex items-center gap-2">
           <School className="h-8 w-8 text-primary" />
-          <h1 className="text-2xl font-bold text-foreground">SmartEdu</h1>
+          <h1 className="text-2xl font-bold text-foreground">Smartedu</h1>
         </Link>
         <nav className="flex items-center gap-2">
           <Link href="/login" passHref>

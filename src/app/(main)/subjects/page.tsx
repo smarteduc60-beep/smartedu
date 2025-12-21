@@ -24,33 +24,35 @@ export default function SubjectsPage() {
 
   useEffect(() => {
     const fetchSubjects = async () => {
-      if (!session?.user) return;
+      if (!session) return; // Wait for session to be available
 
       try {
         setIsLoading(true);
+        setError(null); // Reset error state on new fetch
+        const subjectsRes = await fetch(`/api/subjects`);
         
-        // جلب تفاصيل الطالب للحصول على levelId
-        const userRes = await fetch(`/api/users/${session.user.id}`);
-        const userData = await userRes.json();
-        
-        if (!userData.success || !userData.data?.userDetails?.levelId) {
-          setError('لم يتم العثور على مستواك الدراسي');
-          return;
+        if (!subjectsRes.ok) {
+          let errorMsg = `فشل تحميل المواد. رمز الحالة: ${subjectsRes.status}`;
+          try {
+            const errorData = await subjectsRes.json();
+            errorMsg = errorData.error || errorMsg;
+          } catch (jsonError) {
+            console.error('Could not parse error JSON:', jsonError);
+          }
+          throw new Error(errorMsg);
         }
 
-        const levelId = userData.data.userDetails.levelId;
-        
-        // جلب المواد الخاصة بهذا المستوى
-        const subjectsRes = await fetch(`/api/subjects?levelId=${levelId}`);
         const subjectsData = await subjectsRes.json();
         
         if (subjectsData.success) {
-          const subjectsList = subjectsData.data?.subjects || subjectsData.data || [];
+          const subjectsList = subjectsData.data || [];
           setSubjects(Array.isArray(subjectsList) ? subjectsList : []);
+        } else {
+          setError(subjectsData.error || 'فشل في جلب المواد');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching subjects:', err);
-        setError('حدث خطأ أثناء تحميل المواد');
+        setError(err.message || 'حدث خطأ أثناء تحميل المواد');
       } finally {
         setIsLoading(false);
       }
