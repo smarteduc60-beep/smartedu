@@ -1,5 +1,5 @@
 {
-  "name": "nextn",
+  "name": "smartedu",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -16,11 +16,10 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio",
-    "seed": "tsx prisma/seed.ts"
+    "db:studio": "prisma studio"
   },
   "prisma": {
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.45",
@@ -102,6 +101,6 @@
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }

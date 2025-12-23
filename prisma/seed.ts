@@ -201,8 +201,8 @@ async function main() {
     where: { email: 'aya.student@smartedu.com' },
     update: {},
     create: {
-      firstName: 'Fatima',
-      lastName: 'Al-Ghamdi',
+      firstName: 'Aya',
+      lastName: 'Djedid',
       email: 'aya.student@smartedu.com',
       password: hashedPassword,
       image: 'https://placehold.co/200x200/4CAF50/FFFFFF?text=FG',
