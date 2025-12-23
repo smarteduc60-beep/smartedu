@@ -1,1 +1,1 @@
-web: npx prisma db push --accept-data-loss && npm run seed && npm start
+gitweb: npx prisma db push --accept-data-loss && npm run db:seed && npm start
