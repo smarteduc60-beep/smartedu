@@ -22,6 +22,38 @@ export default function MathContent({ content, className = '' }: MathContentProp
     // تحديث المحتوى
     contentRef.current.innerHTML = content;
 
+    // 1. معالجة عناصر MathLive التي تم إنشاؤها بواسطة المحرر (Tiptap Extension)
+    const processMathLiveElements = () => {
+      if (!contentRef.current) return;
+
+      // البحث عن العناصر التي تحمل السمة data-type="math-live"
+      const mathElements = contentRef.current.querySelectorAll('span[data-type="math-live"]');
+      
+      mathElements.forEach((element) => {
+        // الحصول على كود LaTeX من السمة data-latex أو من النص الداخلي
+        const latex = element.getAttribute('data-latex') || element.textContent || '';
+        
+        if (latex) {
+          try {
+            const span = document.createElement('span');
+            span.className = 'math-inline'; // تنسيق مشابه لـ inline math
+            // الحفاظ على التنسيقات الأصلية إذا وجدت
+            if (element.className) span.className += ` ${element.className}`;
+            
+            katex.render(latex, span, {
+              throwOnError: false,
+              displayMode: false, // افتراضياً inline
+            });
+            
+            // استبدال العنصر الأصلي بالعنصر الذي تم تصييره بواسطة KaTeX
+            element.replaceWith(span);
+          } catch (error) {
+            console.error('KaTeX render error for math-live element:', error);
+          }
+        }
+      });
+    };
+
     // معالجة LaTeX inline: \( ... \)
     const processInlineMath = () => {
       if (!contentRef.current) return;
@@ -171,6 +203,7 @@ export default function MathContent({ content, className = '' }: MathContentProp
     };
 
     // تنفيذ المعالجة
+    processMathLiveElements(); // الأولوية للعناصر الصريحة من المحرر
     processBlockMath();
     processInlineMath();
   }, [content]);
