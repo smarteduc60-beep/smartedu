@@ -112,6 +112,9 @@ model UserDetails {
   aiEvalMode     String  @default("auto") @map("ai_eval_mode") @db.VarChar(10)
   allowMessaging Boolean @default(false) @map("allow_messaging")
 
+  // Google Drive Integration - Main folder for the teacher within their subject
+  teacherDriveFolderId String? @unique @map("teacher_drive_folder_id") @db.VarChar(255)
+
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   stage   Stage?   @relation(fields: [stageId], references: [id])
   level   Level?   @relation(fields: [levelId], references: [id])
@@ -128,6 +131,7 @@ model Stage {
   id           Int    @id @default(autoincrement())
   name         String @db.VarChar(100)
   displayOrder Int    @map("display_order")
+  driveFolderId String? @unique @map("drive_folder_id") @db.VarChar(255)
 
   levels      Level[]
   subjects    Subject[]
@@ -141,6 +145,7 @@ model Level {
   name         String @db.VarChar(100)
   stageId      Int    @map("stage_id")
   displayOrder Int    @map("display_order")
+  driveFolderId String? @unique @map("drive_folder_id") @db.VarChar(255)
 
   stage       Stage         @relation(fields: [stageId], references: [id], onDelete: Cascade)
   subjects    Subject[]
@@ -157,10 +162,10 @@ model Subject {
   id          Int     @id @default(autoincrement())
   name        String  @db.VarChar(100)
   description String? @db.Text
-  levelId     Int?    @map("level_id")
   stageId     Int?    @map("stage_id")
+  driveFolderId String? @unique @map("drive_folder_id") @db.VarChar(255)
 
-  level       Level?        @relation(fields: [levelId], references: [id])
+  levels      Level[]
   stage       Stage?        @relation(fields: [stageId], references: [id])
   lessons     Lesson[]
   userDetails UserDetails[]
@@ -176,20 +181,31 @@ model Lesson {
   id        Int      @id @default(autoincrement())
   title     String   @db.VarChar(255)
   content   String?  @db.Text
-  videoUrl  String?  @map("video_url") @db.VarChar(255)
-  imageUrl  String?  @map("image_url") @db.Text
-  pdfUrl    String?  @map("pdf_url") @db.Text
-  authorId  String   @map("author_id")
-  subjectId Int      @map("subject_id")
-  levelId   Int      @map("level_id")
+  videoUrl  String?  @map("video_url") @db.VarChar(512)
+  imageUrl  String?  @map("image_url") @db.VarChar(512)
+  pdfUrl    String?  @map("pdf_url") @db.VarChar(512)
+  authorId  String?  @map("author_id")
+  subjectId Int?     @map("subject_id")
+  levelId   Int?     @map("level_id")
   type      String   @default("private") @db.VarChar(10)
   status    String   @default("pending") @db.VarChar(20)
   isLocked  Boolean  @default(false) @map("is_locked")
   createdAt DateTime @default(now()) @map("created_at")
 
-  author    User       @relation(fields: [authorId], references: [id])
-  subject   Subject    @relation(fields: [subjectId], references: [id])
-  level     Level      @relation(fields: [levelId], references: [id])
+  // حقول مضافة لدعم خاصية الرفع المباشر (Direct Upload)
+  fileUrl     String?  @map("file_url") @db.VarChar(512)
+  driveFileId String?  @map("drive_file_id") @db.VarChar(255)
+  stageName   String?  @map("stage_name") @db.VarChar(100)
+  subjectName String?  @map("subject_name") @db.VarChar(100)
+  teacherName String?  @map("teacher_name") @db.VarChar(100)
+
+  // Google Drive Integration
+  driveFolderId         String? @map("drive_folder_id") @db.VarChar(255) // Folder inside the teacher's "Lessons" directory
+  lessonFileIds         Json    @default("[]") @map("lesson_file_ids") // Array of Google Drive File IDs
+
+  author    User?      @relation(fields: [authorId], references: [id])
+  subject   Subject?   @relation(fields: [subjectId], references: [id])
+  level     Level?     @relation(fields: [levelId], references: [id])
   exercises Exercise[]
 
   @@map("lessons")
@@ -202,12 +218,10 @@ model Exercise {
   
   // محتوى التمرين
   question            String?  @db.Text // نص بسيط (قديم - للتوافق)
-  questionFileUrl     String?  @map("question_file_url") @db.VarChar(255)
   questionRichContent String?  @map("question_rich_content") @db.Text // محتوى TipTap
   
   // الحل النموذجي (للتمرين الرئيسي)
   modelAnswer         String?  @map("model_answer") @db.Text
-  modelAnswerImage    String?  @map("model_answer_image") @db.VarChar(255)
   
   // النتائج المتوقعة (لتمارين الدعم + نتائج)
   expectedResults     Json?    @map("expected_results") // [{question: "1", result: "45", tolerance: 0.01}, ...]
@@ -220,6 +234,12 @@ model Exercise {
   
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime? @map("updated_at")
+
+  // Google Drive Integration
+  driveFolderId       String? @unique @map("drive_folder_id") @db.VarChar(255)
+  exerciseFileIds     Json    @default("[]") @map("exercise_file_ids")
+  questionFileIds     Json    @default("[]") @map("question_file_ids") // Array of Google Drive File IDs
+  modelAnswerFileIds  Json    @default("[]") @map("model_answer_file_ids") // Array of Google Drive File IDs for the model answer
 
   lesson      Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   submissions Submission[]
@@ -239,7 +259,6 @@ model Submission {
   // إجابة التلميذ
   answerText         String?   @map("answer_text") @db.Text
   answerRichContent  String?   @map("answer_rich_content") @db.Text // محتوى TipTap
-  submissionFileUrl  String?   @map("submission_file_url") @db.VarChar(255)
   
   // نتائج التلميذ (لتمارين الدعم + نتائج)
   studentResults     Json?     @map("student_results") // [{question: "1", answer: "45"}, ...]
@@ -262,6 +281,9 @@ model Submission {
   
   submittedAt        DateTime  @default(now()) @map("submitted_at")
   gradedAt           DateTime? @map("graded_at")
+
+  // Google Drive Integration
+  submissionFileIds Json @default("[]") @map("submission_file_ids") // Array of Google Drive File IDs
 
   student  User     @relation("StudentSubmissions", fields: [studentId], references: [id])
   exercise Exercise @relation(fields: [exerciseId], references: [id])

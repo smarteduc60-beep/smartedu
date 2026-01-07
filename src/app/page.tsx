@@ -12,11 +12,12 @@ import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 
 export default function LandingPage() {
+  // استخدام البيانات الوهمية كقيم ابتدائية لضمان عدم ظهور الأصفار أثناء التحميل أو إذا كانت القاعدة فارغة
   const [stats, setStats] = useState({
-    studentCount: 0,
-    teacherCount: 0,
-    lessonCount: 0,
-    exerciseCount: 0,
+    studentCount: USERS.filter(u => u.role === 'student').length,
+    teacherCount: USERS.filter(u => ['teacher', 'supervisor'].includes(u.role)).length,
+    lessonCount: LESSONS.length,
+    exerciseCount: EXERCISES.length,
   });
 
   const [topStudents, setTopStudents] = useState<Array<{
@@ -30,13 +31,21 @@ export default function LandingPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/statistics/public');
+        // إضافة { cache: 'no-store' } لمنع المتصفح من تخزين النتيجة القديمة (0)
+        const response = await fetch('/api/statistics/public', { cache: 'no-store' });
         if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-          if (data.topStudents) {
-            setTopStudents(data.topStudents);
+          const result = await response.json();
+          if (result.success && result.data) {
+            setStats({
+              studentCount: result.data.students || 0,
+              teacherCount: result.data.teachers || 0,
+              lessonCount: result.data.lessons || 0,
+              exerciseCount: result.data.exercises || 0,
+            });
+            // يمكن إضافة منطق جلب الطلاب المتفوقين هنا لاحقاً إذا توفر في الـ API
           }
+        } else {
+          console.error('Failed to fetch stats:', response.status, response.statusText);
         }
       } catch (error) {
         console.error('Error fetching stats:', error);

@@ -14,12 +14,42 @@ import MainExercise from "./components/MainExercise";
 import SupportWithResultsExercise from "./components/SupportWithResultsExercise";
 import SupportOnlyExercise from "./components/SupportOnlyExercise";
 
+// دالة مساعدة لتحويل روابط Google Drive القديمة إلى روابط Proxy
+const getProxiedUrl = (url: string) => {
+  if (!url) return "";
+  
+  // تنظيف الرابط من أي لاحقات وهمية قد تكون أضيفت سابقاً
+  const cleanUrl = url.replace('&t=image.jpg', '');
+  if (cleanUrl.startsWith('/api/images/proxy')) return cleanUrl;
+  
+  const idMatch = url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if ((url.includes('drive.google.com') || url.includes('googleusercontent.com')) && idMatch && idMatch[1]) {
+    return `/api/images/proxy?fileId=${idMatch[1]}`;
+  }
+  
+  return url;
+};
+
+// دالة مساعدة لتحويل روابط PDF إلى صيغة المعاينة (Preview) لضمان عملها داخل iframe
+const getPdfPreviewUrl = (url: string) => {
+  if (!url) return "";
+  if (url.includes('/preview')) return url;
+  if (url.includes('/view')) return url.replace('/view', '/preview');
+  
+  const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+  if (idMatch && idMatch[1]) {
+    return `https://drive.google.com/file/d/${idMatch[1]}/preview`;
+  }
+  return url;
+};
+
 interface Lesson {
   id: number;
   title: string;
   content: string;
   videoUrl?: string;
   pdfUrl?: string;
+  imageUrl?: string;
   subject?: {
     id: number;
     name: string;
@@ -57,6 +87,8 @@ export default function LessonDetailPage({ params }: { params: Promise<{ id: str
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFoundError, setNotFoundError] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [currentImageSrc, setCurrentImageSrc] = useState<string>("");
 
   useEffect(() => {
     const fetchLessonData = async () => {
@@ -77,6 +109,9 @@ export default function LessonDetailPage({ params }: { params: Promise<{ id: str
         }
         
         setLesson(lessonData.data);
+        if (lessonData.data.imageUrl) {
+          setCurrentImageSrc(getProxiedUrl(lessonData.data.imageUrl));
+        }
         
         // Fetch exercises for this lesson
         const exercisesRes = await fetch(`/api/exercises?lessonId=${id}`);
@@ -108,6 +143,41 @@ export default function LessonDetailPage({ params }: { params: Promise<{ id: str
   if (notFoundError || !lesson) {
     return notFound();
   }
+
+  const handleImageError = () => {
+    // استخراج معرف الملف من الرابط الحالي
+    let fileId = null;
+    
+    try {
+      // استخدام URL API لاستخراج المعاملات بشكل أدق وموثوق
+      // نستخدم base وهمي للتعامل مع الروابط النسبية
+      const urlObj = new URL(currentImageSrc, 'http://localhost');
+      fileId = urlObj.searchParams.get('fileId') || urlObj.searchParams.get('id');
+    } catch (e) {
+      // محاولة استخراج بديلة في حال فشل URL parsing
+      const idMatch = currentImageSrc.match(/[\?&](fileId|id)=([^&]+)/);
+      if (idMatch) fileId = idMatch[2];
+    }
+
+    if (!fileId) {
+      setImageError(true);
+      return;
+    }
+
+    // التسلسل: Proxy -> Direct (uc) -> Thumbnail
+    if (currentImageSrc.includes('/api/images/proxy')) {
+      console.warn("Proxy failed, falling back to direct Google Drive URL");
+      setCurrentImageSrc(`https://drive.google.com/uc?export=view&id=${fileId}`);
+    } else if (currentImageSrc.includes('uc?export=view')) {
+      console.warn("Direct URL failed, falling back to Thumbnail URL");
+      // رابط Thumbnail يعمل غالباً حتى لو فشلت الروابط الأخرى
+      setCurrentImageSrc(`https://drive.google.com/thumbnail?id=${fileId}&sz=w1920`);
+    } else {
+      // إذا فشل كل شيء (بما في ذلك Thumbnail)
+      console.error("All image loading attempts failed");
+      setImageError(true);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -146,8 +216,31 @@ export default function LessonDetailPage({ params }: { params: Promise<{ id: str
         </CardContent>
       </Card>
 
-      {lesson.pdfUrl && (
+      {/* عرض صورة الدرس */}
+      {lesson.imageUrl && (
         <Card className="mb-8 overflow-hidden">
+          <div className="relative w-full h-[400px] bg-muted flex items-center justify-center">
+            {!imageError ? (
+              <img
+                src={currentImageSrc}
+                alt={lesson.title}
+                className="w-full h-full object-cover"
+                onError={handleImageError}
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center p-4 text-muted-foreground">
+                <FileQuestion className="h-10 w-10 mb-2 opacity-50" />
+                <p className="text-sm">تعذر تحميل الصورة</p>
+                <code className="text-[10px] mt-2 bg-black/5 p-1 rounded max-w-full break-all dir-ltr">{currentImageSrc}</code>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
+      {lesson.pdfUrl && (
+        <Card className="mb-8 overflow-hidden" id="pdf-viewer-card">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span>ملف PDF المرفق</span>
@@ -170,7 +263,7 @@ export default function LessonDetailPage({ params }: { params: Promise<{ id: str
           <CardContent className="p-0">
             <div className="w-full h-[800px]">
               <iframe
-                src={lesson.pdfUrl}
+                src={getPdfPreviewUrl(lesson.pdfUrl)}
                 className="w-full h-full border-0"
                 title="PDF Viewer"
               />

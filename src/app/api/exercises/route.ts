@@ -2,6 +2,63 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/api-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
+import { GoogleDriveService } from '@/lib/google-drive';
+import { log, LogLevel, LogCategory } from '@/lib/logger';
+
+/**
+ * Handles the creation of a Google Drive folder for a new exercise.
+ * Path: /<LESSON_FOLDER>/Exercise <EXERCISE_ID>
+ * @param exercise - The newly created exercise object, with its parent lesson included.
+ */
+async function handleExerciseFolderCreation(exercise: any) {
+  if (!exercise.lesson?.driveFolderId) {
+    await log({
+      level: LogLevel.WARNING,
+      category: LogCategory.DRIVE,
+      action: 'EXERCISE_DRIVE_SETUP_SKIPPED',
+      details: `Skipping Drive folder creation for exercise ${exercise.id} because parent lesson ${exercise.lessonId} has no Drive folder.`,
+    });
+    return;
+  }
+
+  try {
+    const lessonFolderId = exercise.lesson.driveFolderId;
+    const exerciseFolderName = `Exercise ${exercise.id}`;
+
+    await log({
+      level: LogLevel.INFO,
+      category: LogCategory.DRIVE,
+      action: 'EXERCISE_DRIVE_SETUP_START',
+      details: `Starting Drive folder setup for exercise "${exerciseFolderName}" (ID: ${exercise.id}).`,
+    });
+
+    // 1. Get or create the Exercise folder inside the parent Lesson folder
+    const exerciseFolderId = await GoogleDriveService.getOrCreateFolder(exerciseFolderName, lessonFolderId);
+
+    // 2. Update the exercise record with the new folder ID
+    await prisma.exercise.update({
+      where: { id: exercise.id },
+      data: { driveFolderId: exerciseFolderId },
+    });
+
+    await log({
+      level: LogLevel.SUCCESS,
+      category: LogCategory.DRIVE,
+      action: 'EXERCISE_DRIVE_SETUP_SUCCESS',
+      details: `Successfully created Drive folder for exercise ${exercise.id}. Folder ID: ${exerciseFolderId}`,
+    });
+  } catch (error: any) {
+    await log({
+      level: LogLevel.ERROR,
+      category: LogCategory.DRIVE,
+      action: 'EXERCISE_DRIVE_SETUP_FAILED',
+      details: {
+        message: `Failed to create Google Drive folder for exercise ${exercise.id}.`,
+        error: error.message,
+      },
+    });
+  }
+}
 
 // GET /api/exercises?lessonId=1&authorId=xxx
 export async function GET(request: NextRequest) {
@@ -61,9 +118,9 @@ export async function POST(request: NextRequest) {
       type = 'main',
       questionRichContent,
       question, 
-      questionFileUrl, 
+      questionFileIds, 
       modelAnswer,
-      modelAnswerImage,
+      modelAnswerFileIds,
       expectedResults,
       maxScore = 20,
       allowRetry = true,
@@ -111,14 +168,14 @@ export async function POST(request: NextRequest) {
       type,
       question: question || null,
       questionRichContent: questionRichContent || null,
-      questionFileUrl: questionFileUrl || null,
+      questionFileIds: questionFileIds || [],
       displayOrder: order,
     };
 
     // إضافة الحقول حسب نوع التمرين
     if (type === 'main') {
       exerciseData.modelAnswer = modelAnswer;
-      exerciseData.modelAnswerImage = modelAnswerImage || null;
+      exerciseData.modelAnswerFileIds = modelAnswerFileIds || [];
       exerciseData.maxScore = parseFloat(String(maxScore));
       exerciseData.allowRetry = allowRetry;
       exerciseData.maxAttempts = parseInt(String(maxAttempts));
@@ -131,14 +188,12 @@ export async function POST(request: NextRequest) {
     const exercise = await prisma.exercise.create({
       data: exerciseData,
       include: {
-        lesson: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
+        lesson: true, // Include the full lesson to get its driveFolderId
       },
     });
+
+    // Fire-and-forget Google Drive folder creation
+    handleExerciseFolderCreation(exercise);
 
     return successResponse(exercise, 'تم إنشاء التمرين بنجاح', 201);
   } catch (error: any) {

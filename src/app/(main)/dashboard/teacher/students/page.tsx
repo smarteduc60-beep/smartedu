@@ -1,5 +1,5 @@
-'use client';
-
+import { requireAuth } from "@/lib/api-auth";
+import { prisma } from "@/lib/prisma";
 import {
   Card,
   CardContent,
@@ -7,8 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-export const dynamic = 'force-dynamic';
 import {
   Table,
   TableBody,
@@ -18,18 +16,44 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { USERS, getUserById } from "@/lib/mock-data";
 
-// Mock current user ID. This would come from auth.
-const MOCK_TEACHER_ID = 2;
+export const dynamic = 'force-dynamic';
 
-export default function MyStudentsPage() {
-    const teacher = getUserById(MOCK_TEACHER_ID);
-    if (!teacher || !teacher.teacher_code) {
-        return <div>لم يتم العثور على المعلم.</div>
-    }
+export default async function MyStudentsPage() {
+  const session = await requireAuth();
+  
+  // تسجيل للتحقق من هوية المعلم في السجلات (Server Logs)
+  console.log(`[StudentsPage] Fetching for Teacher ID: ${session.user.id}`);
 
-    const students = USERS.filter(u => u.role === 'student' && u.connected_teacher_code === teacher.teacher_code);
+  // جلب البيانات مباشرة من قاعدة البيانات (Server-Side)
+  const students = await prisma.user.findMany({
+    where: {
+      studentLinks: {
+        some: {
+          teacherId: session.user.id,
+        },
+      },
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      image: true,
+      userDetails: {
+        select: {
+          level: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  console.log(`[StudentsPage] Found ${students.length} students`);
 
     return (
         <div className="flex flex-col gap-8">
@@ -52,9 +76,8 @@ export default function MyStudentsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>الطالب</TableHead>
+                                <TableHead>المستوى</TableHead>
                                 <TableHead>البريد الإلكتروني</TableHead>
-                                <TableHead className="text-center">الدروس المكتملة</TableHead>
-                                <TableHead className="text-center">متوسط الدرجات</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -64,20 +87,21 @@ export default function MyStudentsPage() {
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <Avatar>
-                                                <AvatarImage src={student.avatar} alt={student.name} />
-                                                <AvatarFallback>{student.prenom.charAt(0)}</AvatarFallback>
+                                                <AvatarImage src={student.image || undefined} alt={`${student.firstName} ${student.lastName}`} />
+                                                <AvatarFallback>{student.firstName.charAt(0)}</AvatarFallback>
                                             </Avatar>
-                                            <span className="font-medium">{student.name}</span>
+                                            <span className="font-medium">{student.firstName} {student.lastName}</span>
                                         </div>
                                     </TableCell>
+                                    <TableCell>
+                                        {student.userDetails?.level?.name || '-'}
+                                    </TableCell>
                                     <TableCell>{student.email}</TableCell>
-                                    <TableCell className="font-medium text-center">5</TableCell>
-                                    <TableCell className="font-medium text-center">85%</TableCell>
                                 </TableRow>
                             ))
                         ) : (
                              <TableRow>
-                                <TableCell colSpan={4} className="text-center h-24">
+                                <TableCell colSpan={3} className="text-center h-24">
                                     لا يوجد طلاب مرتبطون بحسابك بعد.
                                 </TableCell>
                             </TableRow>

@@ -4,17 +4,22 @@ import { useState, useRef, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { UploadCloud, X, FileImage, FileText, Loader2 } from 'lucide-react';
+import { UploadCloud, X, File as FileIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface FileUploadProps {
   label: string;
   accept: string;
   maxSizeMB: number;
-  value?: string;
-  onChange: (base64: string | null) => void;
-  preview?: boolean;
+  value?: string; // Will now hold the file name
+  onChange: (fileInfo: { fileId: string; fileName: string; fileUrl: string } | null) => void;
+  onUploadStatusChange?: (isUploading: boolean) => void;
+  parentFolderId?: string; // The Google Drive folder ID to upload to
   description?: string;
+  stage?: string;
+  subject?: string;
+  teacher?: string;
+  lesson?: string;
 }
 
 export function FileUpload({
@@ -23,13 +28,17 @@ export function FileUpload({
   maxSizeMB,
   value,
   onChange,
-  preview = true,
+  onUploadStatusChange,
+  parentFolderId,
   description,
+  stage,
+  subject,
+  teacher,
+  lesson,
 }: FileUploadProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [fileName, setFileName] = useState<string>('');
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -49,83 +58,74 @@ export function FileUpload({
       return;
     }
 
-    setIsLoading(true);
-    setFileName(file.name);
-
-    try {
-      // Convert to base64
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const base64String = event.target?.result as string;
-          
-          // Check if base64 is too large (roughly 1.37x original size)
-          const base64SizeMB = (base64String.length * 3) / (4 * 1024 * 1024);
-          
-          if (base64SizeMB > maxSizeMB * 1.5) {
-            toast({
-              title: 'الملف كبير جداً بعد التحويل',
-              description: 'يرجى اختيار ملف أصغر حجماً',
-              variant: 'destructive',
-            });
-            setIsLoading(false);
-            if (fileInputRef.current) {
-              fileInputRef.current.value = '';
-            }
-            setFileName('');
-            return;
-          }
-          
-          onChange(base64String);
-          setIsLoading(false);
-          toast({
-            title: 'تم الرفع بنجاح',
-            description: `تم رفع الملف: ${file.name}`,
-          });
-        } catch (err) {
-          console.error('Error processing file:', err);
-          setIsLoading(false);
-          toast({
-            title: 'خطأ في المعالجة',
-            description: 'فشل في معالجة الملف',
-            variant: 'destructive',
-          });
-        }
-      };
-      reader.onerror = () => {
-        setIsLoading(false);
-        toast({
-          title: 'خطأ في القراءة',
-          description: 'فشل في قراءة الملف',
-          variant: 'destructive',
-        });
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        setFileName('');
-      };
-      reader.readAsDataURL(file);
-    } catch (error) {
-      console.error('File upload error:', error);
-      setIsLoading(false);
+    // التحقق من وجود البيانات الهرمية المطلوبة قبل الرفع
+    if (!stage || !subject || !teacher || !lesson) {
       toast({
-        title: 'خطأ',
-        description: 'فشل في رفع الملف',
+        title: 'بيانات ناقصة',
+        description: 'يرجى تعبئة جميع الحقول (المرحلة، المادة، الأستاذ، الدرس) قبل رفع الملف.',
         variant: 'destructive',
       });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    setIsLoading(true);
+    onUploadStatusChange?.(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (parentFolderId) formData.append('parentFolderId', parentFolderId);
+      formData.append('stage', stage);
+      formData.append('subject', subject);
+      formData.append('teacher', teacher);
+      formData.append('lesson', lesson);
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || result.error || 'فشل في رفع الملف');
+      }
+      
+      const { fileId, fileName, fileUrl } = result.data;
+
+      onChange({ fileId, fileName, fileUrl });
+      
+      toast({
+        title: 'تم الرفع بنجاح',
+        description: `تم رفع الملف: ${fileName}`,
+      });
+
+    } catch (error: any) {
+      console.error('File upload error:', error);
+      toast({
+        title: 'خطأ',
+        description: error.message || 'فشل في رفع الملف',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+      onUploadStatusChange?.(false);
+      // Clear the file input for re-uploading the same file if needed
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
   const handleRemove = () => {
     onChange(null);
-    setFileName('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
-
-  const isImage = accept.includes('image');
-  const isPdf = accept.includes('pdf');
 
   return (
     <div className="space-y-2">
@@ -152,10 +152,7 @@ export function FileUpload({
                   <span className="font-semibold">انقر للرفع</span> أو اسحب وأفلت الملف
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {isImage && 'صورة (JPG, PNG, GIF)'}
-                  {isPdf && 'ملف PDF'}
-                  {' '}
-                  - حتى {maxSizeMB} ميجابايت
+                  {`الملفات المسموح بها: ${accept} (حتى ${maxSizeMB} ميجابايت)`}
                 </p>
               </div>
             )}
@@ -174,46 +171,24 @@ export function FileUpload({
 
       {value && (
         <div className="space-y-2">
-          {preview && isImage && (
-            <div className="relative w-full h-48 border rounded-lg overflow-hidden bg-muted">
-              <img
-                src={value}
-                alt="Preview"
-                className="w-full h-full object-contain"
-              />
-            </div>
-          )}
-
-          {isPdf && (
-            <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted">
-              <FileText className="h-8 w-8 text-muted-foreground" />
+          <div className="flex items-center gap-2 p-3 border rounded-lg bg-muted">
+              <FileIcon className="h-8 w-8 text-muted-foreground" />
               <div className="flex-1">
-                <p className="text-sm font-medium">{fileName || 'ملف PDF'}</p>
+                <p className="text-sm font-medium">{value}</p>
                 <p className="text-xs text-muted-foreground">تم الرفع بنجاح</p>
               </div>
             </div>
-          )}
 
           <div className="flex gap-2">
             <Button
               type="button"
-              variant="outline"
+              variant="destructive"
               size="sm"
               onClick={handleRemove}
               className="flex-1"
             >
               <X className="ml-2 h-4 w-4" />
               إزالة الملف
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex-1"
-            >
-              <UploadCloud className="ml-2 h-4 w-4" />
-              تغيير الملف
             </Button>
           </div>
         </div>

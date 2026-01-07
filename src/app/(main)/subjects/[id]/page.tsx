@@ -65,6 +65,18 @@ export default function SubjectLessonsPage() {
     fetchLessons();
   }, [session, params.id]);
 
+  // تجميع الدروس حسب المستوى
+  const groupedLessons: { levelName: string; lessons: any[] }[] = [];
+  lessons.forEach((lesson) => {
+    const levelName = lesson.level?.name || 'مستوى غير محدد';
+    let group = groupedLessons.find(g => g.levelName === levelName);
+    if (!group) {
+      group = { levelName, lessons: [] };
+      groupedLessons.push(group);
+    }
+    group.lessons.push(lesson);
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -85,39 +97,53 @@ export default function SubjectLessonsPage() {
       </div>
 
       {lessons.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {lessons.map((lesson) => (
-            <Card key={lesson.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between mb-2">
-                  <Book className="h-5 w-5 text-primary" />
-                  <Badge variant={lesson.type === 'public' ? 'default' : 'secondary'}>
-                    {lesson.type === 'public' ? 'عام' : 'خاص'}
-                  </Badge>
-                </div>
-                <CardTitle className="line-clamp-2">{lesson.title}</CardTitle>
-                <CardDescription className="line-clamp-3">
-                  {lesson.content ? lesson.content.substring(0, 100) + '...' : 'لا يوجد وصف'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {lesson.isLocked ? (
-                      <Lock className="h-4 w-4" />
-                    ) : (
-                      <Unlock className="h-4 w-4" />
-                    )}
-                    <span>{lesson.isLocked ? 'مغلق' : 'متاح'}</span>
-                  </div>
-                  <Link href={`/lessons/${lesson.id}`}>
-                    <Button size="sm">
-                      بدء الدرس
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+        <div className="space-y-12">
+          {groupedLessons.map((group) => (
+            <div key={group.levelName} className="space-y-6">
+              <div className="flex items-center gap-3 border-b pb-2">
+                <div className="h-8 w-1.5 bg-primary rounded-full" />
+                <h2 className="text-2xl font-bold text-foreground">{group.levelName}</h2>
+                <Badge variant="secondary" className="mr-auto">
+                  {group.lessons.length} {group.lessons.length === 1 ? 'درس' : 'دروس'}
+                </Badge>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {group.lessons.map((lesson) => (
+                  <Card key={lesson.id} className="hover:shadow-lg transition-shadow flex flex-col">
+                    <CardHeader>
+                      <div className="flex items-start justify-between mb-2">
+                        <Book className="h-5 w-5 text-primary" />
+                        <Badge variant={lesson.type === 'public' ? 'default' : 'secondary'}>
+                          {lesson.type === 'public' ? 'عام' : 'خاص'}
+                        </Badge>
+                      </div>
+                      <CardTitle className="line-clamp-2">{lesson.title}</CardTitle>
+                      <CardDescription className="line-clamp-3">
+                        {lesson.content ? lesson.content.replace(/<[^>]*>?/gm, '').substring(0, 100) + '...' : 'لا يوجد وصف'}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="mt-auto">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          {lesson.isLocked ? (
+                            <Lock className="h-4 w-4" />
+                          ) : (
+                            <Unlock className="h-4 w-4" />
+                          )}
+                          <span>{lesson.isLocked ? 'مغلق' : 'متاح'}</span>
+                        </div>
+                        <Link href={`/lessons/${lesson.id}`}>
+                          <Button size="sm">
+                            بدء الدرس
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       ) : (

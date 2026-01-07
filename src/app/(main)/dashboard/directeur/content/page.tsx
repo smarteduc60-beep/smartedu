@@ -66,7 +66,7 @@ export default function ContentManagementPage() {
     const [isSubjectDialogOpen, setSubjectDialogOpen] = useState(false);
     const [subjectToEdit, setSubjectToEdit] = useState<Subject | null>(null);
 
-    const [itemToDelete, setItemToDelete] = useState<{ id: number; name: string; type: 'stage' | 'level' | 'subject' } | null>(null);
+    const [itemToDelete, setItemToDelete] = useState<{ id: number | number[]; name: string; type: 'stage' | 'level' | 'subject' } | null>(null);
 
 
     const handleOpenAddStage = () => {
@@ -175,7 +175,7 @@ export default function ContentManagementPage() {
         }
     };
 
-    const handleDeleteClick = (item: { id: number; name: string; type: 'stage' | 'level' | 'subject' }) => {
+    const handleDeleteClick = (item: { id: number | number[]; name: string; type: 'stage' | 'level' | 'subject' }) => {
         setItemToDelete(item);
     };
     
@@ -183,7 +183,7 @@ export default function ContentManagementPage() {
         if (itemToDelete) {
             switch (itemToDelete.type) {
                 case 'stage':
-                    const stageResult = await deleteStage(itemToDelete.id);
+                    const stageResult = await deleteStage(itemToDelete.id as number);
                     if (stageResult.success) {
                         toast({ title: "تم حذف المرحلة بنجاح" });
                     } else {
@@ -191,7 +191,7 @@ export default function ContentManagementPage() {
                     }
                     break;
                 case 'level':
-                    const levelResult = await deleteLevel(itemToDelete.id);
+                    const levelResult = await deleteLevel(itemToDelete.id as number);
                     if (levelResult.success) {
                         toast({ title: "تم حذف المستوى بنجاح" });
                     } else {
@@ -199,17 +199,58 @@ export default function ContentManagementPage() {
                     }
                     break;
                 case 'subject':
-                    const subjectResult = await deleteSubject(itemToDelete.id);
-                    if (subjectResult.success) {
-                        toast({ title: "تم حذف المادة بنجاح" });
+                    if (Array.isArray(itemToDelete.id)) {
+                        // Bulk delete for grouped subjects
+                        let successCount = 0;
+                        for (const id of itemToDelete.id) {
+                            const res = await deleteSubject(id);
+                            if (res.success) successCount++;
+                        }
+                        if (successCount > 0) toast({ title: `تم حذف ${successCount} مادة بنجاح` });
+                        else toast({ title: "فشل حذف المواد", variant: "destructive" });
                     } else {
-                        toast({ title: "فشل حذف المادة", variant: "destructive" });
+                        const subjectResult = await deleteSubject(itemToDelete.id as number);
+                        if (subjectResult.success) {
+                            toast({ title: "تم حذف المادة بنجاح" });
+                        } else {
+                            toast({ title: "فشل حذف المادة", variant: "destructive" });
+                        }
                     }
                     break;
             }
             setItemToDelete(null);
         }
     };
+
+    // Group subjects by name and stage
+    const groupedSubjects = useMemo(() => {
+        if (!Array.isArray(subjects)) return [];
+        const groups: Record<string, any> = {};
+        
+        subjects.forEach(subject => {
+            const stageId = subject.stageId || subject.stage_id;
+            const key = `${subject.name}-${stageId}`;
+            
+            if (!groups[key]) {
+                groups[key] = {
+                    ...subject,
+                    _levels: [],
+                    _ids: []
+                };
+            }
+            
+            if (subject.levels && Array.isArray(subject.levels)) {
+                subject.levels.forEach((lvl: any) => {
+                    if (!groups[key]._levels.some((l: any) => l.id === lvl.id)) {
+                        groups[key]._levels.push(lvl);
+                    }
+                });
+            }
+            groups[key]._ids.push(subject.id);
+        });
+        
+        return Object.values(groups);
+    }, [subjects]);
 
     // Show loading state
     if (stagesLoading || levelsLoading || subjectsLoading) {
@@ -364,21 +405,33 @@ export default function ContentManagementPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>المادة</TableHead>
+                                        <TableHead>المرحلة</TableHead>
+                                        <TableHead>المستويات</TableHead>
                                         <TableHead>الوصف</TableHead>
                                         <TableHead className="text-center">الإجراءات</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {Array.isArray(subjects) && subjects.map(subject => (
+                                    {groupedSubjects.map(subject => (
                                         <TableRow key={subject.id}>
                                             <TableCell className="font-medium">{subject.name}</TableCell>
+                                            <TableCell>{subject.stage?.name}</TableCell>
+                                            <TableCell>
+                                                <div className="flex flex-wrap gap-1">
+                                                    {subject._levels.sort((a: any, b: any) => a.displayOrder - b.displayOrder).map((l: any) => (
+                                                        <span key={l.id} className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                                                            {l.name}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </TableCell>
                                             <TableCell>{subject.description}</TableCell>
                                             <TableCell className="text-center">
                                                 <div className="flex justify-center gap-2">
                                                     <Button variant="ghost" size="icon" title="تعديل المادة" onClick={() => handleOpenEditSubject(subject)}>
                                                         <FilePenLine className="h-4 w-4" />
                                                     </Button>
-                                                    <Button variant="ghost" size="icon" title="حذف المادة" className="text-destructive hover:text-destructive" onClick={() => handleDeleteClick({ id: subject.id, name: subject.name, type: 'subject' })}>
+                                                    <Button variant="ghost" size="icon" title="حذف المادة" className="text-destructive hover:text-destructive" onClick={() => handleDeleteClick({ id: subject._ids, name: subject.name, type: 'subject' })}>
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>

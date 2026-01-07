@@ -85,39 +85,49 @@ export const authOptions: NextAuthOptions = {
       // عند تسجيل الدخول لأول مرة
       if (user) {
         token.id = user.id;
-        token.role = user.role;
-        token.roleId = user.roleId;
-        token.stage_id = user.stage_id;
+        // نقل البيانات المخصصة من user إلى token إذا توفرت
+        if ('role' in user) token.role = user.role;
+        if ('roleId' in user) token.roleId = user.roleId;
+        if ('stage_id' in user) token.stage_id = user.stage_id;
       }
 
-      // إذا كان التسجيل عبر Google ولأول مرة
-      if (account?.provider === 'google' && profile) {
-        const existingUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          include: { 
-            role: true, 
-            userDetails: {
-              include: {
-                level: {
+      // إذا كان التسجيل عبر Google أو إذا كانت البيانات ناقصة في الـ token (مثل role)
+      // نقوم بجلب بيانات المستخدم من قاعدة البيانات لضمان تكامل الجلسة
+      if (account?.provider === 'google' || (!token.role && token.sub)) {
+        const userId = token.sub;
+        if (userId) {
+          try {
+            const existingUser = await prisma.user.findUnique({
+              where: { id: userId },
+              include: { 
+                role: true, 
+                userDetails: {
                   include: {
-                    stage: true,
+                    level: { include: { stage: true } },
                   },
                 },
               },
-            },
-          },
-        });
+            });
 
-        if (existingUser) {
-          token.role = existingUser.role.name;
-          token.roleId = existingUser.roleId;
-          token.stage_id = existingUser.userDetails?.level?.stageId || existingUser.userDetails?.stageId;
-          
-          // إذا لم يكمل المستخدم ملفه الشخصي، نوجهه لصفحة الإكمال
-          if (!existingUser.userDetails) {
-            token.needsProfileCompletion = true;
+            if (existingUser) {
+              token.id = existingUser.id;
+              token.role = existingUser.role.name;
+              token.roleId = existingUser.roleId;
+              token.stage_id = existingUser.userDetails?.level?.stageId || existingUser.userDetails?.stageId;
+              
+              if (!existingUser.userDetails) {
+                token.needsProfileCompletion = true;
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching user details in JWT callback:', error);
           }
         }
+      }
+
+      // شبكة أمان: ضمان وجود id في الـ token للاستخدامات اللاحقة
+      if (!token.id && token.sub) {
+        token.id = token.sub;
       }
 
       return token;
@@ -125,7 +135,7 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = (token.id as string) || (token.sub as string);
         session.user.role = token.role as string;
         session.user.roleId = token.roleId as number;
         session.user.stage_id = token.stage_id as number | undefined;

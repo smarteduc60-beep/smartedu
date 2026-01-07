@@ -1,0 +1,8 @@
+[33mcommit ecb86268cf90532909946031c730aec4f7598a02[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m)[m
+Author: smarteduc60-beep <smarteduc60@gmail.com>
+Date:   Wed Jan 7 09:47:35 2026 +0100
+
+    feat: add backup export API and dashboard backup page
+
+src/app/(main)/dashboard/directeur/backup/page.tsx
+src/app/api/backup/export/route.ts

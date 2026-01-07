@@ -104,24 +104,38 @@ async function main() {
 
   // 4. إنشاء المواد
   console.log('📖 إنشاء المواد...');
-  await prisma.subject.createMany({
-    data: [
-      { id: 1, name: 'الرياضيات', description: 'مادة الرياضيات للمرحلة الابتدائية', levelId: 1, stageId: stage1.id },
-      { id: 2, name: 'اللغة العربية', description: 'مادة اللغة العربية للمرحلة الابتدائية', levelId: 1, stageId: stage1.id },
-      { id: 3, name: 'العلوم', description: 'مادة العلوم للمرحلة الابتدائية', levelId: 1, stageId: stage1.id },
-      { id: 4, name: 'الرياضيات', description: 'مادة الرياضيات للمرحلة المتوسطة', stageId: stage2.id },
-      { id: 5, name: 'اللغة العربية', description: 'مادة اللغة العربية للمرحلة المتوسطة', stageId: stage2.id },
-      { id: 6, name: 'العلوم الطبيعية', description: 'مادة العلوم الطبيعية للمرحلة المتوسطة', stageId: stage2.id },
-      { id: 7, name: 'اللغة الفرنسية', description: 'مادة اللغة الفرنسية للمرحلة المتوسطة', stageId: stage2.id },
-    ],
-    skipDuplicates: true,
-  });
+  const subjects = [
+    { id: 1, name: 'الرياضيات', description: 'مادة الرياضيات للمرحلة الابتدائية', stageId: stage1.id, levelIds: [1] },
+    { id: 2, name: 'اللغة العربية', description: 'مادة اللغة العربية للمرحلة الابتدائية', stageId: stage1.id, levelIds: [1] },
+    { id: 3, name: 'العلوم', description: 'مادة العلوم للمرحلة الابتدائية', stageId: stage1.id, levelIds: [1] },
+    { id: 4, name: 'الرياضيات', description: 'مادة الرياضيات للمرحلة المتوسطة', stageId: stage2.id, levelIds: [] },
+    { id: 5, name: 'اللغة العربية', description: 'مادة اللغة العربية للمرحلة المتوسطة', stageId: stage2.id, levelIds: [] },
+    { id: 6, name: 'العلوم الطبيعية', description: 'مادة العلوم الطبيعية للمرحلة المتوسطة', stageId: stage2.id, levelIds: [] },
+    { id: 7, name: 'اللغة الفرنسية', description: 'مادة اللغة الفرنسية للمرحلة المتوسطة', stageId: stage2.id, levelIds: [] },
+  ];
+
+  for (const subject of subjects) {
+    await prisma.subject.upsert({
+      where: { id: subject.id },
+      update: {},
+      create: {
+        id: subject.id,
+        name: subject.name,
+        description: subject.description,
+        stageId: subject.stageId,
+        levels: subject.levelIds.length > 0 ? {
+          connect: subject.levelIds.map((id) => ({ id })),
+        } : undefined,
+      },
+    });
+  }
 
   console.log('✅ تم إنشاء المواد بنجاح');
 
   // 5. إنشاء المستخدمين
   console.log('👥 إنشاء المستخدمين...');
   const hashedPassword = await bcrypt.hash('password123', 10);
+  const directorPassword = await bcrypt.hash('Lakhdar14013@Djedid', 10);
 
   // المدير
   const director = await prisma.user.upsert({
@@ -131,7 +145,7 @@ async function main() {
       firstName: 'لخضر',
       lastName: 'جديد',
       email: 'Ladj.director@smartedu.com',
-      password: hashedPassword,
+      password: directorPassword,
       image: 'https://placehold.co/200x200/3F51B5/FFFFFF?text=AK',
       roleId: roleMap.directeur,
     },

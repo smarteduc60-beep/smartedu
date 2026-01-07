@@ -8,6 +8,8 @@ export interface Subject {
   description: string;
   stageId?: number;
   levelId?: number;
+  levelIds?: number[];
+  levels?: { id: number; name: string }[];
 }
 
 export interface UseSubjectsReturn {
@@ -62,13 +64,19 @@ export function useSubjects(): UseSubjectsReturn {
         body: JSON.stringify(subjectData),
       });
 
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (err) {
+        result = { success: response.ok };
+      }
 
       if (response.ok && result.success) {
         await fetchSubjects();
         return { success: true, subject: result.data?.subject || result.subject };
       } else {
-        return { success: false, error: result.error || 'Failed to create subject' };
+        const errorMessage = result.error || `Request failed with status ${response.status}`;
+        return { success: false, error: errorMessage };
       }
     } catch (err) {
       console.error('Error creating subject:', err);
@@ -84,13 +92,19 @@ export function useSubjects(): UseSubjectsReturn {
         body: JSON.stringify(subjectData),
       });
 
-      const result = await response.json();
+      let result: any = {};
+      try {
+        result = await response.json();
+      } catch (err) {
+        result = { success: response.ok };
+      }
 
       if (response.ok && result.success) {
         await fetchSubjects();
         return { success: true, subject: result.data?.subject || result.subject };
       } else {
-        return { success: false, error: result.error || 'Failed to update subject' };
+        const errorMessage = result.error || `Request failed with status ${response.status}`;
+        return { success: false, error: errorMessage };
       }
     } catch (err) {
       console.error('Error updating subject:', err);
@@ -104,13 +118,19 @@ export function useSubjects(): UseSubjectsReturn {
         method: 'DELETE',
       });
 
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (err) {
+        result = { success: response.ok };
+      }
 
       if (response.ok && result.success) {
         await fetchSubjects();
         return { success: true };
       } else {
-        return { success: false, error: result.error || 'Failed to delete subject' };
+        const errorMessage = result.error || `Request failed with status ${response.status}`;
+        return { success: false, error: errorMessage };
       }
     } catch (err) {
       console.error('Error deleting subject:', err);

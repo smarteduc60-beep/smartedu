@@ -52,7 +52,6 @@ import { useSession } from "next-auth/react";
 const studentNavItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "لوحة التحكم" },
   { href: "/subjects", icon: Library, label: "المواد الدراسية" },
-  { href: "/lessons", icon: BookCopy, label: "الدروس" },
   { href: "/dashboard/student/progress", icon: TrendingUp, label: "تقدمي" },
   { href: "/dashboard/student/results", icon: Award, label: "نتائجي" },
   { href: "/profile", icon: Settings, label: "الملف الشخصي" },
@@ -65,7 +64,6 @@ const teacherNavItems = [
   { href: "/dashboard/teacher/students", icon: Users, label: "تلاميذي" },
   { href: "/dashboard/teacher/submissions", icon: ClipboardCheck, label: "تصحيح التمارين" },
   { href: "/messages", icon: MessageSquare, label: "الرسائل" },
-  { href: "/dashboard/teacher/my-code", icon: Code2, label: "كودي الخاص" },
   { href: "/profile", icon: Settings, label: "الإعدادات" },
 ]
 

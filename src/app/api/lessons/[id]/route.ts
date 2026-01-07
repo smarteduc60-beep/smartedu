@@ -1,25 +1,22 @@
-import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '@/lib/api-auth';
-import { successResponse, errorResponse, notFoundResponse } from '@/lib/api-response';
-import { saveBase64ToFile } from '@/lib/file-handler';
+import { errorResponse, successResponse } from '@/lib/api-response';
 
-// Configure API route to accept larger payloads
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
+const prisma = new PrismaClient();
 
-// GET /api/lessons/[id]
+// جلب بيانات درس محدد (لصفحة التعديل)
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAuth();
+    const user = await requireAuth();
+
+    if (!user) {
+      console.error('[API - Lessons ID - GET] Authentication failed: User is null');
+      return errorResponse('Authentication failed: User is null', 401);
+    }
 
     const { id } = await params;
     const lessonId = parseInt(id);
@@ -31,39 +28,35 @@ export async function GET(
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
       include: {
-        author: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            image: true,
-          },
-        },
         subject: true,
         level: true,
-        exercises: {
-          orderBy: { displayOrder: 'asc' },
-        },
-      },
+      }
     });
 
     if (!lesson) {
-      return notFoundResponse('الدرس غير موجود');
+      return errorResponse('الدرس غير موجود', 404);
     }
 
     return successResponse(lesson);
   } catch (error: any) {
-    return errorResponse(error.message || 'فشل في جلب الدرس', 500);
+    console.error('Error fetching lesson:', error);
+    return errorResponse('حدث خطأ أثناء جلب الدرس', 500);
   }
 }
 
-// PATCH /api/lessons/[id]
-export async function PATCH(
+// تحديث بيانات الدرس
+export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth();
+     const user = await requireAuth();
+
+    if (!user) {
+      console.error('[API - Lessons ID - PUT] Authentication failed: User is null');
+      return errorResponse('Authentication failed: User is null', 401);
+    }
+
     const { id } = await params;
     const lessonId = parseInt(id);
 
@@ -71,96 +64,63 @@ export async function PATCH(
       return errorResponse('معرف الدرس غير صالح', 400);
     }
 
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
+    const body = await request.json();
+    const { title, content, videoUrl, imageUrl, pdfUrl, subjectId, levelId } = body;
+
+    // التحقق من وجود الدرس وملكيته
+    const existingLesson = await prisma.lesson.findUnique({
+        where: { id: lessonId },
+        select: { authorId: true }
     });
 
-    if (!lesson) {
-      return notFoundResponse('الدرس غير موجود');
+    if (!existingLesson) {
+        return errorResponse('الدرس غير موجود', 404);
     }
 
-    // التحقق من الصلاحية: المؤلف أو المدير
-    if (lesson.authorId !== session.user.id && session.user.role !== 'directeur') {
-      return errorResponse('غير مصرح بالتعديل', 403);
+    if (!user || !user.id) {
+      return errorResponse('المستخدم غير معرف. يرجى تسجيل الدخول.', 401);
     }
 
-    const body = await request.json();
-    
-    const updateData: any = {};
-    if (body.title !== undefined) updateData.title = body.title;
-    if (body.content !== undefined) updateData.content = body.content;
-    if (body.videoUrl !== undefined) updateData.videoUrl = body.videoUrl;
-    if (body.type !== undefined) updateData.type = body.type;
-    if (body.isLocked !== undefined) updateData.isLocked = body.isLocked;
+    console.log(`[DEBUG] Update Lesson: User ID (${user.id}) vs Author ID (${existingLesson.authorId})`);
 
-    // Handle Image URL directly or fall back to Base64 upload
-    if (body.imageUrl !== undefined) {
-      updateData.imageUrl = body.imageUrl;
-    } else if (body.imageBase64 !== undefined) {
-      if (body.imageBase64 && typeof body.imageBase64 === 'string') {
-        try {
-          const extensionMatch = body.imageBase64.match(/data:image\/(.*?);base64,/);
-          const extension = extensionMatch ? `.${extensionMatch[1]}` : '.png';
-          updateData.imageUrl = saveBase64ToFile(body.imageBase64, 'lessons-images', extension);
-        } catch (e: any) {
-          console.error("Failed to save image during update:", e.message);
-        }
-      } else {
-        updateData.imageUrl = null;
-      }
-    }
-
-    // Handle PDF Upload
-    if (body.pdfBase64 !== undefined) {
-      if (body.pdfBase64 && typeof body.pdfBase64 === 'string') {
-        try {
-          const extensionMatch = body.pdfBase64.match(/data:application\/(.*?);base64,/);
-          const extension = extensionMatch ? `.${extensionMatch[1]}` : '.pdf';
-          updateData.pdfUrl = saveBase64ToFile(body.pdfBase64, 'lessons-pdfs', extension);
-        } catch (e: any) {
-          console.error("Failed to save PDF during update:", e.message);
-        }
-      } else {
-        updateData.pdfUrl = null;
-      }
-    }
-    
-    // فقط المدير أو المشرف يمكنه تغيير الحالة
-    if (body.status !== undefined && ['directeur', 'supervisor_specific', 'supervisor_general'].includes(session.user.role)) {
-      updateData.status = body.status;
+    // التحقق من أن المستخدم هو صاحب الدرس
+    if (existingLesson.authorId && existingLesson.authorId !== user.id) {
+      return errorResponse(`غير مصرح لك بتعديل هذا الدرس. (المستخدم: ${user.id}، المؤلف: ${existingLesson.authorId})`, 403);
     }
 
     const updatedLesson = await prisma.lesson.update({
       where: { id: lessonId },
-      data: updateData,
-      include: {
-        author: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            image: true,
-          },
-        },
-        subject: true,
-        level: true,
+      data: {
+        title,
+        content,
+        videoUrl,
+        imageUrl,
+        pdfUrl,
+        subjectId,
+        levelId,
       },
     });
 
     return successResponse(updatedLesson, 'تم تحديث الدرس بنجاح');
   } catch (error: any) {
     console.error('Error updating lesson:', error);
-    return errorResponse(error.message || 'فشل في تحديث الدرس', 500);
+    return errorResponse('حدث خطأ أثناء تحديث الدرس', 500);
   }
 }
 
-// DELETE /api/lessons/[id]
+// حذف الدرس (إضافي)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await requireAuth();
+    const user = await requireAuth();
+
+    if (!user) {
+      console.error('[API - Lessons ID - DELETE] Authentication failed: User is null');
+      return errorResponse('Authentication failed: User is null', 401);
+    }
+
     const { id } = await params;
     const lessonId = parseInt(id);
 
@@ -168,17 +128,23 @@ export async function DELETE(
       return errorResponse('معرف الدرس غير صالح', 400);
     }
 
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
+    const existingLesson = await prisma.lesson.findUnique({
+        where: { id: lessonId },
+        select: { authorId: true }
     });
 
-    if (!lesson) {
-      return notFoundResponse('الدرس غير موجود');
+    if (!existingLesson) {
+        return errorResponse('الدرس غير موجود', 404);
     }
 
-    // التحقق من الصلاحية
-    if (lesson.authorId !== session.user.id && session.user.role !== 'directeur') {
-      return errorResponse('غير مصرح بالحذف', 403);
+    if (!user || !user.id) {
+      return errorResponse('المستخدم غير معرف. يرجى تسجيل الدخول.', 401);
+    }
+
+    console.log(`[DEBUG] Delete Lesson: User ID (${user.id}) vs Author ID (${existingLesson.authorId})`);
+
+    if (existingLesson.authorId && existingLesson.authorId !== user.id) {
+      return errorResponse(`غير مصرح لك بحذف هذا الدرس. (المستخدم: ${user.id}، المؤلف: ${existingLesson.authorId})`, 403);
     }
 
     await prisma.lesson.delete({
@@ -188,6 +154,6 @@ export async function DELETE(
     return successResponse(null, 'تم حذف الدرس بنجاح');
   } catch (error: any) {
     console.error('Error deleting lesson:', error);
-    return errorResponse(error.message || 'فشل في حذف الدرس', 500);
+    return errorResponse('حدث خطأ أثناء حذف الدرس', 500);
   }
 }

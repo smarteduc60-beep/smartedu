@@ -11,7 +11,6 @@ import TextAlign from '@tiptap/extension-text-align';
 import { Color } from '@tiptap/extension-color';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
-import { Mathematics } from '@tiptap/extension-mathematics';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -33,15 +32,15 @@ import {
   AlignCenter,
   AlignRight,
   AlignJustify,
-  Sigma,
   Upload,
   MoveLeft,
   MoveRight,
+  Sigma,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import 'katex/dist/katex.min.css';
-import MathSymbolsToolbar from './MathSymbolsToolbar';
-import MathPreviewBox from './MathPreviewBox';
+import { MathExtension } from './extensions/MathExtension';
+import { uploadFileToDrive } from '@/lib/upload'; // Import the new upload utility
+import { Loader2 } from 'lucide-react'; // Import Loader2 icon
 
 interface RichTextEditorProps {
   content: string;
@@ -49,6 +48,7 @@ interface RichTextEditorProps {
   placeholder?: string;
   editable?: boolean;
   className?: string;
+  googleDriveParentFolderId?: string; // New prop for Google Drive parent folder
 }
 
 export default function RichTextEditor({
@@ -57,10 +57,12 @@ export default function RichTextEditor({
   placeholder = 'ابدأ الكتابة هنا...',
   editable = true,
   className = '',
+  googleDriveParentFolderId, // Destructure the new prop
 }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [colorPicker, setColorPicker] = useState('#000000');
   const [bgColorPicker, setBgColorPicker] = useState('#ffff00');
+  const [isUploading, setIsUploading] = useState(false); // New state for upload loading
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -88,12 +90,7 @@ export default function RichTextEditor({
       Highlight.configure({
         multicolor: true,
       }),
-      Mathematics.configure({
-        katexOptions: {
-          throwOnError: false,
-          displayMode: false,
-        },
-      }),
+      MathExtension,
     ],
     content,
     editable,
@@ -114,26 +111,37 @@ export default function RichTextEditor({
     }
   }, [content, editor]);
 
-  const handleImageUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && editor) {
-      // التحقق من حجم الصورة
-      const maxSize = 2 * 1024 * 1024; // 2MB
-      if (file.size > maxSize) {
-        alert('حجم الصورة كبير جداً! الحد الأقصى 2 ميجابايت');
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        editor.chain().focus().setImage({ src: base64 }).run();
-      };
-      reader.readAsDataURL(file);
+    if (!file || !editor || !googleDriveParentFolderId) {
+      alert('لا يمكن رفع الملف. تأكد من تحديد المجلد الأب لـ Google Drive.');
+      return;
     }
-  }, [editor]);
 
-  const addImage = useCallback(() => {
+    // Check file size (client-side validation for immediate feedback)
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+      alert('حجم الصورة كبير جداً! الحد الأقصى 2 ميجابايت');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const { fileUrl } = await uploadFileToDrive(file, googleDriveParentFolderId);
+      editor.chain().focus().setImage({ src: fileUrl }).run();
+    } catch (error) {
+      console.error('Error uploading to Google Drive:', error);
+      alert('فشل رفع الصورة إلى Google Drive.');
+    } finally {
+      setIsUploading(false);
+      // Clear the file input value to allow re-uploading the same file
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [editor, googleDriveParentFolderId]);
+
+  const addImageFromDrive = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
 
@@ -148,28 +156,6 @@ export default function RichTextEditor({
     const url = window.prompt('أدخل الرابط:');
     if (url && editor) {
       editor.chain().focus().setLink({ href: url }).run();
-    }
-  }, [editor]);
-
-  const addGeoGebra = useCallback(() => {
-    const url = window.prompt('أدخل رابط GeoGebra:');
-    if (url && editor) {
-      const iframe = `<iframe src="${url}" width="800" height="600" style="border: 1px solid #ccc" frameborder="0"></iframe>`;
-      editor.chain().focus().insertContent(iframe).run();
-    }
-  }, [editor]);
-
-  const addMathEquation = useCallback(() => {
-    const latex = window.prompt('أدخل المعادلة الرياضية (LaTeX):', 'x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}');
-    if (latex && editor) {
-      editor.chain().focus().insertContent(`<span data-type="math" data-latex="${latex}">$${latex}$</span>`).run();
-    }
-  }, [editor]);
-
-  // دالة لإدراج رمز رياضي من الشريط
-  const insertMathSymbol = useCallback((latex: string) => {
-    if (editor) {
-      editor.chain().focus().insertContent(` ${latex} `).run();
     }
   }, [editor]);
 
@@ -202,15 +188,20 @@ export default function RichTextEditor({
     return null;
   }
 
+  const uploadInputId = 'rich-text-image-upload';
+
   return (
     <div className={`border rounded-lg ${className}`}>
       <input
         ref={fileInputRef}
+        id={uploadInputId}
         type="file"
         accept="image/*"
         className="hidden"
         onChange={handleImageUpload}
         aria-label="تحميل صورة"
+        aria-labelledby="upload-image-button"
+        disabled={isUploading}
       />
       {editable && (
         <div className="flex flex-wrap gap-1 p-2 border-b bg-muted/50">
@@ -222,6 +213,7 @@ export default function RichTextEditor({
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={editor.isActive('bold') ? 'bg-muted' : ''}
             title="غامق"
+            disabled={isUploading}
           >
             <Bold className="h-4 w-4" />
           </Button>
@@ -232,6 +224,7 @@ export default function RichTextEditor({
             onClick={() => editor.chain().focus().toggleItalic().run()}
             className={editor.isActive('italic') ? 'bg-muted' : ''}
             title="مائل"
+            disabled={isUploading}
           >
             <Italic className="h-4 w-4" />
           </Button>
@@ -242,6 +235,7 @@ export default function RichTextEditor({
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             className={editor.isActive('underline') ? 'bg-muted' : ''}
             title="تسطير"
+            disabled={isUploading}
           >
             <UnderlineIcon className="h-4 w-4" />
           </Button>
@@ -254,6 +248,7 @@ export default function RichTextEditor({
             size="sm"
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             className={editor.isActive('heading', { level: 1 }) ? 'bg-muted' : ''}
+            disabled={isUploading}
           >
             <Heading1 className="h-4 w-4" />
           </Button>
@@ -263,6 +258,7 @@ export default function RichTextEditor({
             size="sm"
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             className={editor.isActive('heading', { level: 2 }) ? 'bg-muted' : ''}
+            disabled={isUploading}
           >
             <Heading2 className="h-4 w-4" />
           </Button>
@@ -272,6 +268,7 @@ export default function RichTextEditor({
             size="sm"
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             className={editor.isActive('heading', { level: 3 }) ? 'bg-muted' : ''}
+            disabled={isUploading}
           >
             <Heading3 className="h-4 w-4" />
           </Button>
@@ -287,6 +284,7 @@ export default function RichTextEditor({
               }}
               className="w-8 h-8 rounded cursor-pointer"
               title="لون النص"
+              disabled={isUploading}
             />
             <Button
               type="button"
@@ -295,6 +293,7 @@ export default function RichTextEditor({
               onClick={() => editor.chain().focus().toggleHighlight({ color: bgColorPicker }).run()}
               className={editor.isActive('highlight') ? 'bg-muted' : ''}
               title="تمييز"
+              disabled={isUploading}
             >
               <Highlighter className="h-4 w-4" />
             </Button>
@@ -304,6 +303,7 @@ export default function RichTextEditor({
               onChange={(e) => setBgColorPicker(e.target.value)}
               className="w-8 h-8 rounded cursor-pointer"
               title="لون التمييز"
+              disabled={isUploading}
             />
           </div>
 
@@ -316,6 +316,7 @@ export default function RichTextEditor({
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             className={editor.isActive('bulletList') ? 'bg-muted' : ''}
             title="قائمة نقطية"
+            disabled={isUploading}
           >
             <List className="h-4 w-4" />
           </Button>
@@ -326,6 +327,7 @@ export default function RichTextEditor({
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             className={editor.isActive('orderedList') ? 'bg-muted' : ''}
             title="قائمة مرقمة"
+            disabled={isUploading}
           >
             <ListOrdered className="h-4 w-4" />
           </Button>
@@ -339,6 +341,7 @@ export default function RichTextEditor({
             onClick={() => editor.chain().focus().setTextAlign('left').run()}
             className={editor.isActive({ textAlign: 'left' }) ? 'bg-muted' : ''}
             title="محاذاة لليسار"
+            disabled={isUploading}
           >
             <AlignLeft className="h-4 w-4" />
           </Button>
@@ -349,6 +352,7 @@ export default function RichTextEditor({
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
             className={editor.isActive({ textAlign: 'center' }) ? 'bg-muted' : ''}
             title="محاذاة للوسط"
+            disabled={isUploading}
           >
             <AlignCenter className="h-4 w-4" />
           </Button>
@@ -359,6 +363,7 @@ export default function RichTextEditor({
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
             className={editor.isActive({ textAlign: 'right' }) ? 'bg-muted' : ''}
             title="محاذاة لليمين"
+            disabled={isUploading}
           >
             <AlignRight className="h-4 w-4" />
           </Button>
@@ -369,6 +374,7 @@ export default function RichTextEditor({
             onClick={() => editor.chain().focus().setTextAlign('justify').run()}
             className={editor.isActive({ textAlign: 'justify' }) ? 'bg-muted' : ''}
             title="ضبط"
+            disabled={isUploading}
           >
             <AlignJustify className="h-4 w-4" />
           </Button>
@@ -381,6 +387,7 @@ export default function RichTextEditor({
             size="sm"
             onClick={() => setTextDirection('ltr')}
             title="اتجاه من اليسار لليمين (LTR)"
+            disabled={isUploading}
           >
             <MoveRight className="h-4 w-4" />
           </Button>
@@ -390,6 +397,7 @@ export default function RichTextEditor({
             size="sm"
             onClick={() => setTextDirection('rtl')}
             title="اتجاه من اليمين لليسار (RTL)"
+            disabled={isUploading}
           >
             <MoveLeft className="h-4 w-4" />
           </Button>
@@ -397,24 +405,28 @@ export default function RichTextEditor({
           {/* Insert */}
           <div className="w-px h-8 bg-border mx-1" />
           
-          {/* Math Symbols Toolbar */}
-          <MathSymbolsToolbar onInsert={insertMathSymbol} />
-          
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            onClick={addImage}
-            title="تحميل صورة"
+            onClick={addImageFromDrive}
+            id="upload-image-button" // Add ID for aria-labelledby
+            title="رفع صورة إلى Google Drive"
+            disabled={isUploading || !googleDriveParentFolderId}
           >
-            <Upload className="h-4 w-4" />
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={addImageUrl}
-            title="صورة من رابط"
+            title="إدراج صورة من رابط"
+            disabled={isUploading}
           >
             <ImageIcon className="h-4 w-4" />
           </Button>
@@ -425,6 +437,7 @@ export default function RichTextEditor({
             onClick={addLink}
             className={editor.isActive('link') ? 'bg-muted' : ''}
             title="رابط"
+            disabled={isUploading}
           >
             <Link2 className="h-4 w-4" />
           </Button>
@@ -432,19 +445,26 @@ export default function RichTextEditor({
             type="button"
             variant="ghost"
             size="sm"
-            onClick={addMathEquation}
-            title="معادلة رياضية"
+            onClick={addTable}
+            title="جدول"
+            disabled={isUploading}
           >
-            <Sigma className="h-4 w-4" />
+            <TableIcon className="h-4 w-4" />
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            onClick={addTable}
-            title="جدول"
+            onClick={() => {
+              if (typeof editor.chain().focus().setMathLive === 'function') {
+                editor.chain().focus().setMathLive().run();
+              }
+            }}
+            className={editor.isActive('mathLive') ? 'bg-muted' : ''}
+            title="معادلة رياضية"
+            disabled={isUploading}
           >
-            <TableIcon className="h-4 w-4" />
+            <Sigma className="h-4 w-4" />
           </Button>
 
           {/* Undo/Redo */}
@@ -454,7 +474,7 @@ export default function RichTextEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().undo().run()}
-            disabled={!editor.can().undo()}
+            disabled={!editor.can().undo() || isUploading}
           >
             <Undo className="h-4 w-4" />
           </Button>
@@ -463,16 +483,13 @@ export default function RichTextEditor({
             variant="ghost"
             size="sm"
             onClick={() => editor.chain().focus().redo().run()}
-            disabled={!editor.can().redo()}
+            disabled={!editor.can().redo() || isUploading}
           >
             <Redo className="h-4 w-4" />
           </Button>
         </div>
       )}
       <EditorContent editor={editor} className="min-h-[200px]" />
-      
-      {/* مربع المعاينة المباشرة */}
-      {editable && <MathPreviewBox content={content} />}
     </div>
   );
 }

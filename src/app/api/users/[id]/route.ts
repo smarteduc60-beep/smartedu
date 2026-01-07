@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { requireRole, getSession } from '@/lib/api-auth';
 import { successResponse, errorResponse, notFoundResponse } from '@/lib/api-response';
 import bcrypt from 'bcryptjs';
+import { GoogleDriveService } from '@/lib/google-drive'; // Import GoogleDriveService
 
 // GET /api/users/[id] - جلب معلومات مستخدم
 export async function GET(
@@ -181,18 +182,33 @@ export async function DELETE(
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
+      select: { 
+        userDetails: {
+          select: { teacherDriveFolderId: true }
+        }
+      } 
     });
 
     if (!user) {
       return notFoundResponse('المستخدم غير موجود');
     }
 
-    // حذف المستخدم (سيتم حذف التفاصيل تلقائياً بسبب onDelete: Cascade)
+    // 1. Delete associated Google Drive folder if exists
+    if (user.userDetails?.teacherDriveFolderId) {
+      try {
+        await GoogleDriveService.deleteFolder(user.userDetails.teacherDriveFolderId);
+      } catch (gdError: any) {
+        console.error(`Failed to delete Google Drive folder for user ${userId}:`, gdError);
+        // Log and proceed to delete from DB to maintain data integrity within the app
+      }
+    }
+
+    // 2. Delete the user from the database (details will be deleted due to onDelete: Cascade)
     await prisma.user.delete({
       where: { id: userId },
     });
 
-    return successResponse(null, 'تم حذف المستخدم بنجاح');
+    return successResponse(null, 'تم حذف المستخدم والمجلد المرتبط به بنجاح');
   } catch (error: any) {
     console.error('Error deleting user:', error);
     return errorResponse(error.message || 'فشل في حذف المستخدم', 500);

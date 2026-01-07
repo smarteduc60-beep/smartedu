@@ -226,11 +226,7 @@ export async function DELETE(
     // Check if exercise exists and user has access
     const existingExercise = await prisma.exercise.findUnique({
       where: { id: exerciseId },
-      include: {
-        lesson: {
-          select: { authorId: true },
-        },
-      },
+      select: { googleDriveFolderId: true, lesson: { select: { authorId: true } } }, // Select googleDriveFolderId and authorId from lesson
     });
 
     if (!existingExercise) {
@@ -245,6 +241,16 @@ export async function DELETE(
         { success: false, error: 'Forbidden' },
         { status: 403 }
       );
+    }
+
+    // 1. Delete associated Google Drive folder if exists
+    if (existingExercise.googleDriveFolderId) {
+      try {
+        await GoogleDriveService.deleteFolder(existingExercise.googleDriveFolderId);
+      } catch (gdError) {
+        console.error(`Failed to delete Google Drive folder for exercise ${exerciseId}:`, gdError);
+        // Log and proceed to delete from DB to maintain data integrity within the app
+      }
     }
 
     // Delete all submissions first

@@ -114,9 +114,12 @@ SelectLabel.displayName = SelectPrimitive.Label.displayName
 const SelectItem = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Item>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>
->(({ className, children, ...props }, ref) => (
+>(({ className, children, value, ...props }, ref) => (
   <SelectPrimitive.Item
     ref={ref}
+    // Radix UI throws an error if value is an empty string.
+    // We fallback to a safe string to prevent the app from crashing.
+    value={value === "" ? "_empty_" : value}
     className={cn(
       "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className

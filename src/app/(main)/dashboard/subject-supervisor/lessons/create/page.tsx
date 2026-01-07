@@ -12,10 +12,33 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Save, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Save, Loader2, Paperclip } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { RichTextEditor } from "@/components/editor";
+import { FileUpload } from "@/components/FileUpload";
+
+// دالة مساعدة لتحويل روابط Google Drive القديمة أو المباشرة إلى روابط Proxy
+const getProxiedUrl = (url: string) => {
+  if (!url) return "";
+  // إضافة لاحقة وهمية للصورة لكي يتعرف عليها مكون FileUpload والمتصفح كصورة
+  const suffix = "&t=image.jpg";
+  if (url.startsWith('/api/images/proxy')) return url.includes(suffix) ? url : `${url}${suffix}`;
+  
+  const idMatch = url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if ((url.includes('drive.google.com') || url.includes('googleusercontent.com')) && idMatch && idMatch[1]) {
+    return `/api/images/proxy?fileId=${idMatch[1]}${suffix}`;
+  }
+  
+  return url;
+};
 
 interface SupervisorInfo {
   subject: { id: number; name: string };
@@ -36,6 +59,12 @@ export default function CreateLessonPage() {
     pdfUrl: '',
     isPublic: false,
   });
+
+  // حالات للتحكم في ظهور المرفقات وحالة الرفع
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [showPdfUpload, setShowPdfUpload] = useState(false);
+  const [showPptUpload, setShowPptUpload] = useState(false);
+  const [isFileUploading, setIsFileUploading] = useState(false);
 
   useEffect(() => {
     const fetchSupervisorInfo = async () => {
@@ -246,42 +275,84 @@ export default function CreateLessonPage() {
               <Label htmlFor="lesson-type">جعله درسًا عامًا (متاح لجميع الطلاب في هذا المستوى)</Label>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="video-url">رابط الفيديو (يوتيوب) - اختياري</Label>
-              <Input 
-                id="video-url" 
-                placeholder="https://www.youtube.com/watch?v=..." 
-                value={formData.videoUrl}
-                onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-              /> 
-            </div>
+            {/* قسم المرفقات والقائمة المنسدلة */}
+            <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <Paperclip className="w-4 h-4" />
+                  المرفقات
+                </Label>
+                
+                <Select 
+                  disabled={isFileUploading || submitting} 
+                  onValueChange={(value) => {
+                    if (value === 'image') setShowImageUpload(true);
+                    if (value === 'pdf') setShowPdfUpload(true);
+                    if (value === 'ppt') setShowPptUpload(true);
+                  }}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="إضافة مرفق..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {!showImageUpload && <SelectItem value="image">صورة الدرس</SelectItem>}
+                    {!showPdfUpload && <SelectItem value="pdf">ملف الدرس (PDF)</SelectItem>}
+                    {!showPptUpload && <SelectItem value="ppt" disabled>ملف عرض تقديمي (PowerPoint) - قريباً</SelectItem>}
+                    <SelectItem value="video" disabled>فيديو (قريباً)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="image-url">رابط صورة الدرس - اختياري</Label>
-              <Input 
-                id="image-url" 
-                type="url"
-                placeholder="https://example.com/image.jpg" 
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground">
-                أدخل رابط صورة توضيحية (JPG, PNG, GIF)
-              </p>
-            </div>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="video-url">رابط الفيديو (يوتيوب)</Label>
+                  <Input 
+                    id="video-url" 
+                    placeholder="https://www.youtube.com/watch?v=..." 
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    disabled={submitting}
+                  /> 
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="pdf-url">رابط ملف PDF - اختياري</Label>
-              <Input 
-                id="pdf-url" 
-                type="url"
-                placeholder="https://example.com/document.pdf" 
-                value={formData.pdfUrl}
-                onChange={(e) => setFormData({ ...formData, pdfUrl: e.target.value })}
-              />
-              <p className="text-xs text-muted-foreground">
-                أدخل رابط ملف PDF مباشر
-              </p>
+                {showImageUpload && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                    <FileUpload
+                      label="صورة الدرس"
+                      accept="image/*"
+                      maxSizeMB={5}
+                      value={formData.imageUrl}
+                      onChange={(fileInfo) => {
+                        setFormData({ ...formData, imageUrl: getProxiedUrl(fileInfo?.fileUrl || "") });
+                      }}
+                      onUploadStatusChange={setIsFileUploading}
+                      description="قم بتحميل صورة الغلاف للدرس (JPG, PNG, GIF, حتى 5 ميجابايت)"
+                      stage={supervisorInfo?.level.stage.name}
+                      subject={supervisorInfo?.subject.name}
+                      teacher="Supervisor"
+                      lesson={formData.title}
+                    />
+                  </div>
+                )}
+
+                {showPdfUpload && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                    <FileUpload
+                      label="ملف الدرس (PDF)"
+                      accept=".pdf"
+                      maxSizeMB={10}
+                      value={formData.pdfUrl}
+                      onChange={(fileInfo) => setFormData({ ...formData, pdfUrl: fileInfo?.fileUrl || "" })}
+                      onUploadStatusChange={setIsFileUploading}
+                      description="قم بتحميل ملف PDF للدرس (حتى 10 ميجابايت)"
+                      stage={supervisorInfo?.level.stage.name}
+                      subject={supervisorInfo?.subject.name}
+                      teacher="Supervisor"
+                      lesson={formData.title}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end gap-2">
@@ -289,15 +360,15 @@ export default function CreateLessonPage() {
                 variant="outline" 
                 type="button"
                 onClick={() => router.back()}
-                disabled={submitting}
+                disabled={submitting || isFileUploading}
               >
                 إلغاء
               </Button>
-              <Button type="submit" disabled={submitting}>
-                {submitting ? (
+              <Button type="submit" disabled={submitting || isFileUploading}>
+                {submitting || isFileUploading ? (
                   <>
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    <span>جاري الحفظ...</span>
+                    <span>{isFileUploading ? "جاري رفع الملفات..." : "جاري الحفظ..."}</span>
                   </>
                 ) : (
                   <>

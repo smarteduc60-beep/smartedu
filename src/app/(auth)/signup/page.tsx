@@ -100,6 +100,18 @@ export default function SignupPage() {
   console.log('All levels:', levels);
   console.log('Filtered levels for stage:', levelsForStage);
 
+  // Filter subjects by stage and deduplicate by name
+  const uniqueSubjectsForStage = (() => {
+    const stageSubjects = subjects.filter(
+      subject => String(subject.stageId) === stage || String(subject.stage_id) === stage
+    );
+    const uniqueMap = new Map();
+    stageSubjects.forEach(s => {
+      if (!uniqueMap.has(s.name)) uniqueMap.set(s.name, s);
+    });
+    return Array.from(uniqueMap.values());
+  })();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -250,7 +262,7 @@ export default function SignupPage() {
                       <SelectValue placeholder="اختر المادة" />
                     </SelectTrigger>
                     <SelectContent>
-                      {subjects.filter(subject => String(subject.stageId) === stage || String(subject.stage_id) === stage).map(subject => (
+                      {uniqueSubjectsForStage.map(subject => (
                         <SelectItem key={subject.id} value={String(subject.id)}>
                           {subject.name}
                         </SelectItem>

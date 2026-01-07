@@ -13,21 +13,16 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'placehold.co', pathname: '/**' },
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
       { protocol: 'https', hostname: 'picsum.photos', pathname: '/**' },
+      // السماح بصور Google Drive
+      { protocol: 'https', hostname: 'drive.google.com', pathname: '/**' },
+      { protocol: 'https', hostname: '*.googleusercontent.com', pathname: '/**' },
     ],
   },
   experimental: {
-    appDir: true, // تفعيل App Router
     serverActions: {
       bodySizeLimit: '10mb',
     },
   },
-  // ✅ تحديد مجلد src كمصدر رئيسي
-  // هذا يضمن أن Next.js يتعرف على src/app دون الحاجة لنقل المجلد
-  srcDir: 'src',
 };
 
 export default nextConfig;
-
-
-
-

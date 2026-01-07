@@ -78,6 +78,9 @@ desktop.ini
 *.swo
 *~
 
+# تجاهل ملفات JSON لمنع تسريب مفاتيح Google Service Account
+*.json
+
 # ملفات مؤقتة
 tmp/
 temp/

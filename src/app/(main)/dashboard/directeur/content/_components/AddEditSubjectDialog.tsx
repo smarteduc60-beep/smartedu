@@ -26,7 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 interface AddEditSubjectDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (subject: Omit<Subject, 'id'> | Subject) => void;
+  onSave: (data: any) => void;
   subjectToEdit?: Subject | null;
   stages: Stage[];
   levels: Level[];
@@ -43,7 +43,7 @@ export default function AddEditSubjectDialog({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [stageId, setStageId] = useState<string | undefined>(undefined);
-  const [levelId, setLevelId] = useState<string | undefined>(undefined);
+  const [selectedLevelIds, setSelectedLevelIds] = useState<string[]>([]);
 
   // Filter levels by selected stage (stageId in camelCase from API)
   const filteredLevels = Array.isArray(levels) ? levels.filter(l => l && l.id && String(l.stageId) === stageId) : [];
@@ -53,15 +53,25 @@ export default function AddEditSubjectDialog({
       setName(subjectToEdit.name);
       setDescription(subjectToEdit.description);
       // Support both camelCase and snake_case
-      const subjectStageId = subjectToEdit.stageId || subjectToEdit.stage_id;
-      const subjectLevelId = subjectToEdit.levelId || subjectToEdit.level_id;
+      const subjectStageId = subjectToEdit.stageId || (subjectToEdit as any).stage_id;
       setStageId(subjectStageId ? String(subjectStageId) : undefined);
-      setLevelId(subjectLevelId ? String(subjectLevelId) : undefined);
+
+      // Populate selected levels for edit mode
+      let initialLevels: string[] = [];
+      if (subjectToEdit.levels && Array.isArray(subjectToEdit.levels)) {
+        initialLevels = subjectToEdit.levels.map((l: any) => String(l.id));
+      } else if (subjectToEdit.levelIds && Array.isArray(subjectToEdit.levelIds)) {
+        initialLevels = subjectToEdit.levelIds.map(String);
+      } else {
+        const subjectLevelId = subjectToEdit.levelId || (subjectToEdit as any).level_id;
+        if (subjectLevelId) initialLevels.push(String(subjectLevelId));
+      }
+      setSelectedLevelIds(initialLevels);
     } else {
       setName("");
       setDescription("");
       setStageId(undefined);
-      setLevelId(undefined);
+      setSelectedLevelIds([]);
     }
   }, [subjectToEdit, isOpen]);
 
@@ -70,15 +80,36 @@ export default function AddEditSubjectDialog({
       name,
       description,
       stageId: stageId ? Number(stageId) : undefined,
-      levelId: levelId ? Number(levelId) : undefined,
+      levelIds: selectedLevelIds.map(Number),
     };
     if (name) {
+      let payload;
       if (subjectToEdit) {
-        onSave({ ...subjectToEdit, ...subjectData });
+        payload = {
+          id: subjectToEdit.id,
+          ...subjectData,
+        };
       } else {
-        onSave(subjectData);
+        payload = subjectData;
       }
+      onSave(payload);
       onClose();
+    }
+  };
+
+  const toggleLevel = (id: string) => {
+    setSelectedLevelIds(prev =>
+      prev.includes(id)
+        ? prev.filter(item => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const toggleAllLevels = () => {
+    if (selectedLevelIds.length === filteredLevels.length) {
+      setSelectedLevelIds([]);
+    } else {
+      setSelectedLevelIds(filteredLevels.map(l => String(l.id)));
     }
   };
 
@@ -113,7 +144,7 @@ export default function AddEditSubjectDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
                 <Label htmlFor="stage-select">المرحلة</Label>
-                <Select value={stageId} onValueChange={setStageId}>
+                <Select value={stageId} onValueChange={(val) => { setStageId(val); setSelectedLevelIds([]); }}>
                     <SelectTrigger id="stage-select">
                         <SelectValue placeholder="اختر المرحلة" />
                     </SelectTrigger>
@@ -125,17 +156,44 @@ export default function AddEditSubjectDialog({
                 </Select>
             </div>
              <div className="space-y-2">
-                <Label htmlFor="level-select">المستوى (اختياري)</Label>
-                <Select value={levelId} onValueChange={setLevelId} disabled={!stageId}>
-                    <SelectTrigger id="level-select">
-                        <SelectValue placeholder="اختر المستوى" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {Array.isArray(filteredLevels) && filteredLevels.filter(l => l && l.id).map(level => (
-                            <SelectItem key={level.id} value={String(level.id)}>{level.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <Label htmlFor="level-select">المستوى</Label>
+                  <div className="border rounded-md p-3 max-h-[150px] overflow-y-auto space-y-2 bg-white">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="select-all"
+                        checked={filteredLevels.length > 0 && selectedLevelIds.length === filteredLevels.length}
+                        onChange={toggleAllLevels}
+                        disabled={!stageId || filteredLevels.length === 0}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                      />
+                      <label htmlFor="select-all" className="text-sm font-medium leading-none cursor-pointer">
+                        تحديد الكل
+                      </label>
+                    </div>
+                    <div className="h-px bg-gray-200 my-2" />
+                    {filteredLevels.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-2">اختر مرحلة أولاً</p>
+                    ) : (
+                      filteredLevels.map((level) => (
+                        <div key={level.id} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`level-${level.id}`}
+                            checked={selectedLevelIds.includes(String(level.id))}
+                            onChange={() => toggleLevel(String(level.id))}
+                            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                          />
+                          <label
+                            htmlFor={`level-${level.id}`}
+                            className="text-sm leading-none cursor-pointer"
+                          >
+                            {level.name}
+                          </label>
+                        </div>
+                      ))
+                    )}
+                  </div>
             </div>
           </div>
         </div>
