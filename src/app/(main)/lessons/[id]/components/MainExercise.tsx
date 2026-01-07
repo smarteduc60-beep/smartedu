@@ -257,7 +257,11 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
             {exercise.modelAnswer && (
               <div className="space-y-2">
                 <h4 className="font-semibold text-lg">الإجابة النموذجية:</h4>
-                <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div 
+                  className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800 select-none"
+                  onContextMenu={(e) => e.preventDefault()}
+                  style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}
+                >
                   <MathContent content={exercise.modelAnswer} />
                 </div>
               </div>
@@ -288,3 +292,13 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+            

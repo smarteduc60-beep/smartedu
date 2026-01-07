@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MainExercise from "./components/MainExercise";
 import SupportWithResultsExercise from "./components/SupportWithResultsExercise";
 import SupportOnlyExercise from "./components/SupportOnlyExercise";
+import MathContent from "@/components/MathContent";
 
 // دالة مساعدة لتحويل روابط Google Drive القديمة إلى روابط Proxy
 const getProxiedUrl = (url: string) => {
@@ -209,9 +210,9 @@ export default function LessonDetailPage({ params }: { params: Promise<{ id: str
           <CardTitle>محتوى الدرس</CardTitle>
         </CardHeader>
         <CardContent>
-          <div 
+          <MathContent 
+            content={lesson.content}
             className="prose prose-lg max-w-none dark:prose-invert text-foreground" 
-            dangerouslySetInnerHTML={{ __html: lesson.content }}
           />
         </CardContent>
       </Card>

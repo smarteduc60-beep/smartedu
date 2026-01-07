@@ -22,6 +22,34 @@ export default function MathPreviewBox({ content }: MathPreviewBoxProps) {
     // تحديث المحتوى
     previewRef.current.innerHTML = content;
 
+    // معالجة عناصر MathLive التي تم إنشاؤها بواسطة المحرر
+    const processMathLiveElements = () => {
+      if (!previewRef.current) return;
+
+      const mathElements = previewRef.current.querySelectorAll('span[data-type="math-live"]');
+      
+      mathElements.forEach((element) => {
+        const latex = element.getAttribute('data-latex') || element.textContent || '';
+        
+        if (latex) {
+          try {
+            const span = document.createElement('span');
+            span.className = 'math-inline';
+            if (element.className) span.className += ` ${element.className}`;
+            
+            katex.render(latex, span, {
+              throwOnError: false,
+              displayMode: false,
+            });
+            
+            element.replaceWith(span);
+          } catch (error) {
+            console.error('KaTeX render error for math-live element:', error);
+          }
+        }
+      });
+    };
+
     // معالجة LaTeX inline: \( ... \)
     const processInlineMath = () => {
       if (!previewRef.current) return;
@@ -164,6 +192,7 @@ export default function MathPreviewBox({ content }: MathPreviewBoxProps) {
       });
     };
 
+    processMathLiveElements();
     processBlockMath();
     processInlineMath();
   }, [content]);

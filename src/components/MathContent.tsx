@@ -54,85 +54,8 @@ export default function MathContent({ content, className = '' }: MathContentProp
       });
     };
 
-    // معالجة LaTeX inline: \( ... \)
-    const processInlineMath = () => {
-      if (!contentRef.current) return;
-      
-      const walker = document.createTreeWalker(
-        contentRef.current,
-        NodeFilter.SHOW_TEXT,
-        null
-      );
-
-      const nodesToReplace: { node: Node; matches: RegExpMatchArray[] }[] = [];
-      let currentNode: Node | null;
-
-      // البحث عن جميع النصوص التي تحتوي على LaTeX
-      while ((currentNode = walker.nextNode())) {
-        const text = currentNode.textContent || '';
-        const inlineMatches = Array.from(text.matchAll(/\\\((.*?)\\\)/g));
-        
-        if (inlineMatches.length > 0) {
-          nodesToReplace.push({ node: currentNode, matches: inlineMatches });
-        }
-      }
-
-      // استبدال LaTeX بـ KaTeX
-      nodesToReplace.forEach(({ node, matches }) => {
-        if (!node.parentNode) return;
-
-        const text = node.textContent || '';
-        const parts: (string | HTMLElement)[] = [];
-        let lastIndex = 0;
-
-        matches.forEach((match) => {
-          const fullMatch = match[0];
-          const mathContent = match[1];
-          const index = match.index || 0;
-
-          // إضافة النص قبل الصيغة الرياضية
-          if (index > lastIndex) {
-            parts.push(text.substring(lastIndex, index));
-          }
-
-          // إنشاء عنصر للصيغة الرياضية
-          const span = document.createElement('span');
-          span.className = 'math-inline';
-          try {
-            katex.render(mathContent, span, {
-              throwOnError: false,
-              displayMode: false,
-            });
-            parts.push(span);
-          } catch (error) {
-            console.error('KaTeX inline error:', error);
-            parts.push(fullMatch);
-          }
-
-          lastIndex = index + fullMatch.length;
-        });
-
-        // إضافة النص المتبقي
-        if (lastIndex < text.length) {
-          parts.push(text.substring(lastIndex));
-        }
-
-        // استبدال العقدة الأصلية بالعقد الجديدة
-        const fragment = document.createDocumentFragment();
-        parts.forEach((part) => {
-          if (typeof part === 'string') {
-            fragment.appendChild(document.createTextNode(part));
-          } else {
-            fragment.appendChild(part);
-          }
-        });
-
-        node.parentNode.replaceChild(fragment, node);
-      });
-    };
-
-    // معالجة LaTeX block: $$ ... $$
-    const processBlockMath = () => {
+    // دالة عامة لمعالجة النصوص واستبدال الأنماط
+    const processTextNodes = (regex: RegExp, displayMode: boolean) => {
       if (!contentRef.current) return;
       
       const walker = document.createTreeWalker(
@@ -145,11 +68,14 @@ export default function MathContent({ content, className = '' }: MathContentProp
       let currentNode: Node | null;
 
       while ((currentNode = walker.nextNode())) {
+        // تجاهل العقد التي هي بالفعل داخل math-inline أو math-block
+        if (currentNode.parentElement?.closest('.math-inline, .math-block')) continue;
+
         const text = currentNode.textContent || '';
-        const blockMatches = Array.from(text.matchAll(/\$\$(.*?)\$\$/g));
+        const matches = Array.from(text.matchAll(regex));
         
-        if (blockMatches.length > 0) {
-          nodesToReplace.push({ node: currentNode, matches: blockMatches });
+        if (matches.length > 0) {
+          nodesToReplace.push({ node: currentNode, matches });
         }
       }
 
@@ -169,16 +95,17 @@ export default function MathContent({ content, className = '' }: MathContentProp
             parts.push(text.substring(lastIndex, index));
           }
 
-          const div = document.createElement('div');
-          div.className = 'math-block text-center my-4';
+          const wrapper = document.createElement(displayMode ? 'div' : 'span');
+          wrapper.className = displayMode ? 'math-block text-center my-4' : 'math-inline';
+          
           try {
-            katex.render(mathContent, div, {
+            katex.render(mathContent, wrapper, {
               throwOnError: false,
-              displayMode: true,
+              displayMode: displayMode,
             });
-            parts.push(div);
+            parts.push(wrapper);
           } catch (error) {
-            console.error('KaTeX block error:', error);
+            console.error('KaTeX error:', error);
             parts.push(fullMatch);
           }
 
@@ -204,14 +131,23 @@ export default function MathContent({ content, className = '' }: MathContentProp
 
     // تنفيذ المعالجة
     processMathLiveElements(); // الأولوية للعناصر الصريحة من المحرر
-    processBlockMath();
-    processInlineMath();
+    
+    // LaTeX Display: \[ ... \]
+    processTextNodes(/\\\[([\s\S]*?)\\\]/g, true);
+    
+    // LaTeX Display: $$ ... $$
+    processTextNodes(/\$\$([\s\S]*?)\$\$/g, true);
+    
+    // LaTeX Inline: \( ... \)
+    processTextNodes(/\\\(([\s\S]*?)\\\)/g, false);
+    
   }, [content]);
 
   return (
     <div
       ref={contentRef}
       className={`prose prose-sm max-w-none math-content-rtl ${className}`}
+      dir="auto"
     />
   );
 }

@@ -117,7 +117,11 @@ export async function POST(request: NextRequest) {
         exerciseId: parseInt(exerciseId),
         answerText: answerText || null,
         answerRichContent: answerRichContent || null,
-        submissionFileUrl: submissionFileUrl || null,
+
+
+
+
+        
         attemptNumber: previousAttempts + 1,
         aiFeedback,
         aiScore: aiScore ? parseFloat(aiScore.toFixed(2)) : null,
