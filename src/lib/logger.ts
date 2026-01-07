@@ -23,7 +23,8 @@ export enum LogCategory {
   NOTIFICATION = 'NOTIFICATION',
   BACKUP = 'BACKUP',
   SYSTEM = 'SYSTEM',
-  AI = 'AI'
+  AI = 'AI',
+  DRIVE = 'DRIVE',
 }
 
 interface LogData {
