@@ -94,9 +94,20 @@ export default function BackupPage() {
           title: 'تم بنجاح',
           description: `تم إنشاء النسخة الاحتياطية: ${data.backup.filename}`,
         });
+
+        // Auto-download the file
+        if (data.backup.id) {
+          const link = document.createElement('a');
+          link.href = `/api/backup/${data.backup.id}`;
+          link.download = data.backup.filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
+
         fetchBackups();
       } else {
-        throw new Error(data.error);
+        throw new Error(data.details || data.error);
       }
     } catch (error: any) {
       toast({
@@ -258,6 +269,11 @@ export default function BackupPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
+                        <Button size="sm" variant="ghost" asChild>
+                          <a href={`/api/backup/${backup.id}`} download>
+                            <Download className="h-4 w-4" />
+                          </a>
+                        </Button>
                         <Button
                           size="sm"
                           variant="outline"
