@@ -88,7 +88,7 @@ export default function MathContent({ content, className = '' }: MathContentProp
 
         matches.forEach((match) => {
           const fullMatch = match[0];
-          const mathContent = match[1];
+          const mathContent = match[1]; // المحتوى دائمًا في المجموعة الأولى
           const index = match.index || 0;
 
           if (index > lastIndex) {
@@ -132,13 +132,11 @@ export default function MathContent({ content, className = '' }: MathContentProp
     // تنفيذ المعالجة
     processMathLiveElements(); // الأولوية للعناصر الصريحة من المحرر
     
-    // LaTeX Display: \[ ... \]
+    // LaTeX Display: $$...$$ and \[...\]
+    processTextNodes(/\$\$([\s\S]*?)\$\$/g, true);
     processTextNodes(/\\\[([\s\S]*?)\\\]/g, true);
     
-    // LaTeX Display: $$ ... $$
-    processTextNodes(/\$\$([\s\S]*?)\$\$/g, true);
-    
-    // LaTeX Inline: \( ... \)
+    // LaTeX Inline: \(...\)
     processTextNodes(/\\\(([\s\S]*?)\\\)/g, false);
     
   }, [content]);

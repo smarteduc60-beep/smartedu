@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useState, useRef } from "react";
 import { Label } from "@/components/ui/label";
+import MathContent from "@/components/MathContent";
 
 const initialState: SubmissionState = {};
 
@@ -119,7 +120,9 @@ export default function ExerciseSubmission({ exercise }: { exercise: Exercise })
           <CardContent className="space-y-4">
             <div>
               <h4 className="font-semibold mb-2">التقييم:</h4>
-              <p className="text-muted-foreground">{state.feedback}</p>
+              <div className="text-muted-foreground">
+                <MathContent content={state.feedback || ''} />
+              </div>
             </div>
              {state.score !== undefined && (
               <div>

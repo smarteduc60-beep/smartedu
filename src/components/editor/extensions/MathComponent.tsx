@@ -14,6 +14,7 @@ declare global {
 
 export default function MathComponent({ node, updateAttributes, selected, editor, getPos }: NodeViewProps) {
   const [isLibLoaded, setIsLibLoaded] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const mfRef = useRef<HTMLElement>(null);
   
   // استخدام refs لتخزين القيم المتغيرة وتجنب إعادة تشغيل الـ useEffect عند كل تغيير
@@ -62,6 +63,20 @@ export default function MathComponent({ node, updateAttributes, selected, editor
       if ((mf as any).value !== node.attrs.latex) {
         (mf as any).value = node.attrs.latex || '';
       }
+      
+      // التركيز تلقائياً إذا كانت المعادلة فارغة (عند الإنشاء الجديد)
+      if (!node.attrs.latex && editor.isEditable) {
+        setTimeout(() => {
+          // التأكد من أن العنصر لا يزال موجوداً ومتصلاً بالـ DOM قبل التركيز
+          if (mfRef.current && mfRef.current.isConnected) {
+            try {
+              mfRef.current.focus();
+            } catch (e) {
+              console.warn('Failed to focus math field:', e);
+            }
+          }
+        }, 50);
+      }
 
       // تحديث وضع القراءة (Read-Only) بناءً على حالة المحرر
       (mf as any).readOnly = !editor.isEditable;
@@ -74,6 +89,12 @@ export default function MathComponent({ node, updateAttributes, selected, editor
         if (e.key === 'Enter') {
           e.preventDefault();
           
+          // إخفاء لوحة المفاتيح عند الضغط على Enter
+          if (typeof window !== 'undefined' && (window as any).mathVirtualKeyboard) {
+            (window as any).mathVirtualKeyboard.hide();
+          }
+          mf.classList.add('hide-controls');
+
           const currentGetPos = getPosRef.current;
           const currentNode = nodeRef.current;
           const currentEditor = editorRef.current;
@@ -91,20 +112,38 @@ export default function MathComponent({ node, updateAttributes, selected, editor
 
       // إخفاء لوحة المفاتيح عند فقدان التركيز (النقر خارج المعادلة)
       const handleFocusOut = () => {
+        setIsFocused(false);
         if (typeof window !== 'undefined' && (window as any).mathVirtualKeyboard) {
           (window as any).mathVirtualKeyboard.hide();
         }
+          mf.classList.add('hide-controls');
+      };
+
+      // إظهار لوحة المفاتيح عند التركيز (الضغط داخل المربع)
+      const handleFocusIn = () => {
+        setIsFocused(true);
+        if (editor.isEditable && typeof window !== 'undefined' && (window as any).mathVirtualKeyboard) {
+          (window as any).mathVirtualKeyboard.show();
+        }
+        mf.classList.remove('hide-controls');
       };
 
       // إضافة مستمع الحدث
       mf.addEventListener('keydown', handleKeyDown);
       mf.addEventListener('input', handleInput);
       mf.addEventListener('focusout', handleFocusOut);
+      mf.addEventListener('focusin', handleFocusIn);
+
+      // إخفاء الأيقونات افتراضياً إذا لم يكن العنصر نشطاً
+      if (document.activeElement !== mf) {
+        mf.classList.add('hide-controls');
+      }
 
       return () => {
         mf.removeEventListener('keydown', handleKeyDown);
         mf.removeEventListener('input', handleInput);
         mf.removeEventListener('focusout', handleFocusOut);
+        mf.removeEventListener('focusin', handleFocusIn);
       };
     }
   }, [isLibLoaded, handleInput, editor.isEditable]); // تم تقليص الاعتمادات لتحسين الأداء والاستقرار
@@ -130,15 +169,22 @@ export default function MathComponent({ node, updateAttributes, selected, editor
 
   return (
     <NodeViewWrapper className="inline-block align-middle mx-1">
+      <style>{`
+        math-field.hide-controls::part(menu-toggle),
+        math-field.hide-controls::part(virtual-keyboard-toggle) {
+          display: none;
+        }
+      `}</style>
       <math-field
         ref={mfRef}
         style={{
           display: 'inline-block',
-          minWidth: '20px',
-          padding: '2px 4px',
+          minWidth: '30px', // زيادة العرض الأدنى ليسهل النقر عليه
+          padding: '4px 8px',
           borderRadius: '4px',
-          border: selected ? '2px solid #3b82f6' : '1px solid transparent', // تمييز أزرق عند التحديد
-          backgroundColor: selected ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+          // محاكاة مظهر Word: إطار رمادي وخلفية فاتحة عند التركيز أو التحديد أو إذا كانت فارغة
+          border: (selected || isFocused || !node.attrs.latex) ? '1px solid #94a3b8' : '1px solid transparent',
+          backgroundColor: (selected || isFocused || !node.attrs.latex) ? '#f1f5f9' : 'transparent',
           cursor: 'text',
           outline: 'none',
         }}

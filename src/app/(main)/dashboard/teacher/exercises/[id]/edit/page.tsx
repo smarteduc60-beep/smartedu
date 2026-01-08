@@ -21,11 +21,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLessons, useExercises } from "@/hooks";
-import { Save, UploadCloud, Loader2 } from "lucide-react";
+import { Save, UploadCloud, Loader2, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { RichTextEditor } from "@/components/editor";
 
 export default function EditExercisePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -33,6 +33,7 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
   const { toast } = useToast();
   const { lessons, isLoading: lessonsLoading } = useLessons({
     authorId: session?.user?.id,
+    include: { subject: true, level: true },
   });
   const { updateExercise } = useExercises();
 
@@ -44,6 +45,7 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
   const [modelAnswer, setModelAnswer] = useState("");
   const [questionFileUrl, setQuestionFileUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
 
   useEffect(() => {
     const fetchExercise = async () => {
@@ -60,7 +62,7 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
         const exerciseData = data.data;
         setExercise(exerciseData);
         setLessonId(String(exerciseData.lessonId));
-        setQuestion(exerciseData.question);
+        setQuestion(exerciseData.questionRichContent || exerciseData.question);
         setModelAnswer(exerciseData.modelAnswer);
         setQuestionFileUrl(exerciseData.questionFileUrl || "");
       } catch (error) {
@@ -72,6 +74,57 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
     };
     fetchExercise();
   }, [params]);
+
+  const handleGenerateAnswer = async () => {
+    if (!question.trim()) {
+      toast({
+        title: "خطأ",
+        description: "يرجى كتابة نص السؤال أولاً قبل توليد الإجابة.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingAnswer(true);
+    try {
+      const selectedLesson = Array.isArray(lessons) ? lessons.find((l: any) => String(l.id) === lessonId) : null;
+      
+      const response = await fetch('/api/ai/generate-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: question,
+          subject: selectedLesson?.subject?.name || '',
+          level: selectedLesson?.level?.name || '',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // تحويل صيغ LaTeX إلى تنسيق MathLive للمحرر
+        const processedAnswer = result.data.answer
+          .replace(/(\$\$|\\\[)([\s\S]*?)(\$\$|\\\])/g, (match: string, start: string, tex: string) => `<span data-type="math-live" data-latex="${tex.trim()}"></span>`)
+          .replace(/(\\\(|\\\\\()([\s\S]*?)(\\\)|\\\\\))/g, (match: string, start: string, tex: string) => `<span data-type="math-live" data-latex="${tex.trim()}"></span>`);
+        
+        setModelAnswer(processedAnswer);
+        toast({
+          title: "تم بنجاح",
+          description: "تم توليد الإجابة النموذجية. يمكنك مراجعتها وتعديلها.",
+        });
+      } else {
+        throw new Error(result.error || "فشل في توليد الإجابة من الذكاء الاصطناعي");
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الذكاء الاصطناعي",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingAnswer(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,9 +142,10 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
     const result = await updateExercise(Number(exerciseId), {
       lessonId: parseInt(lessonId),
       question,
+      questionRichContent: question,
       modelAnswer,
       questionFileUrl: questionFileUrl || undefined,
-    });
+    } as any);
 
     setIsSubmitting(false);
 
@@ -159,12 +213,10 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
 
             <div className="space-y-2">
               <Label htmlFor="question">نص السؤال *</Label>
-              <Textarea 
-                id="question" 
-                value={question} 
-                onChange={(e) => setQuestion(e.target.value)}
-                rows={5}
-                required
+              <RichTextEditor 
+                content={question} 
+                onChange={setQuestion}
+                placeholder="اكتب نص السؤال هنا..."
               />
             </div>
 
@@ -198,13 +250,27 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="model-answer">الإجابة النموذجية *</Label>
-              <Textarea 
-                id="model-answer" 
-                value={modelAnswer}
-                onChange={(e) => setModelAnswer(e.target.value)}
-                rows={5}
-                required
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="model-answer">الإجابة النموذجية *</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateAnswer}
+                  disabled={isGeneratingAnswer || !question}
+                >
+                  {isGeneratingAnswer ? (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  )}
+                  توليد بالذكاء الاصطناعي
+                </Button>
+              </div>
+              <RichTextEditor 
+                content={modelAnswer}
+                onChange={setModelAnswer}
+                placeholder="اكتب الإجابة النموذجية هنا..."
               />
             </div>
 

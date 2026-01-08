@@ -35,22 +35,29 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
   const [attempts, setAttempts] = useState<number>(0);
   const [bestScore, setBestScore] = useState<number | null>(null);
 
+
   useEffect(() => {
     fetchSubmissionHistory();
   }, [exercise.id]);
 
-  const fetchSubmissionHistory = async () => {
+  const fetchSubmissionHistory = async (preferredSubmissionId?: string | number) => {
     try {
       const response = await fetch(`/api/submissions?exerciseId=${exercise.id}&studentId=${studentId}`);
       const result = await response.json();
       
       if (result.success && result.submissions?.length > 0) {
-        const sorted = result.submissions.sort((a: any, b: any) => 
+        const sorted = [...result.submissions].sort((a: any, b: any) => 
           (b.aiScore || 0) - (a.aiScore || 0)
         );
         setAttempts(result.submissions.length);
         setBestScore(sorted[0]?.aiScore || null);
-        setSubmission(sorted[0]);
+        
+        if (preferredSubmissionId) {
+          const current = result.submissions.find((s: any) => s.id === preferredSubmissionId);
+          setSubmission(current || sorted[0]);
+        } else {
+          setSubmission(sorted[0]);
+        }
       }
     } catch (error) {
       console.error('Error fetching submission history:', error);
@@ -104,15 +111,16 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
           method: 'POST',
         });
 
-        const aiResult = await aiResponse.json();
+        let aiResult;
+        try {
+          aiResult = await aiResponse.json();
+        } catch (error) {
+          console.error("AI Evaluation Error:", error);
+          aiResult = { success: false, message: "فشل الاتصال بخدمة الذكاء الاصطناعي (Timeout)" };
+        }
 
-        if (aiResult.success) {
-          setSubmission(aiResult.data);
-          setAttempts(attempts + 1);
-          
-          if (!bestScore || (aiResult.data.aiScore > bestScore)) {
-            setBestScore(aiResult.data.aiScore);
-          }
+        if (aiResult && aiResult.success) {
+          await fetchSubmissionHistory(result.data.id);
 
           toast({
             title: "تم التصحيح",
@@ -122,6 +130,13 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
           if (onSubmissionComplete) {
             onSubmissionComplete();
           }
+        } else {
+          toast({
+            title: "تنبيه",
+            description: aiResult?.message || "تم حفظ الإجابة ولكن فشل التصحيح الآلي.",
+            variant: "warning",
+          });
+          await fetchSubmissionHistory(result.data.id);
         }
       } else {
         throw new Error(result.error);
@@ -271,7 +286,7 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
               <div className="space-y-2">
                 <h4 className="font-semibold">ملاحظات الذكاء الاصطناعي:</h4>
                 <div className="bg-muted p-4 rounded-lg">
-                  <p className="whitespace-pre-wrap">{submission.aiFeedback}</p>
+                  <MathContent content={submission.aiFeedback} />
                 </div>
               </div>
             )}

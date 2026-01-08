@@ -25,6 +25,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import MathContent from "@/components/MathContent";
+
+interface AiEvaluationResult {
+  score: number;
+  feedback: string;
+  strengths?: string[];
+  weaknesses?: string[];
+}
 
 export default function ReviewSubmissionPage({ params }: { params: { id: string } }) {
   const { id } = params;
@@ -36,14 +44,14 @@ export default function ReviewSubmissionPage({ params }: { params: { id: string 
   const [isSavingManualGrade, setIsSavingManualGrade] = useState(false);
 
   const [isEvaluatingAI, setIsEvaluatingAI] = useState(false);
-  const [aiEvaluationResult, setAiEvaluationResult] = useState<any | null>(null);
+  const [aiEvaluationResult, setAiEvaluationResult] = useState<AiEvaluationResult | null>(null);
 
   useEffect(() => {
     if (submission) {
       setTeacherNotes(submission.teacherNotes || "");
       // Prioritize finalScore, then aiScore, then null
       setFinalScore(submission.finalScore ?? submission.aiScore ?? null); 
-      if (submission.aiFeedback && submission.aiScore) {
+      if (submission.aiFeedback && submission.aiScore != null) {
         setAiEvaluationResult({
           score: submission.aiScore,
           feedback: submission.aiFeedback,
@@ -142,13 +150,28 @@ export default function ReviewSubmissionPage({ params }: { params: { id: string 
       const result = await response.json();
 
       if (response.ok && result.success) {
-        setAiEvaluationResult(result.data); // Store AI's full evaluation
-        setFinalScore(result.data.score); // Pre-fill final score with AI score
+        // تطبيع البيانات القادمة من AI لضمان استقرار الواجهة
+        // هذا يضمن العمل سواء عاد الرد بصيغة مصفوفات أو نصوص، وبمسميات مختلفة
+        const rawData = result.data;
+        const normalizedData: AiEvaluationResult = {
+          score: rawData.score,
+          // توسيع نطاق البحث عن الملاحظات ليشمل teacher_note و explanation
+          feedback: rawData.feedback || rawData.evaluation || rawData.teacher_note || rawData.explanation || rawData.notes || "",
+          strengths: Array.isArray(rawData.strengths) 
+            ? rawData.strengths 
+            : (typeof rawData.strengths === 'string' ? [rawData.strengths] : []),
+          weaknesses: Array.isArray(rawData.weaknesses) 
+            ? rawData.weaknesses 
+            : (Array.isArray(rawData.mistakes) ? rawData.mistakes : (typeof rawData.mistakes === 'string' ? [rawData.mistakes] : [])),
+        };
+
+        setAiEvaluationResult(normalizedData); 
+        setFinalScore(normalizedData.score); 
 
         // Update the submission in the database with AI results
         await updateSubmission({
-          aiScore: result.data.score,
-          aiFeedback: result.data.feedback,
+          aiScore: normalizedData.score,
+          aiFeedback: normalizedData.feedback,
           // Optionally save strengths/weaknesses if schema supports it
         });
 
@@ -159,10 +182,11 @@ export default function ReviewSubmissionPage({ params }: { params: { id: string 
       } else {
         throw new Error(result.error || "فشل في تقييم الإجابة بواسطة الذكاء الاصطناعي");
       }
-    } catch (err: any) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "حدث خطأ غير متوقع أثناء التقييم";
       toast({
         title: "خطأ في التقييم بالذكاء الاصطناعي",
-        description: err.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -191,10 +215,11 @@ export default function ReviewSubmissionPage({ params }: { params: { id: string 
       } else {
         throw new Error(updateError || "فشل في حفظ التقييم اليدوي.");
       }
-    } catch (err: any) {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "حدث خطأ غير متوقع أثناء الحفظ";
       toast({
         title: "خطأ في الحفظ",
-        description: err.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -218,7 +243,7 @@ export default function ReviewSubmissionPage({ params }: { params: { id: string 
               <CardTitle className="flex items-center gap-2"><FileQuestion /> <span>التمرين</span></CardTitle>
             </CardHeader>
             <CardContent>
-              <div dangerouslySetInnerHTML={{ __html: exercise.questionRichContent }} className="text-lg font-medium mb-2" />
+              <MathContent content={exercise.questionRichContent} className="text-lg font-medium mb-2" />
               {/* <p className="text-lg font-medium">{exercise.questionRichContent}</p> */}
               {/* exercise.question_file_url should be exercise.fileUrl in the new schema */}
               {/* {exercise.fileUrl && (
@@ -234,7 +259,7 @@ export default function ReviewSubmissionPage({ params }: { params: { id: string 
               <Separator className="my-4" />
               <Label className="text-sm text-muted-foreground">الإجابة النموذجية:</Label>
               {exercise.modelAnswer ? (
-                 <div dangerouslySetInnerHTML={{ __html: exercise.modelAnswer }} className="text-sm" />
+                 <MathContent content={exercise.modelAnswer} className="text-sm" />
               ) : (
                 <p className="text-sm text-muted-foreground">لا يوجد حل نموذجي لهذا التمرين.</p>
               )}
@@ -247,7 +272,7 @@ export default function ReviewSubmissionPage({ params }: { params: { id: string 
             </CardHeader>
             <CardContent>
               {submission.answer ? (
-                <div dangerouslySetInnerHTML={{ __html: submission.answer }} className="mb-4 p-4 bg-muted rounded-md" />
+                <MathContent content={submission.answer} className="mb-4 p-4 bg-muted rounded-md" />
               ) : (
                 <p className="text-muted-foreground">لم يقدم الطالب إجابة نصية.</p>
               )}
@@ -314,7 +339,7 @@ export default function ReviewSubmissionPage({ params }: { params: { id: string 
                   <Label>ملاحظات AI</Label>
                   <div className="mt-1 text-sm text-muted-foreground">
                     {displayedAiFeedback ? (
-                      <div dangerouslySetInnerHTML={{ __html: displayedAiFeedback }} />
+                      <MathContent content={displayedAiFeedback} />
                     ) : (
                       "لا توجد ملاحظات من الذكاء الاصطناعي."
                     )}

@@ -107,9 +107,20 @@ export default function RichTextEditor({
   // تحديث محتوى المحرر عندما يتغير content من الخارج (مثل توليد AI)
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+      // استخدام setTimeout لتجنب خطأ flushSync أثناء دورة حياة React
+      setTimeout(() => {
+        if (editor && !editor.isDestroyed && content !== editor.getHTML()) {
+          editor.commands.setContent(content);
+        }
+      }, 0);
     }
   }, [content, editor]);
+
+  const insertMathSymbol = useCallback((latex: string) => {
+    if (editor) {
+      editor.chain().focus().insertContent({ type: 'mathLive', attrs: { latex } }).run();
+    }
+  }, [editor]);
 
   const handleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -465,6 +476,75 @@ export default function RichTextEditor({
             disabled={isUploading}
           >
             <Sigma className="h-4 w-4" />
+          </Button>
+
+          {/* Number Sets - مجموعات الأعداد */}
+          <div className="w-px h-8 bg-border mx-1" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => insertMathSymbol('\\mathbb{N}')}
+            title="الأعداد الطبيعية (N)"
+            className="font-serif font-bold w-7 px-0"
+            disabled={isUploading}
+          >
+            N
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => insertMathSymbol('\\mathbb{Z}')}
+            title="الأعداد الصحيحة (Z)"
+            className="font-serif font-bold w-7 px-0"
+            disabled={isUploading}
+          >
+            Z
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => insertMathSymbol('\\mathbb{D}')}
+            title="الأعداد العشرية (D)"
+            className="font-serif font-bold w-7 px-0"
+            disabled={isUploading}
+          >
+            D
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => insertMathSymbol('\\mathbb{Q}')}
+            title="الأعداد الناطقة (Q)"
+            className="font-serif font-bold w-7 px-0"
+            disabled={isUploading}
+          >
+            Q
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => insertMathSymbol('\\mathbb{R}')}
+            title="الأعداد الحقيقية (R)"
+            className="font-serif font-bold w-7 px-0"
+            disabled={isUploading}
+          >
+            R
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => insertMathSymbol('\\mathbb{C}')}
+            title="الأعداد المركبة (C)"
+            className="font-serif font-bold w-7 px-0"
+            disabled={isUploading}
+          >
+            C
           </Button>
 
           {/* Undo/Redo */}

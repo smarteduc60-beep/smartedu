@@ -102,13 +102,35 @@ export default function CreateExercisePage() {
         }),
       });
 
-      const result = await response.json();
+
+
+
+            const result = await response.json();
 
       if (response.ok && result.success) {
-        setModelAnswer(result.data.answer);
+        // تحويل صيغ LaTeX إلى تنسيق MathLive للمحرر
+        const processedAnswer = result.data.answer
+          .replace(/(\$\$|\\\[)([\s\S]*?)(\$\$|\\\])/g, (match: string, start: string, tex: string) => `<span data-type="math-live" data-latex="${tex.trim()}"></span>`)
+          .replace(/(\\\(|\\\\\()([\s\S]*?)(\\\)|\\\\\))/g, (match: string, start: string, tex: string) => `<span data-type="math-live" data-latex="${tex.trim()}"></span>`);
+
+        setModelAnswer(processedAnswer);
         toast({
           title: "تم بنجاح",
           description: "تم توليد الإجابة النموذجية. يمكنك مراجعتها وتعديلها.",
+
+
+
+
+
+      
+
+
+
+
+
+
+
+
         });
       } else {
         throw new Error(result.error || "فشل في توليد الإجابة من الذكاء الاصطناعي");
