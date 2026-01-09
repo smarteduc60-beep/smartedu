@@ -1,6 +1,9 @@
+
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  output: 'standalone', // ✅ هذا هو الحل
+
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -12,7 +15,8 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'placehold.co', pathname: '/**' },
       { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
       { protocol: 'https', hostname: 'picsum.photos', pathname: '/**' },
-      // السماح بصور Google Drive
+
+      // Google Drive
       { protocol: 'https', hostname: 'drive.google.com', pathname: '/**' },
       { protocol: 'https', hostname: '*.googleusercontent.com', pathname: '/**' },
     ],
