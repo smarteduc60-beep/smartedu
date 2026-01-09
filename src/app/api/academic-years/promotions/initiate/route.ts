@@ -43,36 +43,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'السنة الدراسية غير موجودة' }, { status: 404 });
     }
 
-    // Get all students with their parents and current level
-    const parentChildLinks = await prisma.parentChildLink.findMany({
-      include: {
-        parent: {
-          include: { role: true }
-        },
-        child: {
-          include: {
-            role: true,
-            userDetails: {
-              include: {
-                level: {
-                  include: {
-                    stage: true
-                  }
-                }
-              }
-            }
-          }
+    // Get all students eligible for promotion (students with a level assigned)
+    const students = await prisma.user.findMany({
+      where: {
+        role: { name: 'student' },
+        userDetails: {
+          levelId: { not: null }
         }
       },
-      where: {
-        child: {
-          role: {
-            name: 'student'
-          },
-          userDetails: {
-            levelId: {
-              not: null
+      include: {
+        userDetails: {
+          include: {
+            level: {
+              include: { stage: true }
             }
+          }
+        },
+        parentLinks: {
+          include: {
+            parent: true
           }
         }
       }
@@ -80,10 +69,9 @@ export async function POST(req: NextRequest) {
 
     let messagesCreated = 0;
     let promotionsCreated = 0;
+    let studentAlertsSent = 0;
 
-    for (const link of parentChildLinks) {
-      const student = link.child;
-      const parent = link.parent;
+    for (const student of students) {
       const currentLevel = student.userDetails?.level;
 
       if (!currentLevel) continue;
@@ -99,6 +87,43 @@ export async function POST(req: NextRequest) {
       });
 
       if (existingPromotion) continue;
+
+      // Determine parent (take the first one if available)
+      const parent = student.parentLinks[0]?.parent;
+
+      if (!parent) {
+        // Student has no parent linked - Send alert to student
+        await prisma.message.create({
+          data: {
+            senderId: session.user.id,
+            recipientId: student.id,
+            subject: '⚠️ تنبيه هام: ربط حساب ولي الأمر مطلوب للترقية',
+            content: `
+<div style="direction: rtl; text-align: right; font-family: Arial, sans-serif;">
+  <p>عزيزي الطالب <strong>${student.firstName}</strong>،</p>
+  <p>نود إعلامك بأن عملية الترقية للسنة الدراسية القادمة قد بدأت.</p>
+  <p style="color: #e11d48; font-weight: bold;">
+    لإتمام عملية الترقية، يجب عليك ربط حسابك بحساب ولي أمرك في أقرب وقت ممكن.
+  </p>
+  <p>يرجى الطلب من ولي أمرك إنشاء حساب واستخدام كود الربط الخاص بك، أو تزويد الإدارة ببيانات ولي الأمر.</p>
+  <p>تحياتنا،<br/>إدارة المدرسة</p>
+</div>
+            `.trim()
+          }
+        });
+
+        await prisma.notification.create({
+          data: {
+            userId: student.id,
+            title: '⚠️ ربط ولي الأمر مطلوب',
+            message: 'يجب ربط حسابك بولي الأمر لإتمام عملية الترقية السنوية.',
+            type: 'system_alert'
+          }
+        });
+        
+        studentAlertsSent++;
+        continue; // Skip promotion creation
+      }
 
       // Find next level
       const nextLevel = await prisma.level.findFirst({
@@ -204,10 +229,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `تم إرسال ${messagesCreated} رسالة لأولياء الأمور`,
+      message: `تم إرسال ${messagesCreated} رسالة لأولياء الأمور، وتنبيه ${studentAlertsSent} طالب لعدم وجود ولي أمر.`,
       stats: {
         messagesCreated,
-        promotionsCreated
+        promotionsCreated,
+        studentAlertsSent
       }
     });
 

@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MathExtension } from './extensions/MathExtension';
+import { TextDirection } from './extensions/TextDirection';
 import { uploadFileToDrive } from '@/lib/upload'; // Import the new upload utility
 import { Loader2 } from 'lucide-react'; // Import Loader2 icon
 
@@ -91,6 +92,7 @@ export default function RichTextEditor({
         multicolor: true,
       }),
       MathExtension,
+      TextDirection,
     ],
     content,
     editable,
@@ -178,20 +180,7 @@ export default function RichTextEditor({
 
   const setTextDirection = useCallback((direction: 'ltr' | 'rtl') => {
     if (editor) {
-      // الحصول على العنصر الرئيسي للمحرر
-      const editorElement = editor.view.dom;
-      
-      // تطبيق الاتجاه على المحرر بالكامل
-      if (direction === 'rtl') {
-        editorElement.setAttribute('dir', 'rtl');
-        editorElement.style.textAlign = 'right';
-      } else {
-        editorElement.setAttribute('dir', 'ltr');
-        editorElement.style.textAlign = 'left';
-      }
-      
-      // إعادة التركيز على المحرر
-      editor.commands.focus();
+      editor.chain().focus().setTextDirection(direction).run();
     }
   }, [editor]);
 

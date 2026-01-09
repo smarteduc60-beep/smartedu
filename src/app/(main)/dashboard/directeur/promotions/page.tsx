@@ -42,7 +42,7 @@ import {
   Users,
   Calendar,
   Plus,
-  RefreshCw
+  RefreshCwngle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -100,11 +100,21 @@ interface Promotion {
   } | null;
 }
 
+interface SkippedStudent {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  levelName: string;
+  hasParent: boolean;
+}
+
 export default function PromotionsPage() {
   const [years, setYears] = useState<AcademicYear[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>('');
   const [stats, setStats] = useState<PromotionStats | null>(null);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [skippedStudents, setSkippedStudents] = useState<SkippedStudent[]>([]);
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -162,6 +172,7 @@ export default function PromotionsPage() {
         const data = await response.json();
         setStats(data.stats);
         setPromotions(data.promotions);
+        setSkippedStudents(data.skippedStudents || []);
       }
     } catch (error) {
       toast({
@@ -388,6 +399,56 @@ export default function PromotionsPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Skipped Students Warning */}
+          {skippedStudents.length > 0 && (
+            <Card className="border-yellow-500 bg-yellow-50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-yellow-700 text-lg">
+                  <AlertTriangle className="h-5 w-5" />
+                  طلاب غير مؤهلين للترقية (ينقصهم ولي أمر) ({skippedStudents.length})
+                </CardTitle>
+                <CardDescription className="text-yellow-600">
+                  هؤلاء الطلاب لم يتم إنشاء طلب ترقية لهم لأنهم غير مرتبطين بولي أمر. تم إرسال تنبيه لهم.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>الطالب</TableHead>
+                      <TableHead>المستوى الحالي</TableHead>
+                      <TableHead>السبب</TableHead>
+                      <TableHead>الإجراء</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {skippedStudents.map(student => (
+                      <TableRow key={student.id}>
+                        <TableCell>
+                          <div className="font-medium">{student.firstName} {student.lastName}</div>
+                          <div className="text-sm text-muted-foreground">{student.email}</div>
+                        </TableCell>
+                        <TableCell>{student.levelName}</TableCell>
+                        <TableCell>
+                          {!student.hasParent ? (
+                            <Badge variant="destructive">لا يوجد ولي أمر</Badge>
+                          ) : (
+                            <Badge variant="outline">سبب آخر</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="link" size="sm" asChild className="px-0">
+                            <a href={`/dashboard/directeur/users?search=${student.email}`}>ربط بولي أمر</a>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Action Button */}
           {stats.total === 0 && (

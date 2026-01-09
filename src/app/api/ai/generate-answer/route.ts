@@ -128,6 +128,18 @@ Model Answer (MUST BE IN ${questionLanguage}, concise, complete, in HTML format 
       ).join('');
     }
 
+    // تحديد اتجاه النص بناءً على المحتوى
+    const isArabicAnswer = /[\u0600-\u06FF]/.test(cleanedAnswer);
+    if (!isArabicAnswer) {
+      // إذا لم يكن النص عربياً، نضيف سمات الاتجاه لوسوم الفقرات والعناوين والقوائم
+      cleanedAnswer = cleanedAnswer.replace(/<(p|ul|ol|h[1-6])(?![^>]*dir=)/gi, '<$1 dir="ltr" style="text-align: left"');
+      
+      // إذا كان النص لا يحتوي على وسوم كتلية، نغلفه في فقرة
+      if (!cleanedAnswer.includes('<p') && !cleanedAnswer.includes('<ul') && !cleanedAnswer.includes('<h')) {
+         cleanedAnswer = `<p dir="ltr" style="text-align: left">${cleanedAnswer}</p>`;
+      }
+    }
+
     // 7. إرجاع الإجابة المولدة
     return successResponse({ 
       answer: cleanedAnswer,

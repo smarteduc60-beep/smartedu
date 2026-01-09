@@ -173,6 +173,13 @@ REMEMBER: Correct answer = High score, regardless of explanation length!`;
     // التأكد من أن الدرجة في النطاق الصحيح
     evaluation.score = Math.max(0, Math.min(maxScore, evaluation.score));
 
+    // معالجة اتجاه النص للملاحظات
+    let feedbackContent = evaluation.feedback || 'تم التقييم بنجاح';
+    const isFeedbackArabic = /[\u0600-\u06FF]/.test(feedbackContent);
+    if (!isFeedbackArabic) {
+        feedbackContent = `<div dir="ltr" style="text-align: left">${feedbackContent}</div>`;
+    }
+
     // 9. إرجاع النتيجة
     return successResponse({
       score: evaluation.score,
@@ -181,7 +188,7 @@ REMEMBER: Correct answer = High score, regardless of explanation length!`;
       rating: evaluation.rating || 'غير محدد',
       strengths: Array.isArray(evaluation.strengths) ? evaluation.strengths : [],
       weaknesses: Array.isArray(evaluation.weaknesses) ? evaluation.weaknesses : [],
-      feedback: evaluation.feedback || 'تم التقييم بنجاح',
+      feedback: feedbackContent,
       evaluatedAt: new Date().toISOString(),
     });
 

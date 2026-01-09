@@ -82,6 +82,29 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: 'desc' }
     });
 
+    // Get students who were skipped (no promotion record for this year)
+    const skippedStudents = await prisma.user.findMany({
+      where: {
+        role: { name: 'student' },
+        userDetails: { levelId: { not: null } },
+        studentPromotions: {
+          none: { academicYearId }
+        }
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        userDetails: {
+          select: { level: { select: { name: true } } }
+        },
+        parentLinks: {
+          take: 1
+        }
+      }
+    });
+
     return NextResponse.json({
       stats: {
         total,
@@ -91,7 +114,15 @@ export async function GET(req: NextRequest) {
         completed,
         responseRate: total > 0 ? Math.round(((approved + rejected) / total) * 100) : 0
       },
-      promotions
+      promotions,
+      skippedStudents: skippedStudents.map(s => ({
+        id: s.id,
+        firstName: s.firstName,
+        lastName: s.lastName,
+        email: s.email,
+        levelName: s.userDetails?.level?.name,
+        hasParent: s.parentLinks.length > 0
+      }))
     });
 
   } catch (error: any) {
