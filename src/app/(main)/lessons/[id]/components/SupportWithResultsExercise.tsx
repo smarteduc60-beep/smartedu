@@ -118,11 +118,9 @@ export default function SupportWithResultsExercise({ exercise }: SupportWithResu
           </div>
         </CardHeader>
         <CardContent>
-          {exercise.questionRichContent ? (
-            <MathContent content={exercise.questionRichContent} />
-          ) : (
-            <p className="whitespace-pre-wrap">{exercise.question}</p>
-          )}
+          <MathContent 
+            content={exercise.questionRichContent || (exercise.question || '').replace(/\n/g, '<br />')} 
+          />
         </CardContent>
       </Card>
 

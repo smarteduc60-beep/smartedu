@@ -11,9 +11,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await requireAuth();
+    const session = await requireAuth();
 
-    if (!user) {
+    if (!session || !session.user) {
       console.error('[API - Lessons ID - GET] Authentication failed: User is null');
       return errorResponse('Authentication failed: User is null', 401);
     }
@@ -50,9 +50,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-     const user = await requireAuth();
+     const session = await requireAuth();
 
-    if (!user) {
+    if (!session || !session.user) {
       console.error('[API - Lessons ID - PUT] Authentication failed: User is null');
       return errorResponse('Authentication failed: User is null', 401);
     }
@@ -77,15 +77,15 @@ export async function PUT(
         return errorResponse('الدرس غير موجود', 404);
     }
 
-    if (!user || !user.id) {
+    if (!session.user.id) {
       return errorResponse('المستخدم غير معرف. يرجى تسجيل الدخول.', 401);
     }
 
-    console.log(`[DEBUG] Update Lesson: User ID (${user.id}) vs Author ID (${existingLesson.authorId})`);
+    console.log(`[DEBUG] Update Lesson: User ID (${session.user.id}) vs Author ID (${existingLesson.authorId})`);
 
     // التحقق من أن المستخدم هو صاحب الدرس
-    if (existingLesson.authorId && existingLesson.authorId !== user.id) {
-      return errorResponse(`غير مصرح لك بتعديل هذا الدرس. (المستخدم: ${user.id}، المؤلف: ${existingLesson.authorId})`, 403);
+    if (existingLesson.authorId && existingLesson.authorId !== session.user.id) {
+      return errorResponse(`غير مصرح لك بتعديل هذا الدرس. (المستخدم: ${session.user.id}، المؤلف: ${existingLesson.authorId})`, 403);
     }
 
     const updatedLesson = await prisma.lesson.update({
@@ -114,9 +114,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await requireAuth();
+    const session = await requireAuth();
 
-    if (!user) {
+    if (!session || !session.user) {
       console.error('[API - Lessons ID - DELETE] Authentication failed: User is null');
       return errorResponse('Authentication failed: User is null', 401);
     }
@@ -137,14 +137,14 @@ export async function DELETE(
         return errorResponse('الدرس غير موجود', 404);
     }
 
-    if (!user || !user.id) {
+    if (!session.user.id) {
       return errorResponse('المستخدم غير معرف. يرجى تسجيل الدخول.', 401);
     }
 
-    console.log(`[DEBUG] Delete Lesson: User ID (${user.id}) vs Author ID (${existingLesson.authorId})`);
+    console.log(`[DEBUG] Delete Lesson: User ID (${session.user.id}) vs Author ID (${existingLesson.authorId})`);
 
-    if (existingLesson.authorId && existingLesson.authorId !== user.id) {
-      return errorResponse(`غير مصرح لك بحذف هذا الدرس. (المستخدم: ${user.id}، المؤلف: ${existingLesson.authorId})`, 403);
+    if (existingLesson.authorId && existingLesson.authorId !== session.user.id) {
+      return errorResponse(`غير مصرح لك بحذف هذا الدرس. (المستخدم: ${session.user.id}، المؤلف: ${existingLesson.authorId})`, 403);
     }
 
     await prisma.lesson.delete({
