@@ -59,6 +59,7 @@ interface UseLessonsReturn {
   isLoading: boolean;
   error: string | null;
   createLesson: (data: CreateLessonData) => Promise<{ success: boolean; data?: Lesson; error?: string }>;
+  deleteLesson: (id: number) => Promise<{ success: boolean; error?: string }>;
 }
 
 export function useLessons(params?: UseLessonsParams): UseLessonsReturn {
@@ -139,10 +140,45 @@ export function useLessons(params?: UseLessonsParams): UseLessonsReturn {
     }
   }, [fetchLessons]);
 
+  const deleteLesson = useCallback(async (id: number) => {
+    try {
+      const response = await fetch(`/api/lessons/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      // إذا لم تكن الاستجابة ناجحة، حاول قراءة الخطأ من الخادم
+      if (!response.ok) {
+        if (response.status === 401) throw new Error('يرجى تسجيل الدخول أولاً للقيام بهذه العملية');
+        if (response.status === 403) throw new Error('ليس لديك صلاحية لحذف هذا الدرس');
+
+        try {
+          const errorResult = await response.json();
+          throw new Error(errorResult.error || `فشل الحذف. رمز الحالة: ${response.status}`);
+        } catch (e) {
+          // إذا كان جسم الاستجابة فارغًا أو ليس JSON
+          throw new Error(`فشل الحذف. رمز الحالة: ${response.status}`);
+        }
+      }
+
+      // في حالة النجاح، قم بتحديث الحالة المحلية مباشرةً
+      setLessons((prev) => prev.filter((lesson) => lesson.id !== id));
+      return { success: true };
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'حدث خطأ أثناء حذف الدرس';
+      console.error('Error deleting lesson:', errorMessage);
+      return { success: false, error: errorMessage };
+    }
+  }, []);
+
   return {
     lessons,
     isLoading,
     error,
     createLesson,
+    deleteLesson,
   };
 }

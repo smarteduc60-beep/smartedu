@@ -138,6 +138,12 @@ export default function MathContent({ content, className = '' }: MathContentProp
     
     // LaTeX Inline: \(...\)
     processTextNodes(/\\\(([\s\S]*?)\\\)/g, false);
+
+    // LaTeX Inline: $...$
+    processTextNodes(/\$([\s\S]*?)\$/g, false);
+
+    // LaTeX Environment: \begin{equation}...\end{equation}
+    processTextNodes(/\\begin\{equation\}([\s\S]*?)\\end\{equation\}/g, true);
     
   }, [content]);
 

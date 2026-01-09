@@ -159,6 +159,50 @@ export default function MathComponent({ node, updateAttributes, selected, editor
     }
   }, [node.attrs.latex, isLibLoaded]);
 
+  // 5. إعداد لوحة المفاتيح المخصصة (هندسة)
+  useEffect(() => {
+    if (isLibLoaded && typeof window !== 'undefined' && (window as any).mathVirtualKeyboard) {
+      const kbd = (window as any).mathVirtualKeyboard;
+      
+      const geometryLayer = {
+        label: 'هندسة',
+        tooltip: 'رموز الهندسة',
+        rows: [
+          [
+            { latex: '\\angle', label: '∠' },
+            { latex: '\\triangle', label: '△' },
+            { latex: '\\perp', label: '⊥' },
+            { latex: '\\parallel', label: '∥' },
+            { latex: '^\\circ', label: '°' },
+            { latex: '\\pi', label: 'π' },
+            { latex: '\\infty', label: '∞' },
+          ],
+          [
+            { latex: '\\cong', label: '≅' },
+            { latex: '\\sim', label: '∼' },
+            { latex: '\\approx', label: '≈' },
+            { latex: '\\neq', label: '≠' },
+            { latex: '\\pm', label: '±' },
+            { latex: '\\sqrt{#@}', label: '√' },
+          ],
+          [
+            { latex: '\\overline{#@}', label: 'AB' }, // قطعة مستقيمة
+            { latex: '\\overrightarrow{#@}', label: 'AB→' }, // شعاع
+            { latex: '\\overleftrightarrow{#@}', label: 'AB↔' }, // مستقيم
+            { latex: '\\widehat{#@}', label: 'ABC' }, // زاوية
+            { latex: '\\frac{#@}{#?}', label: 'x/y' }, // كسر
+          ]
+        ]
+      };
+
+      try {
+        kbd.layouts = ['numeric', 'symbols', geometryLayer, 'alphabetic', 'greek'];
+      } catch (e) {
+        console.warn('Failed to configure math keyboard:', e);
+      }
+    }
+  }, [isLibLoaded]);
+
   if (!isLibLoaded) {
     return (
       <NodeViewWrapper className="inline-block p-2 border rounded bg-muted text-muted-foreground text-xs">

@@ -77,38 +77,45 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
   const [showPptUpload, setShowPptUpload] = useState(false);
   const [isFileUploading, setIsFileUploading] = useState(false);
 
+  const [userDetails, setUserDetails] = useState<any>(null);
+
+  // 1. جلب بيانات المعلم بشكل مستقل فور تحميل الصفحة
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetch(`/api/users/${session.user.id}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setUserDetails(data.data);
+          }
+        })
+        .catch((err) => console.error('Error fetching user details:', err));
+    }
+  }, [session?.user?.id]);
+
   // Set teacher's subject, stage and available levels
   useEffect(() => {
-    const setTeacherInfo = async () => {
-      if (!session?.user?.id || !subjects || !stages || !levels) return;
-      if (subjects.length === 0 || stages.length === 0 || levels.length === 0) return;
+    // ننتظر توفر بيانات المستخدم والقوائم الأساسية
+    // أزلنا الشرط الصارم (length === 0) للسماح بالعمل حتى لو كانت بعض القوائم فارغة مؤقتاً
+    if (!userDetails || !subjects || !stages) return;
 
-      try {
-        const response = await fetch(`/api/users/${session.user.id}`);
-        const result = await response.json();
+    if (userDetails.userDetails?.subjectId) {
+      const userSubjectId = userDetails.userDetails.subjectId;
+      const subject = subjects.find((s: any) => s.id === userSubjectId);
 
-        if (result.success && result.data?.userDetails?.subjectId) {
-          const userSubjectId = result.data.userDetails.subjectId;
-          const subject = subjects.find((s: any) => s.id === userSubjectId);
-
-          if (subject) {
-            setTeacherSubject(subject);
-            const stage = stages.find((st: any) => st.id === subject.stageId || st.id === subject.stage_id);
-            
-            if (stage) {
-              setTeacherStage(stage);
-              const stageLevels = levels.filter((l: any) => l.stageId === stage.id);
-              setAvailableLevels(stageLevels);
-            }
-          }
+      if (subject) {
+        setTeacherSubject(subject);
+        const stage = stages.find((st: any) => st.id === subject.stageId || st.id === subject.stage_id);
+        
+        if (stage) {
+          setTeacherStage(stage);
+          // تصفية المستويات فقط إذا كانت قائمة المستويات موجودة
+          const stageLevels = levels ? levels.filter((l: any) => l.stageId === stage.id) : [];
+          setAvailableLevels(stageLevels);
         }
-      } catch (error) {
-        console.error('Error fetching teacher info:', error);
       }
-    };
-
-    setTeacherInfo();
-  }, [session, subjects, stages, levels]);
+    }
+  }, [userDetails, subjects, stages, levels]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

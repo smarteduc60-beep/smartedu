@@ -9,6 +9,7 @@ import { CheckCircle2, XCircle, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import MathContent from "@/components/MathContent";
 
 interface SupportWithResultsExerciseProps {
   exercise: {
@@ -118,10 +119,7 @@ export default function SupportWithResultsExercise({ exercise }: SupportWithResu
         </CardHeader>
         <CardContent>
           {exercise.questionRichContent ? (
-            <div 
-              className="tiptap prose max-w-none"
-              dangerouslySetInnerHTML={{ __html: exercise.questionRichContent }}
-            />
+            <MathContent content={exercise.questionRichContent} />
           ) : (
             <p className="whitespace-pre-wrap">{exercise.question}</p>
           )}
