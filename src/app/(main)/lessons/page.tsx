@@ -120,7 +120,7 @@ export default function LessonsPage() {
               </CardHeader>
               <CardContent className="flex-grow">
                 <CardDescription>
-                  {lesson.description || lesson.content.substring(0, 100) + '...'}
+                  {lesson.description || (lesson.content ? lesson.content.replace(/<pre[^>]*>[\s\S]*?<\/pre>/g, '').replace(/<[^>]*>?/gm, '').substring(0, 100) + '...' : '')}
                 </CardDescription>
               </CardContent>
               <CardFooter>

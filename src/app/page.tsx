@@ -11,6 +11,33 @@ import { USERS, LESSONS, EXERCISES, LEVELS, getUserById } from "@/lib/mock-data"
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 
+const TESTIMONIALS = [
+  {
+    id: 1,
+    name: "آيــة جديــد",
+    role: "طالبة",
+    content: "أحب الحصول على feedback فوري، هذا يساعدني على فهم أخطائي بسرعة والتحسن في دراستي.",
+    image: "https://images.unsplash.com/photo-1708426238272-994fcddabca4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwwfHx8fDE3NjQ4ODQ5ODV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+    initial: "آ"
+  },
+  {
+    id: 2,
+    name: "ناصر عنتري",
+    role: "معلم",
+    content: "المنصة وفرت عليّ الكثير من الوقت في تصحيح الواجبات، وأعطتني رؤى دقيقة عن مستوى كل طالب.",
+    image: "https://images.unsplash.com/photo-1580893472468-01373fe4c97e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwwfHx8fDE3NjQ4ODQ5ODV8MA&ixlib.rb-4.1.0&q=80&w=1080",
+    initial: "ن"
+  },
+  {
+    id: 3,
+    name: "ناصر ولد منصور",
+    role: "ولي أمر",
+    content: "أشعر براحة أكبر وأنا أتابع تقدم ابنتي الدراسي بسهولة عبر التقارير المفصلة التي تقدمها المنصة.",
+    image: "https://images.unsplash.com/photo-1576765974026-6a4a1f6a1a3e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMG1hbnxlbnwwfHx8fDE3NjUxNzU4MjZ8MA&ixlib.rb-4.1.0&q=80&w=1080",
+    initial: "ن"
+  }
+];
+
 export default function LandingPage() {
   // استخدام البيانات الوهمية كقيم ابتدائية لضمان عدم ظهور الأصفار أثناء التحميل أو إذا كانت القاعدة فارغة
   const [stats, setStats] = useState({
@@ -229,51 +256,23 @@ export default function LandingPage() {
                     <p className="text-muted-foreground mt-2">ماذا يقولون عن تجربتهم مع SmartEdu.</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="flex items-center mb-4">
-                                <Avatar className="h-12 w-12 ml-4">
-                                    <AvatarImage src="https://images.unsplash.com/photo-1708426238272-994fcddabca4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwwfHx8fDE3NjQ4ODQ5ODV8MA&ixlib=rb-4.1.0&q=80&w=1080" />
-                                    <AvatarFallback>ف</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-semibold">فاطمة الغامدي</p>
-                                    <p className="text-sm text-muted-foreground">طالبة</p>
+                    {TESTIMONIALS.map((testimonial) => (
+                        <Card key={testimonial.id}>
+                            <CardContent className="pt-6">
+                                <div className="flex items-center mb-4">
+                                    <Avatar className="h-12 w-12 ml-4">
+                                        <AvatarImage src={testimonial.image} alt={testimonial.name} />
+                                        <AvatarFallback>{testimonial.initial}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-semibold">{testimonial.name}</p>
+                                        <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <p className="text-muted-foreground">"أحب الحصول على feedback فوري، هذا يساعدني على فهم أخطائي بسرعة والتحسن في دراستي."</p>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardContent className="pt-6">
-                             <div className="flex items-center mb-4">
-                                <Avatar className="h-12 w-12 ml-4">
-                                    <AvatarImage src="https://images.unsplash.com/photo-1580893472468-01373fe4c97e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwwfHx8fDE3NjQ4ODQ5ODV8MA&ixlib.rb-4.1.0&q=80&w=1080" />
-                                    <AvatarFallback>أ</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-semibold">أحمد محمود</p>
-                                    <p className="text-sm text-muted-foreground">معلم</p>
-                                </div>
-                            </div>
-                            <p className="text-muted-foreground">"المنصة وفرت عليّ الكثير من الوقت في تصحيح الواجبات، وأعطتني رؤى دقيقة عن مستوى كل طالب."</p>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardContent className="pt-6">
-                            <div className="flex items-center mb-4">
-                                <Avatar className="h-12 w-12 ml-4">
-                                    <AvatarImage src="https://images.unsplash.com/photo-1576765974026-6a4a1f6a1a3e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMG1hbnxlbnwwfHx8fDE3NjUxNzU4MjZ8MA&ixlib.rb-4.1.0&q=80&w=1080" />
-                                    <AvatarFallback>خ</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="font-semibold">خالد الغامدي</p>
-                                    <p className="text-sm text-muted-foreground">ولي أمر</p>
-                                </div>
-                            </div>
-                            <p className="text-muted-foreground">"أشعر براحة أكبر وأنا أتابع تقدم ابنتي الدراسي بسهولة عبر التقارير المفصلة التي تقدمها المنصة."</p>
-                        </CardContent>
-                    </Card>
+                                <p className="text-muted-foreground">"{testimonial.content}"</p>
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
             </div>
         </section>

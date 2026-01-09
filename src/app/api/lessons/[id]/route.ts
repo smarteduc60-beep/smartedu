@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { requireAuth } from '@/lib/api-auth';
 import { errorResponse, successResponse } from '@/lib/api-response';
+import { GoogleDriveService } from '@/lib/google-drive';
 
 const prisma = new PrismaClient();
 
@@ -130,7 +131,7 @@ export async function DELETE(
 
     const existingLesson = await prisma.lesson.findUnique({
         where: { id: lessonId },
-        select: { authorId: true }
+        select: { authorId: true, driveFolderId: true }
     });
 
     if (!existingLesson) {
@@ -147,6 +148,31 @@ export async function DELETE(
       return errorResponse(`غير مصرح لك بحذف هذا الدرس. (المستخدم: ${session.user.id}، المؤلف: ${existingLesson.authorId})`, 403);
     }
 
+    // 1. حذف جميع الإجابات (Submissions) المرتبطة بتمارين هذا الدرس
+    // هذا ضروري لأن قاعدة البيانات قد تمنع حذف التمارين إذا كان لها إجابات مرتبطة
+    const exercises = await prisma.exercise.findMany({
+      where: { lessonId: lessonId },
+      select: { id: true }
+    });
+
+    if (exercises.length > 0) {
+      const exerciseIds = exercises.map(e => e.id);
+      await prisma.submission.deleteMany({
+        where: { exerciseId: { in: exerciseIds } }
+      });
+    }
+
+    // 2. محاولة حذف مجلد الدرس من Google Drive (تنظيف)
+    if (existingLesson.driveFolderId) {
+      try {
+        await GoogleDriveService.deleteFolder(existingLesson.driveFolderId);
+      } catch (gdError) {
+        console.error(`[API] Failed to delete Drive folder for lesson ${lessonId}:`, gdError);
+        // نستمر في الحذف حتى لو فشل حذف المجلد
+      }
+    }
+
+    // 3. حذف الدرس (سيتم حذف التمارين تلقائياً بفضل Cascade في Prisma)
     await prisma.lesson.delete({
       where: { id: lessonId },
     });
@@ -154,6 +180,6 @@ export async function DELETE(
     return successResponse(null, 'تم حذف الدرس بنجاح');
   } catch (error: any) {
     console.error('Error deleting lesson:', error);
-    return errorResponse('حدث خطأ أثناء حذف الدرس', 500);
+    return errorResponse(`حدث خطأ أثناء حذف الدرس: ${error.message}`, 500);
   }
 }

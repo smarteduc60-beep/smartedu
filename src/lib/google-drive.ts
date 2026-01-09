@@ -309,6 +309,21 @@ export async function uploadFileToHierarchy(
 }
 
 /**
+ * دالة لحذف ملف أو مجلد
+ */
+export async function deleteFile(fileId: string) {
+  const drive = getDriveClient();
+  console.log(`[GoogleDrive] 🗑️ Deleting file/folder: ${fileId}`);
+  try {
+    await withRetry(() => drive.files.delete({ fileId }));
+    console.log(`[GoogleDrive] ✅ Deleted successfully: ${fileId}`);
+  } catch (error) {
+    console.error(`[GoogleDrive] ❌ Failed to delete ${fileId}:`, error);
+    throw error;
+  }
+}
+
+/**
  * دالة لاسترجاع معرف المجلد الجذري (للتوافق مع الواجهات القديمة)
  */
 export function getRootFolderId() {
@@ -344,5 +359,8 @@ export const GoogleDriveService = {
     } catch (e) {
       console.warn(`[GoogleDrive] Failed to make file public: ${fileId}`, e);
     }
-  }
+  },
+
+  // دالة الحذف
+  deleteFolder: deleteFile
 };
