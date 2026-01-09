@@ -2,7 +2,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  output: 'standalone', // ✅ هذا هو الحل
+  // output: 'standalone',
 
   typescript: {
     ignoreBuildErrors: true,
