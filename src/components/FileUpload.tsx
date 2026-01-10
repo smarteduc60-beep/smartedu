@@ -105,9 +105,15 @@ export function FileUpload({
 
     } catch (error: any) {
       console.error('File upload error:', error);
+      
+      let errorMessage = error.message || 'فشل في رفع الملف';
+      if (errorMessage.includes('invalid_grant')) {
+         errorMessage = 'خطأ في إعدادات Google Drive (invalid_grant). يرجى التواصل مع الإدارة.';
+      }
+
       toast({
         title: 'خطأ',
-        description: error.message || 'فشل في رفع الملف',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

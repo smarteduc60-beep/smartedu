@@ -15,6 +15,20 @@ async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 10
   try {
     return await operation();
   } catch (error: any) {
+    // معالجة خطأ المصادقة invalid_grant بشكل خاص
+    if (
+      error.message?.includes('invalid_grant') || 
+      (error.response && error.response.data && error.response.data.error === 'invalid_grant')
+    ) {
+       console.error('[GoogleDrive] ❌ Critical Authentication Error: "invalid_grant".');
+       console.error('This usually means your Google Refresh Token is expired, revoked, or invalid.');
+       
+       // إعادة تعيين العميل لإجبار إعادة التهيئة في الطلبات القادمة
+       driveClient = null;
+
+       throw new Error('Google Drive Auth Error: invalid_grant. Check server logs.');
+    }
+
     const isNetworkError = 
       error.code === 'EAI_AGAIN' || 
       error.code === 'ETIMEDOUT' || 
