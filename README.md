@@ -1,13 +1,13 @@
-# SmartEdu Platform 🎓 1111-3
+# SmartEdu Platform 🎓 1111-6
 
 منصة تعليمية ذكية متكاملة تهدف إلى تسهيل إدارة العملية التعليمية، ربط المعلمين بالطلاب، وتوظيف الذكاء الاصطناعي لتحسين جودة التعليم.
 
 ## 🚀 التقنيات المستخدمة (Tech Stack)
 
-- **Frontend:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, shadcn/ui.
-- **Backend:** Next.js API Routes, Node.js.
-- **Database:** Prisma ORM (MySQL).
-- **Authentication:** NextAuth.js v4 (Role-Based Access Control).
+- **Frontend:** Next.js 15 (App Router), React 19, TypeScript 5, Tailwind CSS, shadcn/ui.
+- **Backend:** Next.js API Routes, Node.js 18+.
+- **Database:** Prisma ORM v6 (MySQL 8.0+).
+- **Authentication:** NextAuth.js v4 (Credentials + Google OAuth).
 - **Storage:** Google Drive API (Custom Integration with Proxy & Caching).
 - **AI:** Integration for automated grading and feedback.
 
@@ -26,7 +26,12 @@
 - تصحيح تلقائي للتمارين المقالية.
 - تحليل إجابات الطلاب وتقديم تغذية راجعة فورية.
 
-## 🛠️ الإعداد والتشغيل (Setup)
+## 🛠️ متطلبات التشغيل (Prerequisites)
+
+- **Node.js:** الإصدار 18 أو أحدث.
+- **Database:** MySQL 8.0 أو أحدث.
+
+## ⚙️ الإعداد والتشغيل (Installation & Setup)
 
 1. **تثبيت الاعتماديات:**
    ```bash
@@ -34,11 +39,24 @@
    ```
 
 2. **إعداد متغيرات البيئة (.env):**
-   تأكد من إعداد المتغيرات التالية:
-   - `DATABASE_URL`
-   - `NEXTAUTH_SECRET`
-   - `GOOGLE_CLIENT_EMAIL` & `GOOGLE_PRIVATE_KEY` (لخدمة Google Drive)
-   - `GOOGLE_DRIVE_ROOT_FOLDER_ID`
+   قم بإنشاء ملف `.env` في المجلد الرئيسي وأضف المتغيرات التالية:
+
+   ```env
+   # Database
+   DATABASE_URL="mysql://USER:PASSWORD@HOST:PORT/DATABASE"
+
+   # NextAuth
+   NEXTAUTH_URL="http://localhost:3000"
+   NEXTAUTH_SECRET="your-super-secret-key"
+
+   # Google Drive Service Account (Storage)
+   GOOGLE_CLIENT_EMAIL="your-service-account-email"
+   GOOGLE_PRIVATE_KEY="your-private-key"
+   GOOGLE_DRIVE_ROOT_FOLDER_ID="your-root-folder-id"
+
+   # AI Integration
+   DEEPSEEK_API_KEY="your-deepseek-api-key"
+   ```
 
 3. **تهيئة قاعدة البيانات:**
    ```bash

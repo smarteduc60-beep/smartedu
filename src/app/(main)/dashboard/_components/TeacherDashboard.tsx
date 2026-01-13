@@ -14,6 +14,8 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
+import OnboardingTour from "./OnboardingTour";
+import TeacherChecklist from "./TeacherChecklist";
 
 
 export default function TeacherDashboard() {
@@ -145,6 +147,51 @@ export default function TeacherDashboard() {
         }
     };
 
+    // تعريف خطوات الجولة التعريفية للمعلم
+    const tourSteps = [
+        {
+            element: '#teacher-welcome',
+            popover: {
+                title: 'مرحباً بك في SmartEdu! 👋',
+                description: 'هذه لوحة التحكم الخاصة بك. دعنا نأخذ جولة سريعة.',
+                side: 'bottom',
+                align: 'start'
+            }
+        },
+        {
+            element: '#create-lesson-btn',
+            popover: {
+                title: 'إضافة الدروس والتمارين',
+                description: 'من هنا يمكنك إنشاء درس جديد، وداخل الدرس يمكنك إضافة التمارين والواجبات للطلاب.',
+                side: 'bottom'
+            }
+        },
+        {
+            element: '#teacher-code-card',
+            popover: {
+                title: 'كود الربط',
+                description: 'هذا الكود مهم جداً! شاركه مع طلابك ليتمكنوا من الانضمام إليك.',
+                side: 'top'
+            }
+        },
+        {
+            element: '#teacher-stats',
+            popover: {
+                title: 'الإحصائيات',
+                description: 'تابع تقدمك وعدد طلابك وتفاعلهم من هنا.',
+                side: 'top'
+            }
+        },
+        {
+            element: '#teacher-exercises-link',
+            popover: {
+                title: 'إدارة التمارين',
+                description: 'من هنا يمكنك إضافة تمارين جديدة وتصحيح إجابات الطلاب.',
+                side: 'top'
+            }
+        }
+    ];
+
     // Display submission stats
     const totalSubmissions = stats.submissions;
     const gradedSubmissions = 0; // TODO: Filter graded submissions
@@ -153,8 +200,11 @@ export default function TeacherDashboard() {
 
     return (
         <div className="flex flex-col gap-8">
+            <OnboardingTour steps={tourSteps} tourKey="teacher-dashboard-tour-v2" />
+            <TeacherChecklist stats={stats} teacherCode={teacherCode} />
+
             <div className="flex items-center justify-between">
-                <div className="grid gap-1">
+                <div className="grid gap-1" id="teacher-welcome">
                     <h1 className="text-3xl font-bold tracking-tight">
                         مرحباً بك أستاذ، {session?.user?.name || 'المعلم'}!
                     </h1>
@@ -163,14 +213,14 @@ export default function TeacherDashboard() {
                     </p>
                 </div>
                 <Link href="/dashboard/teacher/lessons/create" passHref>
-                    <Button>
+                    <Button id="create-lesson-btn">
                         <PlusCircle className="ml-2 h-4 w-4" />
                         <span>إنشاء درس جديد</span>
                     </Button>
                 </Link>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4" id="teacher-stats">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">الدروس المضافة</CardTitle>
@@ -214,7 +264,7 @@ export default function TeacherDashboard() {
             </div>
             
             <div className="grid gap-6 md:grid-cols-2">
-                 <Card>
+                 <Card id="teacher-code-card">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <LinkIcon className="text-primary" />
@@ -266,7 +316,7 @@ export default function TeacherDashboard() {
                     <CardContent className="grid grid-cols-2 gap-4">
                         <Link href="/dashboard/teacher/lessons" passHref><Button variant="secondary" className="w-full justify-start">إدارة الدروس</Button></Link>
                         <Link href="/dashboard/teacher/students" passHref><Button variant="secondary" className="w-full justify-start">عرض الطلاب</Button></Link>
-                        <Link href="/dashboard/teacher/submissions" passHref><Button variant="secondary" className="w-full justify-start">تصحيح الإجابات</Button></Link>
+                        <Link href="/dashboard/teacher/submissions" passHref><Button variant="secondary" className="w-full justify-start" id="teacher-exercises-link">تصحيح الإجابات</Button></Link>
                         <Link href="/messages" passHref><Button variant="secondary" className="w-full justify-start">الرسائل</Button></Link>
                     </CardContent>
                 </Card>

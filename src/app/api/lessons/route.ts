@@ -65,19 +65,12 @@ export async function GET(request: NextRequest) {
 
       const teacherIds = teacherLinks.map(link => link.teacherId);
 
-      console.log('=== Student Lessons Debug ===');
-      console.log('Student ID:', session.user.id);
-      console.log('Student Level ID:', userDetails.levelId);
-      console.log('Teacher Links:', teacherLinks);
-      console.log('Teacher IDs:', teacherIds);
-      console.log('Subject ID Filter:', subjectId);
-
       // إعادة بناء شرط WHERE للطلاب
       const studentWhere: any = {
         OR: [
           // 1. الدروس العامة من مستوى التلميذ
           {
-            type: 'public',
+            type: { in: ['public', 'isPublic'] },
             levelId: userDetails.levelId,
             ...(subjectId && { subjectId: parseInt(subjectId) }),
           },
@@ -89,8 +82,6 @@ export async function GET(request: NextRequest) {
           }] : []),
         ],
       };
-
-      console.log('Student WHERE condition:', JSON.stringify(studentWhere, null, 2));
 
       // استبدال where بالشرط الجديد
       Object.keys(where).forEach(key => delete where[key]);
@@ -179,6 +170,11 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireRole(['teacher', 'supervisor_specific', 'supervisor_general', 'directeur']);
 
+    // 1. جلب تفاصيل المستخدم لفرض القيود
+    const userDetails = await prisma.userDetails.findUnique({
+        where: { userId: session.user.id }
+    });
+
     const body = await request.json();
     console.log('--- DIAGNOSTIC: LESSON CREATION BODY ---', body);
     const {
@@ -195,8 +191,35 @@ export async function POST(request: NextRequest) {
       isLocked = false,
     } = body;
 
-    if (!title || !subjectId || !levelId) {
-      return errorResponse('العنوان والمادة والمستوى مطلوبة', 400);
+    if (!title) {
+      return errorResponse('العنوان مطلوب', 400);
+    }
+
+    // 2. تحديد المادة والمستوى بناءً على الدور (Business Logic Enforcement)
+    let finalSubjectId = parseInt(subjectId);
+    let finalLevelId = parseInt(levelId);
+
+    if (session.user.role === 'supervisor_specific') {
+        // المشرف: مقيد بالمادة والمستوى المسجلين في ملفه
+        if (!userDetails?.subjectId || !userDetails?.levelId) {
+            return errorResponse('حساب المشرف غير مهيأ بشكل صحيح (المادة أو المستوى مفقود)', 400);
+        }
+        finalSubjectId = userDetails.subjectId;
+        finalLevelId = userDetails.levelId;
+        console.log(`[Lesson Create] Enforcing Supervisor Constraints: Subject ${finalSubjectId}, Level ${finalLevelId}`);
+    } 
+    else if (session.user.role === 'teacher') {
+        // المعلم: مقيد بالمادة فقط، يمكنه اختيار المستوى (داخل مرحلته عادةً)
+        if (!userDetails?.subjectId) {
+            return errorResponse('حساب المعلم غير مهيأ بشكل صحيح (المادة مفقودة)', 400);
+        }
+        finalSubjectId = userDetails.subjectId;
+        // finalLevelId نأخذه من الطلب كما هو لأن المعلم يدرس عدة مستويات
+        if (!finalLevelId) return errorResponse('المستوى مطلوب للمعلم', 400);
+    }
+    else if (!finalSubjectId || !finalLevelId) {
+        // للمدير أو الأدوار الأخرى، يجب تحديد المادة والمستوى
+        return errorResponse('المادة والمستوى مطلوبان', 400);
     }
 
     let driveFolderId: string | null = null;
@@ -207,7 +230,7 @@ export async function POST(request: NextRequest) {
     // --- Google Drive Automation ---
     try {
       const subject = await prisma.subject.findUnique({
-        where: { id: parseInt(subjectId) },
+        where: { id: finalSubjectId },
         include: { stage: true },
       });
 
@@ -337,8 +360,8 @@ export async function POST(request: NextRequest) {
         videoUrl: videoUrl || null,
         imageUrl: finalImageUrl,
         pdfUrl: finalPdfUrl,
-        subjectId: parseInt(subjectId),
-        levelId: parseInt(levelId),
+        subjectId: finalSubjectId,
+        levelId: finalLevelId,
         authorId: session.user.id,
         type,
         isLocked,

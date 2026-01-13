@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
+import OnboardingTour from "./OnboardingTour";
+import { UserCircle, Library, Award, MessageSquare } from "lucide-react";
 
 export default function StudentDashboard() {
   const { data: session, status } = useSession();
@@ -170,10 +172,49 @@ export default function StudentDashboard() {
     }
   };
 
+  // تعريف خطوات الجولة التعريفية للطالب
+  const tourSteps = [
+    {
+      element: '#student-welcome',
+      popover: {
+        title: 'أهلاً بك في رحلتك التعليمية! 🚀',
+        description: 'هنا يمكنك متابعة تقدمك والوصول لدروسك.',
+        side: 'bottom',
+        align: 'start'
+      }
+    },
+    {
+      element: '#connect-teacher-card',
+      popover: {
+        title: 'الخطوة الأولى: اربط حسابك بالأستاذ',
+        description: 'أدخل الكود الذي يعطيه لك أستاذك هنا للوصول إلى المواد والدروس.',
+        side: 'top'
+      }
+    },
+    {
+      element: '#quick-link-subjects',
+      popover: {
+        title: 'الوصول للمواد والدروس',
+        description: 'اضغط هنا لتصفح جميع المواد الدراسية والدروس المتاحة لك.',
+        side: 'top'
+      }
+    },
+    {
+      element: '#quick-link-profile',
+      popover: {
+        title: 'ربط ولي الأمر',
+        description: 'من خلال ملفك الشخصي، يمكنك إضافة كود ولي الأمر لربط حسابك به.',
+        side: 'top'
+      }
+    }
+  ];
+
   return (
     <div className="flex flex-col gap-8">
+      <OnboardingTour steps={tourSteps} tourKey="student-dashboard-tour-v2" />
+
       <div className="flex items-center justify-between">
-        <div className="grid gap-1">
+        <div className="grid gap-1" id="student-welcome">
             <h1 className="text-3xl font-bold tracking-tight">
                 أهلاً بك مجدداً، {session.user.name}!
             </h1>
@@ -231,7 +272,7 @@ export default function StudentDashboard() {
       </div>
       
       <div className="grid gap-6 md:grid-cols-2">
-        <Card>
+        <Card id="connect-teacher-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <LinkIcon className="text-primary" />
@@ -298,6 +339,19 @@ export default function StudentDashboard() {
                 لم تقم بالربط بأي أستاذ بعد
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>روابط سريعة</CardTitle>
+            <CardDescription>وصول سريع لأهم الصفحات</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-2 gap-4">
+            <Link href="/subjects" passHref><Button variant="secondary" className="w-full justify-start" id="quick-link-subjects"><Library className="ml-2 h-4 w-4"/>المواد الدراسية</Button></Link>
+            <Link href="/dashboard/student/results" passHref><Button variant="secondary" className="w-full justify-start"><Award className="ml-2 h-4 w-4"/>النتائج</Button></Link>
+            <Link href="/messages" passHref><Button variant="secondary" className="w-full justify-start"><MessageSquare className="ml-2 h-4 w-4"/>الرسائل</Button></Link>
+            <Link href="/profile" passHref><Button variant="secondary" className="w-full justify-start" id="quick-link-profile"><UserCircle className="ml-2 h-4 w-4"/>الملف الشخصي</Button></Link>
           </CardContent>
         </Card>
       </div>

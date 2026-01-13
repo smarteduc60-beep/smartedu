@@ -1,178 +1,44 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
+import useSWR from 'swr';
 
-// ==================== Stages Hook ====================
+// This is a generic fetcher function that can be used by SWR.
+// It assumes the API will return JSON with a `success` flag and a `data` property.
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
 
-interface Stage {
-  id: number;
-  name: string;
-  description: string;
-}
+  if (!res.ok) {
+    const error: any = new Error('An error occurred while fetching the data.');
+    // Attach extra info to the error object.
+    error.info = await res.json();
+    error.status = res.status;
+    throw error;
+  }
 
-interface UseStagesReturn {
-  stages: Stage[];
-  isLoading: boolean;
-  error: string | null;
-  refetch: () => void;
-}
+  const json = await res.json();
+  if (!json.success) {
+    const error: any = new Error(json.error || 'API returned an error.');
+    error.info = json;
+    throw error;
+  }
 
-export function useStages(): UseStagesReturn {
-  const { data: session } = useSession();
-  const [stages, setStages] = useState<Stage[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  return json.data;
+};
 
-  const fetchStages = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/stages');
-      const result = await response.json();
-
-      if (result.success) {
-        const stagesData = result.data?.stages || result.data || [];
-        setStages(Array.isArray(stagesData) ? stagesData : []);
-      } else {
-        setError(result.error || 'فشل في تحميل المراحل');
-      }
-    } catch (err) {
-      setError('حدث خطأ أثناء تحميل المراحل');
-      console.error('Error fetching stages:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchStages();
-  }, [fetchStages]);
+/**
+ * A generic data fetching hook using SWR.
+ * @param endpoint The API endpoint to fetch data from (e.g., '/api/parents/children'). If null, the request will not be made.
+ * @returns {data, isLoading, isError, mutate}
+ */
+export function useData<T>(endpoint: string | null) {
+  // SWR will not fetch if the key (endpoint) is null.
+  // This is useful for conditional fetching.
+  const { data, error, isLoading, mutate } = useSWR<T>(endpoint, fetcher, {
+    shouldRetryOnError: false, // Optional: configure SWR behavior
+  });
 
   return {
-    stages,
+    data,
     isLoading,
-    error,
-    refetch: fetchStages,
-  };
-}
-
-// ==================== Levels Hook ====================
-
-interface Level {
-  id: number;
-  name: string;
-  stage_id: number;
-  stage?: {
-    id: number;
-    name: string;
-  };
-}
-
-interface UseLevelsParams {
-  stageId?: number;
-}
-
-interface UseLevelsReturn {
-  levels: Level[];
-  isLoading: boolean;
-  error: string | null;
-  refetch: () => void;
-}
-
-export function useLevels(params?: UseLevelsParams): UseLevelsReturn {
-  const [levels, setLevels] = useState<Level[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchLevels = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const queryParams = new URLSearchParams();
-      if (params?.stageId) queryParams.append('stageId', params.stageId.toString());
-
-      const response = await fetch(`/api/levels?${queryParams.toString()}`);
-      const result = await response.json();
-
-      if (result.success) {
-        // التعامل مع حالتين: data.levels أو data مباشرة
-        const levelsData = result.data.levels || result.data;
-        setLevels(Array.isArray(levelsData) ? levelsData : []);
-      } else {
-        setError(result.error || 'فشل في تحميل المستويات');
-      }
-    } catch (err) {
-      setError('حدث خطأ أثناء تحميل المستويات');
-      console.error('Error fetching levels:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [params?.stageId]);
-
-  useEffect(() => {
-    fetchLevels();
-  }, [fetchLevels]);
-
-  return {
-    levels,
-    isLoading,
-    error,
-    refetch: fetchLevels,
-  };
-}
-
-// ==================== Subjects Hook ====================
-
-interface Subject {
-  id: number;
-  name: string;
-  description: string | null;
-  icon: string | null;
-}
-
-interface UseSubjectsReturn {
-  subjects: Subject[];
-  isLoading: boolean;
-  error: string | null;
-  refetch: () => void;
-}
-
-export function useSubjects(): UseSubjectsReturn {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchSubjects = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/subjects');
-      const result = await response.json();
-
-      if (result.success) {
-        const subjectsData = result.data?.subjects || result.data || [];
-        setSubjects(Array.isArray(subjectsData) ? subjectsData : []);
-      } else {
-        setError(result.error || 'فشل في تحميل المواد');
-      }
-    } catch (err) {
-      setError('حدث خطأ أثناء تحميل المواد');
-      console.error('Error fetching subjects:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSubjects();
-  }, [fetchSubjects]);
-
-  return {
-    subjects,
-    isLoading,
-    error,
-    refetch: fetchSubjects,
+    isError: error,
+    mutate,
   };
 }

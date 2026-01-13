@@ -28,9 +28,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find parent by code
+    const codeToSearch = parentCode.trim().toUpperCase();
+    
+    // Add detailed logging before searching
+    console.log(`[connect-parent] Received code from studentId: ${studentId}. Searching for code: "${codeToSearch}"`);
+
+    // Find parent by code using the standardized uppercase format.
     const parentDetails = await prisma.userDetails.findUnique({
-      where: { parentCode: parentCode.trim() },
+      where: { parentCode: codeToSearch },
       include: {
         user: {
           include: {

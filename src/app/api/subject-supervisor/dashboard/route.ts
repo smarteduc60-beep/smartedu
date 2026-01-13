@@ -156,6 +156,7 @@ export async function GET(request: NextRequest) {
         stageName: lesson.level?.stage?.name,
         exercisesCount: lesson._count.exercises,
         createdAt: lesson.createdAt.toISOString(),
+        isPublic: lesson.type === 'public',
       })),
     });
   } catch (error: any) {

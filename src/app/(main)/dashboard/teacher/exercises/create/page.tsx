@@ -67,6 +67,7 @@ export default function CreateExercisePage() {
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
+  const [lastGeneratedQuestion, setLastGeneratedQuestion] = useState("");
 
   // 2. Improved function to generate AI answer with context
   const handleGenerateAnswer = async () => {
@@ -75,6 +76,14 @@ export default function CreateExercisePage() {
         title: "خطأ",
         description: "يرجى كتابة نص السؤال أولاً قبل توليد الإجابة.",
         variant: "destructive",
+      });
+      return;
+    }
+
+    if (questionContent.trim() === lastGeneratedQuestion) {
+      toast({
+        title: "تنبيه",
+        description: "تم توليد إجابة لهذا السؤال مسبقاً.",
       });
       return;
     }

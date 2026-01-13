@@ -37,29 +37,31 @@ export async function POST(request: NextRequest) {
     const questionLanguage = detectLanguage(question);
     
     const prompt = `You are an expert teacher in '${subject || 'General'}' for '${level || 'General'}' level.
-Your task is to provide a clear and well-structured model answer to the following question.
+Your task is to provide a model answer for the following question.
 
 ⚠️ CRITICAL INSTRUCTION - LANGUAGE:
 - The question is written in ${questionLanguage}
-- You MUST write your ENTIRE answer in ${questionLanguage}
-- DO NOT translate or use any other language
-- If the question is in Arabic, your answer must be 100% in Arabic
-- If the question is in French, your answer must be 100% in French  
-- If the question is in English, your answer must be 100% in English
+- You MUST write the answer in ${questionLanguage}
 
 FORMATTING INSTRUCTIONS:
-1. Keep the answer CONCISE but COMPLETE - neither too long nor too short
-2. Focus on the essential concepts and key steps
-3. For mathematical expressions, use INLINE LaTeX format: wrap them with \\( and \\) like this: \\(x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\\)
-4. For displayed equations (centered), use BLOCK LaTeX format: wrap them with $$ and $$ like this: $$x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$
-5. Format the answer in simple HTML (use <p>, <strong>, <ul>, <ol>, <li>)
-6. For math questions: show the main steps without excessive details
-7. Aim for a balance: thorough enough to be useful, brief enough to be practical
+1. Answer: Concise, complete, HTML format.
+2. Math & Chemistry: 
+   - ALWAYS wrap mathematical expressions in LaTeX delimiters.
+   - Use \\( ... \\) for inline math.
+   - Use $$ ... $$ for block math.
+   - Example: \\( x \\times y = z \\)
+   - Ensure LaTeX commands are correctly escaped for JSON (e.g. "\\\\times" in JSON becomes "\\times" in string).
+   - Do NOT double escape LaTeX commands (e.g. do NOT write "\\\\\\\\times").
+   - Chemistry Example: \\(H_2O\\), \\(CO_2\\) -> Subscripts are REQUIRED.
+3. Provide ONLY ONE model answer.
 
 Question:
 ${question}
 
-Model Answer (MUST BE IN ${questionLanguage}, concise, complete, in HTML format with LaTeX for math):`;
+Return ONLY valid JSON in this format:
+{
+  "answer": "HTML answer string..."
+}`;
 
     console.log('Calling DeepSeek API with detected language:', questionLanguage);
 
@@ -75,7 +77,7 @@ Model Answer (MUST BE IN ${questionLanguage}, concise, complete, in HTML format 
         messages: [
           {
             role: 'system',
-            content: `You are an expert educational assistant. You MUST respond in the SAME language as the student's question. If the question is in Arabic, respond entirely in Arabic. If in French, respond entirely in French. If in English, respond entirely in English. Never mix languages.`,
+            content: `You are an expert educational assistant. You MUST respond in the SAME language as the student's question. Always return valid JSON.`,
           },
           {
             role: 'user',
@@ -84,6 +86,7 @@ Model Answer (MUST BE IN ${questionLanguage}, concise, complete, in HTML format 
         ],
         temperature: 0.7,
         max_tokens: 2000,
+        response_format: { type: 'json_object' }
       }),
     });
 
@@ -99,26 +102,73 @@ Model Answer (MUST BE IN ${questionLanguage}, concise, complete, in HTML format 
     }
 
     const data = await response.json();
-    const generatedAnswer = data.choices?.[0]?.message?.content;
+    const content = data.choices?.[0]?.message?.content;
 
-    if (!generatedAnswer) {
+    if (!content) {
       throw new Error('No response from DeepSeek API');
     }
 
     console.log('DeepSeek API response received');
     
-    // التحقق من تطابق اللغة
-    const answerLanguage = detectLanguage(generatedAnswer);
-    if (answerLanguage !== questionLanguage) {
-      console.warn(`⚠️ Language mismatch detected! Question: ${questionLanguage}, Answer: ${answerLanguage}`);
-      // سنترك الإجابة كما هي لكن نسجل التحذير
+    let cleanedAnswer = "";
+    try {
+        // The AI should return a JSON object. We parse it.
+        const jsonStr = content.replace(/```json\n?|\n?```/g, '').trim();
+        const parsedData = JSON.parse(jsonStr);
+        cleanedAnswer = parsedData.answer || "";
+    } catch (e) {
+        // If parsing fails, it means the AI didn't follow instructions.
+        // We assume the raw content is the answer and log a warning.
+        console.warn("AI did not return valid JSON. Using raw content as fallback.", e);
+        cleanedAnswer = content;
     }
 
-    // 6. تنظيف وتحقق من HTML المولد
-    let cleanedAnswer = generatedAnswer.trim();
+    if (!cleanedAnswer) {
+        // This can happen if the AI returns {"answer": ""} or just ""
+        throw new Error('AI returned an empty answer.');
+    }
     
+    // 6. تنظيف وتحقق من HTML المولد
     // إزالة markdown code blocks إذا وجدت
     cleanedAnswer = cleanedAnswer.replace(/```html\n?/g, '').replace(/```\n?/g, '');
+
+    // تنظيف LaTeX المزدوج (Double Escaping)
+    // بعض نماذج الذكاء الاصطناعي تقوم بعمل escaping زائد للرموز الرياضية
+    cleanedAnswer = cleanedAnswer
+      .replace(/\\\\times/g, '\\times')
+      .replace(/\\\\div/g, '\\div')
+      .replace(/\\\\cdot/g, '\\cdot')
+      .replace(/\\\\frac/g, '\\frac')
+      .replace(/\\\\sqrt/g, '\\sqrt')
+      .replace(/\\\\pm/g, '\\pm')
+      .replace(/\\\\le/g, '\\le')
+      .replace(/\\\\ge/g, '\\ge')
+      .replace(/\\\\approx/g, '\\approx')
+      .replace(/\\\\neq/g, '\\neq')
+      .replace(/\\\\in/g, '\\in')
+      .replace(/\\\\infty/g, '\\infty')
+      .replace(/\\\\left/g, '\\left')
+      .replace(/\\\\right/g, '\\right')
+      .replace(/\\\\begin/g, '\\begin')
+      .replace(/\\\\end/g, '\\end')
+      .replace(/\\\\alpha/g, '\\alpha')
+      .replace(/\\\\beta/g, '\\beta')
+      .replace(/\\\\gamma/g, '\\gamma')
+      .replace(/\\\\theta/g, '\\theta')
+      .replace(/\\\\pi/g, '\\pi')
+      .replace(/\\\\sigma/g, '\\sigma')
+      .replace(/\\\\omega/g, '\\omega')
+      .replace(/\\\\Delta/g, '\\Delta');
+
+    // إصلاح محددات LaTeX
+    cleanedAnswer = cleanedAnswer
+      .replace(/\\\\\[/g, '$$')
+      .replace(/\\\\\]/g, '$$')
+      .replace(/\\\\\(/g, '\\(')
+      .replace(/\\\\\)/g, '\\)');
+
+    // Ensure $$ are not escaped
+    cleanedAnswer = cleanedAnswer.replace(/\\+\$\$/g, '$$');
     
     // التأكد من أن الإجابة تحتوي على HTML صالح
     if (!cleanedAnswer.includes('<') || !cleanedAnswer.includes('>')) {

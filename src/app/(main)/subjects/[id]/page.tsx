@@ -36,24 +36,14 @@ export default function SubjectLessonsPage() {
           setSubject(subjectData.data);
         }
 
-        // جلب الأساتذة المرتبطين
-        const teachersRes = await fetch('/api/students/teachers');
-        const teachersData = await teachersRes.json();
-        const teacherIds = teachersData.success 
-          ? teachersData.data.teachers.map((t: any) => t.id) 
-          : [];
-
         // جلب دروس المادة (عامة + دروس الأساتذة المرتبطين)
+        // الـ API يقوم بالفلترة المناسبة للطالب تلقائياً
         const lessonsRes = await fetch(`/api/lessons?subjectId=${params.id}`);
         const lessonsResult = await lessonsRes.json();
         
         if (lessonsResult.success) {
           const lessonsList = lessonsResult.data?.lessons || lessonsResult.data || [];
-          // تصفية: دروس عامة أو دروس من أساتذة مرتبطين
-          const filteredLessons = lessonsList.filter((lesson: any) => 
-            lesson.type === 'public' || teacherIds.includes(lesson.authorId)
-          );
-          setLessons(Array.isArray(filteredLessons) ? filteredLessons : []);
+          setLessons(Array.isArray(lessonsList) ? lessonsList : []);
         }
       } catch (error) {
         console.error('Error fetching lessons:', error);

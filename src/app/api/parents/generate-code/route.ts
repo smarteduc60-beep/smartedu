@@ -14,6 +14,7 @@ function generateParentCode(): string {
 }
 
 export async function POST(request: NextRequest) {
+  console.log(`[generate-code] Received a request to generate parent code.`);
   try {
     const session = await getServerSession(authOptions);
 
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate new unique code
-    let newCode = generateParentCode();
+    let newCode = generateParentCode().toUpperCase();
     let isUnique = false;
 
     while (!isUnique) {
@@ -63,9 +64,12 @@ export async function POST(request: NextRequest) {
       if (!existing) {
         isUnique = true;
       } else {
-        newCode = generateParentCode();
+        newCode = generateParentCode().toUpperCase();
       }
     }
+
+    // Add detailed logging before saving
+    console.log(`[generate-code] Preparing to save code for parentId: ${parentId}. Code: "${newCode}"`);
 
     // Update parent code in userDetails
     await prisma.userDetails.upsert({

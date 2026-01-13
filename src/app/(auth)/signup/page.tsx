@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from "react";
@@ -19,6 +18,7 @@ import { School, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface Stage {
   id: number;
@@ -44,6 +44,7 @@ export default function SignupPage() {
   const { toast } = useToast();
   const [role, setRole] = useState<string>('');
   const [stage, setStage] = useState<string>('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   
@@ -114,6 +115,16 @@ export default function SignupPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (!termsAccepted) {
+      toast({
+        title: "تنبيه",
+        description: "يجب الموافقة على شروط الاستخدام وسياسة الخصوصية للمتابعة",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
@@ -321,6 +332,21 @@ export default function SignupPage() {
                 required 
                 disabled={isLoading}
               />
+            </div>
+
+            <div className="flex items-center space-x-2 space-x-reverse py-2">
+              <Checkbox 
+                id="terms" 
+                checked={termsAccepted}
+                onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                disabled={isLoading}
+              />
+              <label
+                htmlFor="terms"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                أوافق على <Link href="/terms" className="underline text-primary" target="_blank">شروط الاستخدام</Link> و <Link href="/privacy" className="underline text-primary" target="_blank">سياسة الخصوصية</Link>
+              </label>
             </div>
 
             <Button type="submit" className="w-full !mt-6" disabled={isLoading}>

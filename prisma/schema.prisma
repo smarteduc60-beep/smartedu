@@ -155,6 +155,7 @@ model Level {
   promotionsFrom StudentPromotion[] @relation("PromotionFromLevel")
   promotionsTo   StudentPromotion[] @relation("PromotionToLevel")
 
+  @@unique([name, stageId])
   @@map("levels")
 }
 

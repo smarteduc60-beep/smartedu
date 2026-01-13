@@ -147,10 +147,22 @@ const StudentProfile = () => {
   };
 
   const handleConnectParent = async () => {
-    if (!parentCode.trim()) {
+    const processedCode = parentCode.trim();
+
+    if (!processedCode) {
       toast({
         title: 'خطأ',
         description: 'يرجى إدخال كود ولي الأمر',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Client-side validation for the code format
+    if (!/^P-[\w\d]{6}$/i.test(processedCode)) {
+      toast({
+        title: 'صيغة الكود غير صحيحة',
+        description: 'تأكد من أن الكود يطابق الصيغة P-XXXXXX',
         variant: 'destructive',
       });
       return;
@@ -160,7 +172,7 @@ const StudentProfile = () => {
       const response = await fetch('/api/students/connect-parent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ parentCode: parentCode.trim() }),
+        body: JSON.stringify({ parentCode: processedCode }),
       });
 
       const result = await response.json();
@@ -367,14 +379,20 @@ const StudentProfile = () => {
             </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="flex items-center gap-2">
-                  <Input 
-                    id="parent-code" 
-                    placeholder="أدخل كود ولي الأمر هنا..."
-                    value={parentCode}
-                    onChange={(e) => setParentCode(e.target.value)}
-                  />
-                  <Button onClick={handleConnectParent}>ربط الحساب</Button>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input 
+                      id="parent-code" 
+                      placeholder="P-ABC123"
+                      value={parentCode}
+                      onChange={(e) => setParentCode(e.target.value)}
+                      className="text-left tracking-widest"
+                    />
+                    <Button onClick={handleConnectParent}>ربط الحساب</Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground px-2">
+                    سيتم التعامل مع الكود على أنه بالأحرف الكبيرة.
+                  </p>
                 </div>
                 
                 <div className="space-y-4">

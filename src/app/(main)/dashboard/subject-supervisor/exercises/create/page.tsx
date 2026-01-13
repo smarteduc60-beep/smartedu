@@ -65,6 +65,7 @@ export default function CreateExercisePage() {
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
+  const [lastGeneratedQuestion, setLastGeneratedQuestion] = useState("");
 
   const handleGenerateAnswer = async () => {
     if (!questionContent.trim()) {
@@ -72,6 +73,14 @@ export default function CreateExercisePage() {
         title: "خطأ",
         description: "يرجى كتابة نص السؤال أولاً قبل توليد الإجابة.",
         variant: "destructive",
+      });
+      return;
+    }
+
+    if (questionContent.trim() === lastGeneratedQuestion) {
+      toast({
+        title: "تنبيه",
+        description: "تم توليد إجابة لهذا السؤال مسبقاً.",
       });
       return;
     }
@@ -116,6 +125,7 @@ export default function CreateExercisePage() {
           .replace(/(\\\(|\\\\\()([\s\S]*?)(\\\)|\\\\\))/g, (match: string, start: string, tex: string) => `<span data-type="math-live" data-latex="${tex.trim()}"></span>`);
 
         setModelAnswer(processedAnswer);
+        setLastGeneratedQuestion(questionContent.trim());
         toast({
           title: "تم بنجاح",
           description: "تم توليد الإجابة النموذجية. يمكنك مراجعتها وتعديلها.",

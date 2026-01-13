@@ -97,13 +97,35 @@ export async function POST(request: NextRequest) {
       return errorResponse('التمرين غير موجود', 404);
     }
 
-    // الحصول على عدد المحاولات السابقة
-    const previousAttempts = await prisma.submission.count({
+    // الحصول على المحاولات السابقة للتحقق من العدد والدرجات
+    const previousSubmissions = await prisma.submission.findMany({
       where: {
         studentId: session.user.id,
         exerciseId: parseInt(exerciseId),
       },
+      select: {
+        aiScore: true,
+        finalScore: true,
+      },
     });
+
+    const previousAttempts = previousSubmissions.length;
+
+    // التحقق من الحد الأقصى للمحاولات
+    if (exercise.maxAttempts && previousAttempts >= exercise.maxAttempts) {
+      return errorResponse(`لقد استنفدت جميع المحاولات المتاحة (${exercise.maxAttempts}) لهذا التمرين.`, 400);
+    }
+
+    // التحقق مما إذا كان الطالب قد حصل على العلامة الكاملة سابقاً
+    const maxScore = Number(exercise.maxScore || 20);
+    const hasPerfectScore = previousSubmissions.some((sub) => {
+      const score = Number(sub.finalScore ?? sub.aiScore ?? 0);
+      return score >= maxScore;
+    });
+
+    if (hasPerfectScore) {
+      return errorResponse('لقد حصلت بالفعل على العلامة الكاملة في هذا التمرين.', 400);
+    }
 
     // تم تعطيل التقييم التلقائي لتحسين الأداء
     // سيتم التقييم عند الضغط على زر "تقييم" يدوياً

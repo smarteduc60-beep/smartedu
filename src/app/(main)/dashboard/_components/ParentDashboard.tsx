@@ -15,6 +15,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
+import OnboardingTour from "./OnboardingTour";
 
 type Child = {
     id: string;
@@ -135,10 +136,48 @@ export default function ParentDashboard() {
 
     const parentName = `${parent.firstName} ${parent.lastName}`; 
 
+    // تعريف خطوات الجولة التعريفية لولي الأمر
+    const tourSteps = [
+        {
+            element: '#parent-welcome',
+            popover: {
+                title: 'مرحباً بك في بوابة ولي الأمر 👋',
+                description: 'هنا يمكنك متابعة تقدم أبنائك والتواصل مع معلميهم.',
+                side: 'bottom',
+                align: 'start'
+            }
+        },
+        {
+            element: '#parent-code-card',
+            popover: {
+                title: 'الخطوة الأهم: ربط الأبناء 🔑',
+                description: 'هذا الكود خاص بك. أعطه لأبنائك ليدخلوه في حساباتهم، وسيظهرون هنا تلقائياً.',
+                side: 'top'
+            }
+        },
+        {
+            element: '#quick-link-reports',
+            popover: {
+                title: 'الاطلاع على النتائج',
+                description: 'اضغط هنا لمشاهدة تقارير مفصلة عن أداء ونتائج أبنائك.',
+                side: 'top'
+            }
+        },
+        {
+            element: '#quick-link-messages',
+            popover: {
+                title: 'التواصل مع الأساتذة',
+                description: 'يمكنك إرسال واستقبال الرسائل مع معلمي أبنائك من هنا.',
+                side: 'top'
+            }
+        }
+    ];
+
     return (
         <div className="flex flex-col gap-8">
+            <OnboardingTour steps={tourSteps} tourKey="parent-dashboard-tour-v2" />
             <div className="flex items-center justify-between">
-                <div className="grid gap-1">
+                <div className="grid gap-1" id="parent-welcome">
                     <h1 className="text-3xl font-bold tracking-tight">
                         أهلاً بك، {parentName}!
                     </h1>
@@ -182,7 +221,7 @@ export default function ParentDashboard() {
             </div>
             
             <div className="grid gap-6 lg:grid-cols-2">
-                <Card>
+                <Card id="parent-code-card">
                     <CardHeader>
                         <CardTitle>كود الربط الخاص بك</CardTitle>
                         <CardDescription>
@@ -226,8 +265,8 @@ export default function ParentDashboard() {
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4">
                         <Link href="/dashboard/parent/children" passHref><Button variant="secondary" className="w-full justify-start">عرض الأبناء</Button></Link>
-                        <Link href="/dashboard/parent/reports" passHref><Button variant="secondary" className="w-full justify-start">عرض التقارير</Button></Link>
-                        <Link href="/messages" passHref><Button variant="secondary" className="w-full justify-start">الرسائل</Button></Link>
+                        <Link href="/dashboard/parent/reports" passHref><Button variant="secondary" className="w-full justify-start" id="quick-link-reports">عرض التقارير</Button></Link>
+                        <Link href="/messages" passHref><Button variant="secondary" className="w-full justify-start" id="quick-link-messages">الرسائل</Button></Link>
                         <Link href="/profile" passHref><Button variant="secondary" className="w-full justify-start">الملف الشخصي</Button></Link>
                     </CardContent>
                 </Card>

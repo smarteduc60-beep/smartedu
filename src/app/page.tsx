@@ -205,7 +205,7 @@ export default function LandingPage() {
                             <CardTitle>أدوار متعددة</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-muted-foreground">تجربة استخدام مخصصة لكل دور (طالب، معلم، ولي أمر، مدير) لتلبية احتياجاتهم الفريدة.</p>
+                            <p className="text-muted-foreground">تجربة استخدام مخصصة لكل دور (طالب، معلم، ولي أمر) لتلبية احتياجاتهم الفريدة.</p>
                         </CardContent>
                     </Card>
                 </div>
