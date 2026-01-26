@@ -106,7 +106,11 @@ export function FileUpload({
     } catch (error: any) {
       console.error('File upload error:', error);
       
-      let errorMessage = error.message || 'فشل في رفع الملف';
+      let errorMessage = 'فشل في رفع الملف. يرجى المحاولة مرة أخرى.';
+      if (error.message) {
+        errorMessage = error.message;
+      }
+
       if (errorMessage.includes('invalid_grant')) {
          errorMessage = 'خطأ في إعدادات Google Drive (invalid_grant). يرجى التواصل مع الإدارة.';
       }

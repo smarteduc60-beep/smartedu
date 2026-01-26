@@ -172,6 +172,12 @@ export const logger = {
       log({ level: LogLevel.ERROR, category: LogCategory.AI, action: 'AI_EVALUATION_FAILED', targetId: submissionId, details: { error: error.message } }),
   },
 
+  // Drive logs
+  drive: {
+    authFailure: (error: any) =>
+      log({ level: LogLevel.ERROR, category: LogCategory.DRIVE, action: 'AUTH_FAILURE', details: { error: error.message, stack: error.stack } }),
+  },
+
   // System logs
   system: {
     started: () =>

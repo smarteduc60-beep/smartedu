@@ -32,6 +32,7 @@ import {
   GraduationCap,
   HardDrive,
   ScrollText,
+  Trash2,
 } from "lucide-react";
 
 import {
@@ -92,6 +93,7 @@ const directeurNavItems = [
     { href: "/dashboard/directeur/promotions", icon: GraduationCap, label: "الترقيات السنوية" },
     { href: "/dashboard/directeur/backup", icon: HardDrive, label: "النسخ الاحتياطي" },
     { href: "/dashboard/directeur/logs", icon: ScrollText, label: "سجلات النظام" },
+    { href: "/dashboard/directeur/drive-cleanup", icon: Trash2, label: "تنظيف Drive" },
     { href: "/messages", icon: MessageSquare, label: "الرسائل" },
     { href: "/dashboard/directeur/database", icon: Database, label: "قاعدة البيانات" },
     { href: "/dashboard/directeur/settings", icon: Settings, label: "الإعدادات" },

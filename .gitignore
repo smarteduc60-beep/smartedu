@@ -1,131 +1,43 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+# Dependencies
 /node_modules
 /.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+.pnp.js
 
-# testing
+# Testing
 /coverage
 
-# next.js
+# Next.js
 /.next/
 /out/
 
-# production
+# Production
 /build
 
-# misc
+# Misc
 .DS_Store
 *.pem
 
-# debug
+# Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
 
-# vercel
+# Environment Variables (CRITICAL SECURITY)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
 .vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Prisma
+/prisma/*.db
+/prisma/*.db-journal
 
-.genkit/*
-!.nixpacks/plan.json
-.env*
-!.env.example
-!.env.railway.example
-
-# firebase
-firebase-debug.log
-firestore-debug.log
-/src/generated/prisma
-
-# ===== ملفات حساسة إضافية =====
-# نسخ احتياطية
-*.sql
-*.backup
-*.bak
+# Security & Local
+service-account.json
 backups/
-
-# ملفات مضغوطة
-*.zip
-*.rar
-*.7z
-
-# شهادات SSL
-certificates/
-*.pem
-*.key
-*.crt
-
-# ملفات النظام
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# ملفات IDE
+public/backups/
 .vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# تجاهل ملفات JSON لمنع تسريب مفاتيح Google Service Account
-*.json
-
-# ملفات مؤقتة
-tmp/
-temp/
-*.tmp
-*.log
-
-# ===== ملفات توثيق مؤقتة وتطوير =====
-# ملفات الإعداد والاختبار
-SETUP.md
-Test.md
-test-db.js
-auto-test.ps1
-check-security.ps1
-push-to-github.ps1
-
-# ملفات التوثيق المؤقتة
-COMPLETE.md
-COMPLETE_100.md
-FINAL_SUMMARY.md
-SUMMARY.md
-DEVELOPMENT_LOG.md
-PROJECT_INSPECTION_REPORT.md
-TESTING_CHECKLIST.md
-TESTING_SESSION.md
-MYSQL_FIX.md
-NOTIFICATIONS_UPDATE.md
-WSCRIPT_ISSUE.md
-
-# ملفات README قديمة
-README.old.md
-README_NEW.md
-
-# سكريبتات بدء التشغيل
-start-server.bat
-start-server.ps1
-
-# ملفات التوثيق التطويرية
-API_DOCUMENTATION.md
-DEPLOYMENT.md
-QUICKSTART.md
-SERVER_START_GUIDE.md
-
-# ملفات تكوين خاصة
-apphosting.yaml
-
-# مجلدات مؤقتة
-.idx/
-.modified

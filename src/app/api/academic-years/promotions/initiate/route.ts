@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
             }
           }
         },
-        parentLinks: {
+        childLinks: {
           include: {
             parent: true
           }
@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
       if (existingPromotion) continue;
 
       // Determine parent (take the first one if available)
-      const parent = student.parentLinks[0]?.parent;
+      const parent = student.childLinks[0]?.parent;
 
       if (!parent) {
         // Student has no parent linked - Send alert to student

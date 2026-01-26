@@ -42,13 +42,16 @@ import {
   Users,
   Calendar,
   Plus,
-  RefreshCwngle
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import Confetti from 'react-confetti';
+import dynamic from 'next/dynamic';
 import { useWindowSize } from '@/hooks/use-window-size';
+
+const Confetti = dynamic(() => import('react-confetti'), { ssr: false });
 
 interface AcademicYear {
   id: string;
@@ -406,10 +409,10 @@ export default function PromotionsPage() {
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2 text-yellow-700 text-lg">
                   <AlertTriangle className="h-5 w-5" />
-                  طلاب غير مؤهلين للترقية (ينقصهم ولي أمر) ({skippedStudents.length})
+                  طلاب لم تشملهم الترقية ({skippedStudents.length})
                 </CardTitle>
                 <CardDescription className="text-yellow-600">
-                  هؤلاء الطلاب لم يتم إنشاء طلب ترقية لهم لأنهم غير مرتبطين بولي أمر. تم إرسال تنبيه لهم.
+                  هؤلاء الطلاب لم يتم إنشاء طلب ترقية لهم. يرجى التحقق من الأسباب أدناه (غالباً عدم وجود ولي أمر).
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -438,9 +441,11 @@ export default function PromotionsPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button variant="link" size="sm" asChild className="px-0">
-                            <a href={`/dashboard/directeur/users?search=${student.email}`}>ربط بولي أمر</a>
-                          </Button>
+                          {!student.hasParent && (
+                            <Button variant="link" size="sm" asChild className="px-0">
+                              <a href={`/dashboard/directeur/users?search=${student.email}`}>ربط بولي أمر</a>
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -451,15 +456,17 @@ export default function PromotionsPage() {
           )}
 
           {/* Action Button */}
-          {stats.total === 0 && (
+          {(stats.total === 0 || skippedStudents.length > 0) && (
             <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-dashed">
               <CardContent className="pt-6">
                 <div className="text-center space-y-4">
                   <Send className="h-12 w-12 mx-auto text-primary" />
                   <div>
-                    <h3 className="text-lg font-semibold">ابدأ عملية الترقية</h3>
+                    <h3 className="text-lg font-semibold">
+                      {stats.total === 0 ? 'ابدأ عملية الترقية' : 'استكمال عملية الترقية'}
+                    </h3>
                     <p className="text-muted-foreground mt-2">
-                      سيتم إرسال رسائل لجميع أولياء الأمور للاستفسار عن نتائج أبنائهم
+                      سيتم إرسال رسائل لأولياء الأمور الذين لم يتم مراسلتهم بعد
                     </p>
                   </div>
                   <Button size="lg" onClick={() => setShowInitiateDialog(true)}>

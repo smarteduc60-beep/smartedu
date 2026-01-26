@@ -104,23 +104,15 @@ export default function MyLessonsPage() {
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-2">
-                        <Link href={`/lessons/${lesson.id}`} passHref>
-                          <Button variant="ghost" size="icon" title="معاينة">
+                        <Button asChild variant="ghost" size="icon" title="معاينة">
+                          <Link href={`/lessons/${lesson.id}`}>
                             <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          title="تعديل"
-                          onClick={() => {
-                            toast({
-                              title: "قريباً",
-                              description: "سنفعل خاصية التعديل ",
-                            });
-                          }}
-                        >
-                          <FilePenLine className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button asChild variant="ghost" size="icon" title="تعديل">
+                          <Link href={`/dashboard/teacher/lessons/${lesson.id}/edit`}>
+                            <FilePenLine className="h-4 w-4" />
+                          </Link>
                         </Button>
                         <Button 
                           variant="ghost" 

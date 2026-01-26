@@ -14,8 +14,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import Confetti from 'react-confetti';
+import dynamic from 'next/dynamic';
 import { useWindowSize } from '@/hooks/use-window-size';
+
+const Confetti = dynamic(() => import('react-confetti'), { ssr: false });
 
 interface PromotionResponseProps {
   messageId: number;

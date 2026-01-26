@@ -194,16 +194,16 @@ export default function SupervisorLessonsPage() {
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-2">
-                        <Link href={`/lessons/${lesson.id}`}>
-                          <Button variant="ghost" size="icon" title="معاينة">
+                        <Button asChild variant="ghost" size="icon" title="معاينة">
+                          <Link href={`/lessons/${lesson.id}`}>
                             <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/dashboard/subject-supervisor/lessons/${lesson.id}/edit`}>
-                          <Button variant="ghost" size="icon" title="تعديل">
+                          </Link>
+                        </Button>
+                        <Button asChild variant="ghost" size="icon" title="تعديل">
+                          <Link href={`/dashboard/subject-supervisor/lessons/${lesson.id}/edit`}>
                             <FilePenLine className="h-4 w-4" />
-                          </Button>
-                        </Link>
+                          </Link>
+                        </Button>
                         <Button 
                           variant="ghost" 
                           size="icon" 

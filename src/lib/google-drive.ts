@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { Readable } from 'stream';
+import { logger, LogCategory } from './logger';
 
 // متغير لتخزين نسخة العميل (Singleton Pattern)
 let driveClient: any = null;
@@ -20,8 +21,10 @@ async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 10
       error.message?.includes('invalid_grant') || 
       (error.response && error.response.data && error.response.data.error === 'invalid_grant')
     ) {
-       console.error('[GoogleDrive] ❌ Critical Authentication Error: "invalid_grant".');
-       console.error('This usually means your Google Refresh Token is expired, revoked, or invalid.');
+       const authErrorMessage = 'Critical Authentication Error: "invalid_grant". This usually means your Google Refresh Token is expired, revoked, or invalid.';
+       console.error(`[GoogleDrive] ❌ ${authErrorMessage}`);
+       
+       logger.drive.authFailure(new Error(authErrorMessage));
        
        // إعادة تعيين العميل لإجبار إعادة التهيئة في الطلبات القادمة
        driveClient = null;
@@ -174,7 +177,8 @@ async function findOrCreateFolder(folderName: string, parentId: string | null): 
 export async function resolveHierarchy(pathHierarchy: string[]): Promise<string> {
   let currentParentId: string | null = getRootFolderId();
 
-  console.log(`[GoogleDrive] 🌳 Resolving hierarchy: ${JSON.stringify(pathHierarchy)} starting from parent: ${currentParentId || 'root'}`);
+  console.log(`[GoogleDrive] 📂 Root Folder ID: ${currentParentId || 'root (My Drive)'}`);
+  console.log(`[GoogleDrive] 🌳 Resolving hierarchy: ${JSON.stringify(pathHierarchy)}`);
 
   for (const folderName of pathHierarchy) {
     if (!folderName || !folderName.trim()) continue;
@@ -201,6 +205,14 @@ export async function uploadFile(
   console.log(`[GoogleDrive] 🚀 Uploading file "${fileName}" to Folder ID: ${folderId}`);
   
   const drive = getDriveClient();
+
+  // تشخيص: التحقق من هوية المستخدم الذي يقوم بالرفع
+  try {
+    const about = await drive.about.get({ fields: 'user' });
+    console.log(`[GoogleDrive] 👤 Authenticated as: ${about.data.user?.emailAddress} (${about.data.user?.displayName})`);
+  } catch (e) {
+    console.warn('[GoogleDrive] ⚠️ Could not verify uploader identity');
+  }
 
   const requestBody = {
     name: fileName,
@@ -273,6 +285,7 @@ export async function uploadFile(
   }
 
   console.log(`[GoogleDrive] 🔗 Generated Public URL: ${publicUrl}`);
+  console.log(`[GoogleDrive] 📍 File Location: Folder ID ${folderId}`);
 
   return {
     fileId: response.data.id!,
@@ -338,10 +351,51 @@ export async function deleteFile(fileId: string) {
 }
 
 /**
+ * Lists all folders in the Drive account.
+ * Uses pagination to handle large numbers of folders.
+ */
+export async function listAllAccountFolders(): Promise<{ id: string; name: string; webViewLink: string; createdTime: string; }[]> {
+  const drive = getDriveClient();
+  const allFolders: { id: string; name: string; webViewLink: string; createdTime: string; }[] = [];
+  let pageToken: string | undefined = undefined;
+
+  console.log(`[GoogleDrive] 📂 Starting to list ALL folders in the account...`);
+
+  do {
+    const res = await withRetry(() => drive.files.list({
+      q: "mimeType='application/vnd.google-apps.folder' and trashed=false",
+      fields: 'nextPageToken, files(id, name, webViewLink, createdTime)',
+      pageSize: 1000,
+      pageToken: pageToken,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    }));
+
+    if (res.data.files) {
+      for (const folder of res.data.files) {
+        if (folder.id && folder.name && folder.webViewLink && folder.createdTime) {
+          allFolders.push({ 
+            id: folder.id, 
+            name: folder.name,
+            webViewLink: folder.webViewLink,
+            createdTime: folder.createdTime,
+          });
+        }
+      }
+    }
+    pageToken = res.data.nextPageToken || undefined;
+  } while (pageToken);
+
+  console.log(`[GoogleDrive] 📂 Finished listing. Found ${allFolders.length} total folders.`);
+  return allFolders;
+}
+
+/**
  * دالة لاسترجاع معرف المجلد الجذري (للتوافق مع الواجهات القديمة)
  */
 export function getRootFolderId() {
-  return process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || null;
+  // استخدام المعرف الصحيح للمجلد الجذر مباشرة لتجنب أخطاء البيئة
+  return '17WMjpBNuwDLj-WWcwHYkVDgpesIig2zg';
 }
 
 // ========================================================
@@ -376,5 +430,8 @@ export const GoogleDriveService = {
   },
 
   // دالة الحذف
-  deleteFolder: deleteFile
+  deleteFolder: deleteFile,
+
+  // دالة جلب كل المجلدات
+  listAllAccountFolders,
 };

@@ -7,17 +7,12 @@ import { GoogleDriveService } from '@/lib/google-drive';
 // جلب بيانات درس محدد (لصفحة التعديل)
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const session = await requireAuth();
+    await requireAuth(); // Just to ensure user is logged in
 
-    if (!session?.user) {
-      return errorResponse('Authentication failed: User is null', 401);
-    }
-
-    const { id } = await params;
-    const lessonId = parseInt(id);
+    const lessonId = parseInt(params.id);
 
     if (isNaN(lessonId)) {
       return errorResponse('معرف الدرس غير صالح', 400);
@@ -28,6 +23,13 @@ export async function GET(
       include: {
         subject: true,
         level: true,
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          }
+        }
       }
     });
 
@@ -45,18 +47,14 @@ export async function GET(
 // دالة مشتركة لتحديث الدرس (تستخدم لـ PUT و PATCH)
 async function updateLesson(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
      const session = await requireAuth();
 
-    if (!session?.user) {
-      return errorResponse('Authentication failed: User is null', 401);
-    }
     const user = session.user;
 
-    const { id } = await params;
-    const lessonId = parseInt(id);
+    const lessonId = parseInt(params.id);
 
     if (isNaN(lessonId)) {
       return errorResponse('معرف الدرس غير صالح', 400);
@@ -77,7 +75,7 @@ async function updateLesson(
 
     // التحقق من أن المستخدم هو صاحب الدرس أو مدير
     if (existingLesson.authorId && existingLesson.authorId !== user.id && user.role !== 'directeur') {
-      return errorResponse(`غير مصرح لك بتعديل هذا الدرس.`, 403);
+      return errorResponse('غير مصرح لك بتعديل هذا الدرس.', 403);
     }
 
     const dataToUpdate: any = {};
@@ -103,29 +101,24 @@ async function updateLesson(
 }
 
 // تصدير دوال PUT و PATCH
-export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  return updateLesson(req, ctx);
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  return updateLesson(req, { params });
 }
 
-export async function PATCH(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
-  return updateLesson(req, ctx);
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  return updateLesson(req, { params });
 }
 
 // حذف الدرس (إضافي)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const session = await requireAuth();
-
-    if (!session?.user) {
-      return errorResponse('Authentication failed: User is null', 401);
-    }
     const user = session.user;
 
-    const { id } = await params;
-    const lessonId = parseInt(id);
+    const lessonId = parseInt(params.id);
 
     if (isNaN(lessonId)) {
       return errorResponse('معرف الدرس غير صالح', 400);
@@ -141,7 +134,7 @@ export async function DELETE(
     }
 
     if (existingLesson.authorId && existingLesson.authorId !== user.id && user.role !== 'directeur') {
-      return errorResponse(`غير مصرح لك بحذف هذا الدرس.`, 403);
+      return errorResponse('غير مصرح لك بحذف هذا الدرس.', 403);
     }
 
     // 1. حذف جميع الإجابات (Submissions) المرتبطة بتمارين هذا الدرس
@@ -161,7 +154,11 @@ export async function DELETE(
     // 2. محاولة حذف مجلد الدرس من Google Drive (تنظيف)
     if (existingLesson.driveFolderId) {
       try {
-        await GoogleDriveService.deleteFolder(existingLesson.driveFolderId);
+        // لا نستخدم await هنا لتجنب حجب العملية، فالحذف من Drive مهم لكن ليس حرجاً لإيقاف حذف الدرس
+        GoogleDriveService.deleteFolder(existingLesson.driveFolderId).catch(gdError => {
+          console.error(`[API] Failed to delete Drive folder for lesson ${lessonId}:`, gdError);
+          // يمكنك هنا إضافة تسجيل للخطأ في قاعدة البيانات إذا أردت
+        });
       } catch (gdError) {
         console.error(`[API] Failed to delete Drive folder for lesson ${lessonId}:`, gdError);
         // نستمر في الحذف حتى لو فشل حذف المجلد

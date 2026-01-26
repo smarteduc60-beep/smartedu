@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
         userDetails: {
           select: { level: { select: { name: true } } }
         },
-        parentLinks: {
+        childLinks: {
           take: 1
         }
       }
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
         lastName: s.lastName,
         email: s.email,
         levelName: s.userDetails?.level?.name,
-        hasParent: s.parentLinks.length > 0
+        hasParent: s.childLinks.length > 0
       }))
     });
 

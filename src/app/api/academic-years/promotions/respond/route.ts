@@ -67,6 +67,14 @@ export async function POST(req: NextRequest) {
         data: { levelId: promotion.toLevelId }
       });
 
+      // Unlink student from all previous teachers upon promotion
+      await prisma.teacherStudentLink.deleteMany({
+        where: { studentId: promotion.studentId }
+      });
+
+      // Log the unlinking action
+      await logger.user.updated(promotion.studentId, session.user.id, { action: 'unlinked_from_all_teachers_on_promotion' });
+
       await prisma.studentPromotion.update({
         where: { id: promotionId },
         data: {
