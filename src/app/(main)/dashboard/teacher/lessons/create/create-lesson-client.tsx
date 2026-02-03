@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useStages, useLevels, useSubjects, useLessons } from "@/hooks";
-import { Save, Loader2, Paperclip, Plus } from "lucide-react";
+import { Save, Loader2, Paperclip, Plus, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/editor";
 import { FileUpload } from "@/components/FileUpload";
@@ -117,7 +117,7 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
     }
   }, [userDetails, subjects, stages, levels]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent | React.MouseEvent, status: 'approved' | 'draft' = 'approved') => {
     e.preventDefault();
     
     if (!title || !content || !teacherSubject || !levelId) {
@@ -138,6 +138,7 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
       pdfUrl: pdfUrl || undefined,
       subjectId: teacherSubject.id,
       levelId: parseInt(levelId),
+      status,
     });
 
     setIsSubmitting(false);
@@ -145,7 +146,7 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
     if (result.success) {
       toast({
         title: "نجح",
-        description: "تم إنشاء الدرس بنجاح",
+        description: status === 'draft' ? "تم حفظ المسودة بنجاح" : "تم نشر الدرس بنجاح",
       });
       router.push("/dashboard/teacher/lessons");
     } else {
@@ -177,7 +178,7 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={(e) => handleSubmit(e, 'approved')} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">عنوان الدرس *</Label>
               <Input 
@@ -358,6 +359,15 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
               >
                 إلغاء
               </Button>
+              <Button 
+                type="button" 
+                variant="secondary" 
+                onClick={(e) => handleSubmit(e, 'draft')}
+                disabled={isSubmitting || isFileUploading}
+              >
+                {isSubmitting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <FileText className="ml-2 h-4 w-4" />}
+                <span>حفظ كمسودة</span>
+              </Button>
               <Button type="submit" disabled={isSubmitting || isFileUploading}>
                 {isSubmitting || isFileUploading ? (
                   <>
@@ -367,7 +377,7 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
                 ) : (
                   <>
                     <Save className="ml-2 h-4 w-4" />
-                    <span>حفظ الدرس</span>
+                    <span>نشر الدرس</span>
                   </>
                 )}
               </Button>

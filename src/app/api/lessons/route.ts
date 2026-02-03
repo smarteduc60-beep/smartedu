@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     const levelId = searchParams.get('levelId');
     const type = searchParams.get('type'); // public | private
     const authorId = searchParams.get('authorId');
+    const status = searchParams.get('status');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const skip = (page - 1) * limit;
@@ -37,6 +38,7 @@ export async function GET(request: NextRequest) {
     if (levelId) where.levelId = parseInt(levelId);
     if (type) where.type = type;
     if (authorId) where.authorId = authorId;
+    if (status) where.status = status;
 
     // الطلاب يرون فقط الدروس العامة + دروس معلمهم
     if (userRole === 'student') {
@@ -67,6 +69,7 @@ export async function GET(request: NextRequest) {
 
       // إعادة بناء شرط WHERE للطلاب
       const studentWhere: any = {
+        status: 'approved',
         OR: [
           // 1. الدروس العامة من مستوى التلميذ
           {
@@ -77,6 +80,7 @@ export async function GET(request: NextRequest) {
           // 2. جميع دروس أساتذة التلميذ (عامة أو خاصة)
           ...(teacherIds.length > 0 ? [{
             authorId: { in: teacherIds },
+            status: 'approved',
             levelId: userDetails.levelId,
             ...(subjectId && { subjectId: parseInt(subjectId) }),
           }] : []),
@@ -189,6 +193,7 @@ export async function POST(request: NextRequest) {
       levelId,
       type = 'private',
       isLocked = false,
+      status = 'approved',
     } = body;
 
     if (!title) {
@@ -365,7 +370,7 @@ export async function POST(request: NextRequest) {
         authorId: session.user.id,
         type,
         isLocked,
-        status: 'approved', // جميع الدروس معتمدة مباشرة
+        status: status || 'approved', // الحالة الافتراضية معتمدة إذا لم تحدد
         driveFolderId: driveFolderId, // حفظ معرف المجلد
         lessonFileIds: lessonFileIds, // حفظ معرفات الملفات
       },

@@ -61,8 +61,7 @@ async function updateLesson(
     }
 
     const body = await request.json();
-    const { title, content, videoUrl, imageUrl, pdfUrl, subjectId, levelId, type } = body;
-
+    const { title, content, videoUrl, imageUrl, pdfUrl, subjectId, levelId, type, status } = body;
     // التحقق من وجود الدرس وملكيته
     const existingLesson = await prisma.lesson.findUnique({
         where: { id: lessonId },
@@ -87,6 +86,7 @@ async function updateLesson(
     if (subjectId !== undefined) dataToUpdate.subjectId = parseInt(subjectId);
     if (levelId !== undefined) dataToUpdate.levelId = parseInt(levelId);
     if (type !== undefined) dataToUpdate.type = type;
+    if (status !== undefined) dataToUpdate.status = status;
 
     const updatedLesson = await prisma.lesson.update({
       where: { id: lessonId },

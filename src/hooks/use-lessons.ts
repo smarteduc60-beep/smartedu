@@ -25,6 +25,7 @@ export interface Lesson {
   videoUrl?: string;
   imageUrl?: string;
   pdfUrl?: string;
+  status?: string;
   // تضمين الكائنات الكاملة للمادة والمستوى
   subject: Subject;
   level: Level;
@@ -38,6 +39,7 @@ interface CreateLessonData {
   videoUrl?: string;
   imageUrl?: string;
   pdfUrl?: string;
+  status?: 'approved' | 'draft';
 }
 
 // 3. تحديث البارامترات للسماح بطلب التضمين

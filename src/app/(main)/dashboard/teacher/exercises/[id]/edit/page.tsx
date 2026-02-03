@@ -20,12 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useLessons, useExercises } from "@/hooks";
-import { Save, UploadCloud, Loader2, Sparkles } from "lucide-react";
+import { useLessons, useExercises, useLevels } from "@/hooks";
+import { Save, Loader2, Sparkles } from "lucide-react";
 import { notFound } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/editor";
+import { FileUpload } from "@/components/FileUpload";
 
 export default function EditExercisePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
     authorId: session?.user?.id,
     include: { subject: true, level: true },
   });
+  const { levels } = useLevels();
   const { updateExercise } = useExercises();
 
   const [exerciseId, setExerciseId] = useState<string>("");
@@ -44,8 +46,13 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
   const [question, setQuestion] = useState("");
   const [modelAnswer, setModelAnswer] = useState("");
   const [questionFileUrl, setQuestionFileUrl] = useState("");
+  const [questionFileName, setQuestionFileName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
+  const [isFileUploading, setIsFileUploading] = useState(false);
+
+  const selectedLesson = Array.isArray(lessons) ? lessons.find((l: any) => String(l.id) === lessonId) : null;
+  const selectedLevelData = Array.isArray(levels) ? levels.find((l: any) => l.id === selectedLesson?.level?.id) : null;
 
   useEffect(() => {
     const fetchExercise = async () => {
@@ -65,6 +72,9 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
         setQuestion(exerciseData.questionRichContent || exerciseData.question);
         setModelAnswer(exerciseData.modelAnswer);
         setQuestionFileUrl(exerciseData.questionFileUrl || "");
+        if (exerciseData.questionFileUrl) {
+          setQuestionFileName("الملف الحالي");
+        }
       } catch (error) {
         console.error('Error fetching exercise:', error);
         notFound();
@@ -87,8 +97,6 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
 
     setIsGeneratingAnswer(true);
     try {
-      const selectedLesson = Array.isArray(lessons) ? lessons.find((l: any) => String(l.id) === lessonId) : null;
-      
       const response = await fetch('/api/ai/generate-answer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -221,31 +229,26 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
             </div>
 
             <div className="space-y-2">
-                <Label>إرفاق ملف للسؤال (اختياري)</Label>
-                <div className="flex items-center justify-center w-full">
-                    <Label htmlFor="dropzone-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-muted hover:bg-muted/80">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <UploadCloud className="w-8 h-8 mb-4 text-muted-foreground" />
-                            <p className="mb-2 text-sm text-muted-foreground"><span className="font-semibold">انقر للرفع</span> أو اسحب وأفلت الملف</p>
-                            <p className="text-xs text-muted-foreground">صورة أو PDF</p>
-                        </div>
-                        <Input id="dropzone-file" type="file" className="hidden" />
-                    </Label>
-                </div> 
-                {exercise.question_file_url && (
-                    <div className="text-sm text-muted-foreground">
-                        الملف الحالي: <a href={exercise.question_file_url} target="_blank" rel="noopener noreferrer" className="text-primary underline">{exercise.question_file_url}</a>
-                    </div>
-                )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="question-file-url">رابط ملف السؤال (اختياري)</Label>
-              <Input 
-                id="question-file-url" 
-                placeholder="https://example.com/question.pdf" 
-                value={questionFileUrl}
-                onChange={(e) => setQuestionFileUrl(e.target.value)}
+              <FileUpload
+                label="ملف السؤال (صورة أو PDF)"
+                accept="image/*,.pdf"
+                maxSizeMB={5}
+                value={questionFileName}
+                onChange={(fileInfo) => {
+                  if (fileInfo) {
+                    setQuestionFileUrl(fileInfo.fileUrl);
+                    setQuestionFileName(fileInfo.fileName);
+                  } else {
+                    setQuestionFileUrl("");
+                    setQuestionFileName("");
+                  }
+                }}
+                onUploadStatusChange={setIsFileUploading}
+                stage={selectedLevelData?.stage?.name}
+                subject={selectedLesson?.subject?.name}
+                teacher={session?.user?.name || "Teacher"}
+                lesson={selectedLesson?.title}
+                description="يمكنك رفع ملف للسؤال (اختياري) - سيتم حفظه في مجلد التمارين"
               />
             </div>
 
@@ -283,11 +286,11 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
               >
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" disabled={isSubmitting || isFileUploading}>
+                {isSubmitting || isFileUploading ? (
                   <>
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    <span>جاري الحفظ...</span>
+                    <span>{isFileUploading ? "جاري رفع الملف..." : "جاري الحفظ..."}</span>
                   </>
                 ) : (
                   <>

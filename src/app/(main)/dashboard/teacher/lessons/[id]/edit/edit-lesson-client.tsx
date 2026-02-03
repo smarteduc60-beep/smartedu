@@ -162,8 +162,7 @@ export default function EditLessonClient({ lessonId, googleDriveParentFolderId }
     fetchLesson();
   }, [lessonId, router, toast]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (status: 'draft' | 'approved') => {
     
     if (!title || !content || !teacherSubject || !levelId) {
       toast({
@@ -191,6 +190,7 @@ export default function EditLessonClient({ lessonId, googleDriveParentFolderId }
           // pptUrl: pptUrl || null,
           subjectId: teacherSubject.id,
           levelId: parseInt(levelId),
+          status,
         }),
       });
 
@@ -198,8 +198,8 @@ export default function EditLessonClient({ lessonId, googleDriveParentFolderId }
 
       if (response.ok && result.success) {
         toast({
-          title: "تم التحديث",
-          description: "تم تعديل الدرس بنجاح",
+          title: status === 'draft' ? "تم الحفظ" : "تم النشر",
+          description: status === 'draft' ? "تم حفظ المسودة بنجاح" : "تم نشر الدرس بنجاح",
         });
         router.push("/dashboard/teacher/lessons");
       } else {
@@ -242,7 +242,7 @@ export default function EditLessonClient({ lessonId, googleDriveParentFolderId }
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
             <div className="space-y-2">
               <Label htmlFor="title">عنوان الدرس *</Label>
               <Input 
@@ -415,7 +415,22 @@ export default function EditLessonClient({ lessonId, googleDriveParentFolderId }
               >
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isSubmitting || isFileUploading}>
+
+              <Button 
+                type="button" 
+                variant="secondary"
+                onClick={() => handleSubmit('draft')}
+                disabled={isSubmitting || isFileUploading}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Save className="ml-2 h-4 w-4" />
+                )}
+                <span>حفظ كمسودة</span>
+              </Button>
+
+              <Button type="button" onClick={() => handleSubmit('approved')} disabled={isSubmitting || isFileUploading}>
                 {isSubmitting || isFileUploading ? (
                   <>
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
@@ -424,7 +439,7 @@ export default function EditLessonClient({ lessonId, googleDriveParentFolderId }
                 ) : (
                   <>
                     <Save className="ml-2 h-4 w-4" />
-                    <span>حفظ التعديلات</span>
+                    <span>نشر الدرس</span>
                   </>
                 )}
               </Button>

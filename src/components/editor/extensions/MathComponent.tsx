@@ -36,14 +36,22 @@ export default function MathComponent({ node, updateAttributes, selected, editor
       if (window.customElements.get('math-field')) {
         setIsLibLoaded(true);
       } else {
-        import('mathlive')
-          .then((mod) => {
-            // تعيين مسار الخطوط إلى CDN لحل مشكلة عدم العثور عليها في بيئة Next.js
-            mod.MathfieldElement.fontsDirectory = 'https://cdn.jsdelivr.net/npm/mathlive/dist/fonts/';
-
-            setIsLibLoaded(true);
-          })
-          .catch((err) => console.error('Failed to load mathlive:', err));
+        // دالة لتحميل المكتبة مع إعادة المحاولة في حال الفشل (ChunkLoadError)
+        const loadMathLive = (retries: number) => {
+          import('mathlive')
+            .then((mod) => {
+              // تعيين مسار الخطوط إلى CDN لحل مشكلة عدم العثور عليها في بيئة Next.js
+              mod.MathfieldElement.fontsDirectory = 'https://cdn.jsdelivr.net/npm/mathlive/dist/fonts/';
+              setIsLibLoaded(true);
+            })
+            .catch((err) => {
+              console.error('Failed to load mathlive:', err);
+              if (retries > 0) {
+                setTimeout(() => loadMathLive(retries - 1), 1500);
+              }
+            });
+        };
+        loadMathLive(3);
       }
     }
   }, []);

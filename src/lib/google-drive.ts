@@ -21,7 +21,7 @@ async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 10
       error.message?.includes('invalid_grant') || 
       (error.response && error.response.data && error.response.data.error === 'invalid_grant')
     ) {
-       const authErrorMessage = 'Critical Authentication Error: "invalid_grant". This usually means your Google Refresh Token is expired, revoked, or invalid.';
+       const authErrorMessage = 'Critical Authentication Error: "invalid_grant". Please check your Service Account credentials (EMAIL/KEY) or OAuth Refresh Token.';
        console.error(`[GoogleDrive] ❌ ${authErrorMessage}`);
        
        logger.drive.authFailure(new Error(authErrorMessage));
@@ -394,8 +394,7 @@ export async function listAllAccountFolders(): Promise<{ id: string; name: strin
  * دالة لاسترجاع معرف المجلد الجذري (للتوافق مع الواجهات القديمة)
  */
 export function getRootFolderId() {
-  // استخدام المعرف الصحيح للمجلد الجذر مباشرة لتجنب أخطاء البيئة
-  return '17WMjpBNuwDLj-WWcwHYkVDgpesIig2zg';
+  return process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || null;
 }
 
 // ========================================================

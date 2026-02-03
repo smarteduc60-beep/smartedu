@@ -110,9 +110,7 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
     fetchLesson();
   }, [params]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSave = async (status: 'draft' | 'approved') => {
     // Validation
     if (!formData.title.trim()) {
       toast({
@@ -142,6 +140,7 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
         imageUrl: formData.imageUrl?.trim() || null, // سيحتوي على رابط البروكسي الجديد
         pdfUrl: formData.pdfUrl?.trim() || null,
         type: formData.isPublic ? 'public' : 'private',
+        status,
       };
 
       console.log('Sending payload size:', JSON.stringify(payload).length, 'bytes');
@@ -163,7 +162,7 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
       if (result.success) {
         toast({
           title: 'تم التحديث',
-          description: 'تم تحديث الدرس بنجاح',
+          description: status === 'draft' ? 'تم حفظ المسودة بنجاح' : 'تم نشر التعديلات بنجاح',
         });
         router.push('/dashboard/subject-supervisor/lessons');
       } else {
@@ -210,7 +209,7 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">عنوان الدرس *</Label>
               <Input 
@@ -346,7 +345,7 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
               </div>
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-4">
               <Button 
                 variant="outline" 
                 type="button"
@@ -355,7 +354,16 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
               >
                 إلغاء
               </Button>
-              <Button type="submit" disabled={submitting || isFileUploading}>
+              <Button 
+                variant="secondary" 
+                type="button"
+                onClick={() => handleSave('draft')}
+                disabled={submitting || isFileUploading}
+              >
+                {submitting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
+                حفظ كمسودة
+              </Button>
+              <Button type="button" onClick={() => handleSave('approved')} disabled={submitting || isFileUploading}>
                 {submitting || isFileUploading ? (
                   <>
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
@@ -364,7 +372,7 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
                 ) : (
                   <>
                     <Save className="ml-2 h-4 w-4" />
-                    <span>حفظ التغييرات</span>
+                    <span>نشر التعديلات</span>
                   </>
                 )}
               </Button>

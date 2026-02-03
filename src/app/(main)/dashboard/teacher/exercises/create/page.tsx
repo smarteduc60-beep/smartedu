@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/editor";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { FileUpload } from "@/components/FileUpload";
 
 type ExerciseType = 'main' | 'support_with_results' | 'support_only';
 
@@ -68,6 +69,11 @@ export default function CreateExercisePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
   const [lastGeneratedQuestion, setLastGeneratedQuestion] = useState("");
+  const [questionFileName, setQuestionFileName] = useState("");
+  const [isFileUploading, setIsFileUploading] = useState(false);
+
+  const selectedLesson = lessons.find(l => String(l.id) === lessonId);
+  const selectedLevelData = levels.find(l => l.id === selectedLesson?.level?.id);
 
   // 2. Improved function to generate AI answer with context
   const handleGenerateAnswer = async () => {
@@ -96,8 +102,6 @@ export default function CreateExercisePage() {
       });
       return;
     }
-
-    const selectedLesson = lessons.find(l => String(l.id) === lessonId);
 
     setIsGeneratingAnswer(true);
     try {
@@ -394,13 +398,26 @@ export default function CreateExercisePage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="questionFileUrl">رابط ملف السؤال (PDF اختياري)</Label>
-              <Input
-                id="questionFileUrl"
-                type="url"
-                placeholder="https://example.com/question.pdf"
-                value={questionFileUrl}
-                onChange={(e) => setQuestionFileUrl(e.target.value)}
+              <FileUpload
+                label="ملف السؤال (صورة أو PDF)"
+                accept="image/*,.pdf"
+                maxSizeMB={5}
+                value={questionFileName}
+                onChange={(fileInfo) => {
+                  if (fileInfo) {
+                    setQuestionFileUrl(fileInfo.fileUrl);
+                    setQuestionFileName(fileInfo.fileName);
+                  } else {
+                    setQuestionFileUrl("");
+                    setQuestionFileName("");
+                  }
+                }}
+                onUploadStatusChange={setIsFileUploading}
+                stage={selectedLevelData?.stage?.name}
+                subject={selectedLesson?.subject?.name}
+                teacher={session?.user?.name || "Teacher"}
+                lesson={selectedLesson?.title}
+                description="يمكنك رفع ملف للسؤال (اختياري) - سيتم حفظه في مجلد التمارين"
               />
             </div>
 
@@ -553,11 +570,11 @@ export default function CreateExercisePage() {
             )}
 
             <div className="flex gap-3 pt-4">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" disabled={isSubmitting || isFileUploading}>
+                {isSubmitting || isFileUploading ? (
                   <>
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    جارٍ الحفظ...
+                    {isFileUploading ? "جاري رفع الملف..." : "جارٍ الحفظ..."}
                   </>
                 ) : (
                   <>

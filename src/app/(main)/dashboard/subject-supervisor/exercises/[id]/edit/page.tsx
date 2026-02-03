@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/editor";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { FileUpload } from "@/components/FileUpload";
 import { notFound } from "next/navigation";
 
 type ExerciseType = 'main' | 'support_with_results' | 'support_only';
@@ -38,6 +39,7 @@ interface Exercise {
   id: number;
   type: ExerciseType;
   questionRichContent: string;
+  questionFileUrl?: string | null;
   modelAnswer: string | null;
   modelAnswerImage: string | null;
   expectedResults: any;
@@ -47,6 +49,8 @@ interface Exercise {
   lesson: {
     id: number;
     title: string;
+    subject?: { name: string };
+    level?: { name: string; stage?: { name: string } };
   };
 }
 
@@ -60,6 +64,8 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [exerciseType, setExerciseType] = useState<ExerciseType>('main');
   const [questionContent, setQuestionContent] = useState("");
+  const [questionFileUrl, setQuestionFileUrl] = useState("");
+  const [questionFileName, setQuestionFileName] = useState("");
   const [modelAnswer, setModelAnswer] = useState("");
   const [modelAnswerImage, setModelAnswerImage] = useState("");
   const [maxScore, setMaxScore] = useState("20");
@@ -70,6 +76,7 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
   ]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
+  const [isFileUploading, setIsFileUploading] = useState(false);
 
   useEffect(() => {
     const fetchExercise = async () => {
@@ -85,6 +92,10 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
           setExercise(ex);
           setExerciseType(ex.type);
           setQuestionContent(ex.questionRichContent || '');
+          setQuestionFileUrl(ex.questionFileUrl || "");
+          if (ex.questionFileUrl) {
+            setQuestionFileName("الملف الحالي");
+          }
           setModelAnswer(ex.modelAnswer || '');
           setModelAnswerImage(ex.modelAnswerImage || '');
           setMaxScore(ex.maxScore?.toString() || '20');
@@ -201,6 +212,7 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
       const payload: any = {
         type: exerciseType,
         questionRichContent: questionContent,
+        questionFileUrl: questionFileUrl || null,
         modelAnswer: exerciseType !== 'support_only' ? modelAnswer : null,
         modelAnswerImage: modelAnswerImage || null,
         maxScore: Number(maxScore),
@@ -216,7 +228,7 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
       }
 
       const response = await fetch(`/api/exercises/${exerciseId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -307,6 +319,31 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
               <RichTextEditor 
                 content={questionContent}
                 onChange={setQuestionContent}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <FileUpload
+                label="ملف السؤال (صورة أو PDF)"
+                accept="image/*,.pdf"
+                maxSizeMB={5}
+                value={questionFileName}
+                onChange={(fileInfo) => {
+                  if (fileInfo) {
+                    setQuestionFileUrl(fileInfo.fileUrl);
+                    setQuestionFileName(fileInfo.fileName);
+                  } else {
+                    setQuestionFileUrl("");
+                    setQuestionFileName("");
+                  }
+                }}
+                onUploadStatusChange={setIsFileUploading}
+                stage={exercise.lesson.level?.stage?.name}
+                subject={exercise.lesson.subject?.name}
+                teacher={session?.user?.name || "Supervisor"}
+                lesson={exercise.lesson.title}
+                subfolder="Exercises"
+                description="يمكنك رفع ملف للسؤال (اختياري) - سيتم حفظه في مجلد التمارين"
               />
             </div>
 
@@ -428,13 +465,18 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
               >
                 إلغاء
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+              <Button type="submit" disabled={isSubmitting || isFileUploading}>
+                {isSubmitting || isFileUploading ? (
+                  <>
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    <span>{isFileUploading ? "جاري رفع الملف..." : "جاري الحفظ..."}</span>
+                  </>
                 ) : (
-                  <Save className="ml-2 h-4 w-4" />
+                  <>
+                    <Save className="ml-2 h-4 w-4" />
+                    <span>حفظ التغييرات</span>
+                  </>
                 )}
-                <span>حفظ التغييرات</span>
               </Button>
             </div>
           </form>

@@ -220,6 +220,7 @@ model Exercise {
   // محتوى التمرين
   question            String?  @db.Text // نص بسيط (قديم - للتوافق)
   questionRichContent String?  @map("question_rich_content") @db.Text // محتوى TipTap
+  questionFileUrl     String?  @map("question_file_url") @db.VarChar(512)
   
   // الحل النموذجي (للتمرين الرئيسي)
   modelAnswer         String?  @map("model_answer") @db.Text

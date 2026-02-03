@@ -91,6 +91,11 @@ export const authOptions: NextAuthOptions = {
         if ('stage_id' in user) token.stage_id = user.stage_id;
       }
 
+      // حفظ refresh_token في JWT لاستخدامه لاحقاً (مثلاً مع Google Drive)
+      if (account?.refresh_token) {
+        token.refreshToken = account.refresh_token;
+      }
+
       // إذا كان التسجيل عبر Google أو إذا كانت البيانات ناقصة في الـ token (مثل role)
       // نقوم بجلب بيانات المستخدم من قاعدة البيانات لضمان تكامل الجلسة
       if (account?.provider === 'google' || (!token.role && token.sub)) {
@@ -162,28 +167,45 @@ export const authOptions: NextAuthOptions = {
           return true;
         }
 
-        // إذا كان مستخدم جديد عبر Google، ننشئ حساب أساسي
-        // سيكون عليه إكمال ملفه الشخصي لاحقاً
+        // مستخدم جديد عبر Google: ننشئه يدوياً مع دور الطالب الافتراضي
         try {
-          // نحصل على دور الطالب كافتراضي (يمكن تغييره)
           const studentRole = await prisma.role.findFirst({
             where: { name: 'student' },
           });
 
           if (!studentRole) {
-            throw new Error('لم يتم العثور على دور الطالب');
+            console.error("Default 'student' role not found in database. Please seed the roles table.");
+            return '/login?error=ConfigurationError'; // Redirect to login with a generic error
           }
 
-          // سيتم إنشاء المستخدم تلقائياً بواسطة PrismaAdapter
-          // لكن نحتاج التأكد من وجود firstName و lastName
+          // The adapter will link this user to the account automatically
+          await prisma.user.create({
+            data: {
+              email: profile.email,
+              firstName: profile.given_name || profile.name?.split(' ')[0] || 'مستخدم',
+              lastName: profile.family_name || profile.name?.split(' ').slice(1).join(' ') || 'جديد',
+              image: profile.picture,
+              roleId: studentRole.id,
+              emailVerified: new Date(), // Mark email as verified for Google users
+            },
+          });
+          
           return true;
         } catch (error) {
-          console.error('خطأ في إنشاء المستخدم:', error);
+          console.error('Error creating new user during Google sign-in:', error);
           return false;
         }
       }
 
       return true;
+    },
+
+    async redirect({ url, baseUrl }) {
+      // السماح بإعادة التوجيه للروابط النسبية
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // السماح بإعادة التوجيه لنفس النطاق
+      else if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
     },
   },
 

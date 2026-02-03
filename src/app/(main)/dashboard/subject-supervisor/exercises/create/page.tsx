@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/editor";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { FileUpload } from "@/components/FileUpload";
 
 type ExerciseType = 'main' | 'support_with_results' | 'support_only';
 
@@ -53,7 +54,7 @@ export default function CreateExercisePage() {
 
   const [lessonId, setLessonId] = useState<string>("");
   const [exerciseType, setExerciseType] = useState<ExerciseType>('main');
-  const [questionContent, setQuestionContent] = useState("");
+  const [questionContent, setQuestionContent] = useState("<p>أجب على الأسئلة بتأني</p>");
   const [questionFileUrl, setQuestionFileUrl] = useState("");
   const [modelAnswer, setModelAnswer] = useState("");
   const [modelAnswerImage, setModelAnswerImage] = useState("");
@@ -66,6 +67,12 @@ export default function CreateExercisePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
   const [lastGeneratedQuestion, setLastGeneratedQuestion] = useState("");
+  const [questionFileName, setQuestionFileName] = useState("");
+  const [isFileUploading, setIsFileUploading] = useState(false);
+
+  const selectedLesson = lessons.find(l => String(l.id) === lessonId);
+  const selectedLevel = levels.find(l => l.id === selectedLesson?.level?.id);
+  const stageName = selectedLevel?.stage?.name;
 
   const handleGenerateAnswer = async () => {
     if (!questionContent.trim()) {
@@ -93,8 +100,6 @@ export default function CreateExercisePage() {
       });
       return;
     }
-
-    const selectedLesson = lessons.find(l => String(l.id) === lessonId);
 
     setIsGeneratingAnswer(true);
     try {
@@ -388,16 +393,33 @@ export default function CreateExercisePage() {
               />
             </div>
 
+            {exerciseType === 'support_only' && (
             <div className="space-y-2">
-              <Label htmlFor="questionFileUrl">رابط ملف السؤال (PDF اختياري)</Label>
-              <Input
-                id="questionFileUrl"
-                type="url"
-                placeholder="https://example.com/question.pdf"
-                value={questionFileUrl}
-                onChange={(e) => setQuestionFileUrl(e.target.value)}
+              <Label>ملف السؤال (اختياري)</Label>
+              <FileUpload
+                label="رفع ملف السؤال (PDF أو صورة)"
+                accept=".pdf,image/*"
+                maxSizeMB={10}
+                value={questionFileName}
+                onChange={(fileInfo) => {
+                  if (fileInfo) {
+                    setQuestionFileUrl(fileInfo.fileUrl);
+                    setQuestionFileName(fileInfo.fileName);
+                  } else {
+                    setQuestionFileUrl("");
+                    setQuestionFileName("");
+                  }
+                }}
+                onUploadStatusChange={setIsFileUploading}
+                stage={stageName}
+                subject={selectedLesson?.subject?.name}
+                teacher={session?.user?.name || "Supervisor"}
+                lesson={selectedLesson?.title}
+                subfolder="Exercises"
+                description="يمكنك رفع ملف PDF أو صورة للسؤال (حتى 10 ميجابايت)"
               />
             </div>
+            )}
 
             {exerciseType === 'main' && (
               <>
@@ -548,11 +570,11 @@ export default function CreateExercisePage() {
             )}
 
             <div className="flex gap-3 pt-4">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
+              <Button type="submit" disabled={isSubmitting || isFileUploading}>
+                {isSubmitting || isFileUploading ? (
                   <>
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    جارٍ الحفظ...
+                    <span>{isFileUploading ? "جاري رفع الملف..." : "جارٍ الحفظ..."}</span>
                   </>
                 ) : (
                   <>

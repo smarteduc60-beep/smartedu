@@ -20,6 +20,7 @@ interface FileUploadProps {
   subject?: string;
   teacher?: string;
   lesson?: string;
+  subfolder?: string;
 }
 
 export function FileUpload({
@@ -35,6 +36,7 @@ export function FileUpload({
   subject,
   teacher,
   lesson,
+  subfolder,
 }: FileUploadProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -82,6 +84,7 @@ export function FileUpload({
       formData.append('subject', subject);
       formData.append('teacher', teacher);
       formData.append('lesson', lesson);
+      if (subfolder) formData.append('subfolder', subfolder);
 
       const response = await fetch('/api/upload', {
         method: 'POST',

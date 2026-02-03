@@ -5,17 +5,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, XCircle, RefreshCw } from "lucide-react";
+import { CheckCircle2, XCircle, RefreshCw, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import MathContent from "@/components/MathContent";
+import Link from "next/link";
 
 interface SupportWithResultsExerciseProps {
   exercise: {
     id: number;
     questionRichContent?: string;
     question?: string;
+    questionFileUrl?: string;
     expectedResults?: any; // JSON array
   };
 }
@@ -121,6 +123,33 @@ export default function SupportWithResultsExercise({ exercise }: SupportWithResu
           <MathContent 
             content={exercise.questionRichContent || (exercise.question || '').replace(/\n/g, '<br />')} 
           />
+
+          {exercise.questionFileUrl && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+              <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                <ExternalLink className="h-4 w-4" />
+                ملف مرفق
+              </p>
+              {exercise.questionFileUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?|&)/i) || exercise.questionFileUrl.includes('api/images/proxy') ? (
+                <div className="relative w-full overflow-hidden rounded-lg border bg-background">
+                  <img 
+                    src={exercise.questionFileUrl} 
+                    alt="ملف التمرين" 
+                    className="w-full h-auto max-h-[500px] object-contain"
+                  />
+                </div>
+              ) : (
+                <Link 
+                  href={exercise.questionFileUrl} 
+                  target="_blank" 
+                  className="inline-flex items-center gap-2 text-primary hover:underline bg-background px-4 py-2 rounded-md border shadow-sm hover:bg-accent transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>عرض الملف المرفق</span>
+                </Link>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

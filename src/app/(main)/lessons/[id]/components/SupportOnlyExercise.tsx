@@ -2,14 +2,16 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen } from "lucide-react";
+import { BookOpen, ExternalLink } from "lucide-react";
 import MathContent from "@/components/MathContent";
+import Link from "next/link";
 
 interface SupportOnlyExerciseProps {
   exercise: {
     id: number;
     questionRichContent?: string;
     question?: string;
+    questionFileUrl?: string;
   };
 }
 
@@ -37,6 +39,33 @@ export default function SupportOnlyExercise({ exercise }: SupportOnlyExercisePro
             <MathContent content={exercise.questionRichContent} />
           ) : (
             <p className="whitespace-pre-wrap">{exercise.question}</p>
+          )}
+
+          {exercise.questionFileUrl && (
+            <div className="mt-4 p-4 bg-muted/50 rounded-lg border">
+              <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                <ExternalLink className="h-4 w-4" />
+                ملف مرفق
+              </p>
+              {exercise.questionFileUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?|&)/i) || exercise.questionFileUrl.includes('api/images/proxy') ? (
+                <div className="relative w-full overflow-hidden rounded-lg border bg-background">
+                  <img 
+                    src={exercise.questionFileUrl} 
+                    alt="ملف التمرين" 
+                    className="w-full h-auto max-h-[500px] object-contain"
+                  />
+                </div>
+              ) : (
+                <Link 
+                  href={exercise.questionFileUrl} 
+                  target="_blank" 
+                  className="inline-flex items-center gap-2 text-primary hover:underline bg-background px-4 py-2 rounded-md border shadow-sm hover:bg-accent transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>عرض الملف المرفق</span>
+                </Link>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

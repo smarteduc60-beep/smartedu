@@ -38,7 +38,7 @@ interface Subject {
 export default function CompleteProfilePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { data: session, update } = useSession();
+  const { data: session, update, status } = useSession();
   
   const [role, setRole] = useState<string>('');
   const [stage, setStage] = useState<string>('');
@@ -135,8 +135,21 @@ export default function CompleteProfilePage() {
     }
   };
 
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [status, router]);
+
+  if (status === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   if (!session) {
-    router.push('/login');
     return null;
   }
 
@@ -254,4 +267,3 @@ export default function CompleteProfilePage() {
     </div>
   );
 }
-

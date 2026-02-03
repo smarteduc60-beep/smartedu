@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
     const subject = ((formData.get('subject') || formData.get('subjectName')) as string)?.trim();
     const teacher = ((formData.get('teacher') || formData.get('teacherName')) as string)?.trim();
     const lesson = ((formData.get('lesson') || formData.get('lessonName')) as string)?.trim();
+    const subfolder = (formData.get('subfolder') as string)?.trim();
 
     console.log(`[API] 📥 Received Upload Request: Stage=${stage}, Subject=${subject}, Teacher=${teacher}, Lesson=${lesson}`);
 
@@ -31,6 +32,9 @@ export async function POST(request: NextRequest) {
 
     // بناء الهرمية
     const hierarchy = [stage, subject, teacher, lesson];
+    if (subfolder) {
+      hierarchy.push(subfolder);
+    }
     console.log(`[API] 🗺️ Hierarchy to resolve: ${JSON.stringify(hierarchy)}`);
 
     // رفع الملف باستخدام الدالة الجديدة
@@ -55,6 +59,13 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('Upload API Error:', error);
+
+    // معالجة خطأ invalid_grant (سواء Service Account أو OAuth)
+    if (error.message?.includes('invalid_grant')) {
+      console.error('❌ Google Drive Auth Error: Invalid Credentials. Please check GOOGLE_CLIENT_EMAIL/KEY or REFRESH_TOKEN in .env');
+      return errorResponse('خطأ في إعدادات Google Drive: بيانات الاعتماد غير صالحة (invalid_grant). يرجى مراجعة مدير النظام.', 500);
+    }
+
     if (error.message.includes('Authentication required')) {
       return errorResponse('غير مصرح لك بالقيام بهذا الإجراء', 401);
     }

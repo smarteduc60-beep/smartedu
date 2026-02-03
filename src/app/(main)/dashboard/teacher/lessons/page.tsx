@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -19,6 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLessons } from "@/hooks";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
@@ -26,10 +34,23 @@ import { useToast } from "@/hooks/use-toast";
 export default function MyLessonsPage() {
   const { data: session } = useSession();
   const { toast } = useToast();
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   
   const { lessons, isLoading, deleteLesson } = useLessons({
     authorId: session?.user?.id,
+    status: statusFilter === 'all' ? undefined : statusFilter,
   });
+
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'draft':
+        return <Badge variant="secondary">مسودة</Badge>;
+      case 'approved':
+        return <Badge variant="default">منشور</Badge>;
+      default:
+        return <Badge variant="outline">{status || 'غير محدد'}</Badge>;
+    }
+  };
 
   const handleDelete = async (id: number) => {
     if (!confirm('هل أنت متأكد من حذف هذا الدرس؟')) return;
@@ -66,12 +87,24 @@ export default function MyLessonsPage() {
             قم بإدارة جميع الدروس التي قمت بإنشائها.
           </p>
         </div>
-        <Link href="/dashboard/teacher/lessons/create" passHref>
-          <Button>
-            <PlusCircle className="ml-2 h-4 w-4" />
-            <span>إنشاء درس جديد</span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="تصفية حسب الحالة" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">الكل</SelectItem>
+              <SelectItem value="approved">منشور</SelectItem>
+              <SelectItem value="draft">مسودة</SelectItem>
+            </SelectContent>
+          </Select>
+          <Link href="/dashboard/teacher/lessons/create" passHref>
+            <Button>
+              <PlusCircle className="ml-2 h-4 w-4" />
+              <span>إنشاء درس جديد</span>
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card>
@@ -87,7 +120,7 @@ export default function MyLessonsPage() {
               <TableRow>
                 <TableHead>عنوان الدرس</TableHead>
                 <TableHead>المادة</TableHead>
-                <TableHead>النوع</TableHead>
+                <TableHead>الحالة</TableHead>
                 <TableHead className="text-center">الإجراءات</TableHead>
               </TableRow>
             </TableHeader>
@@ -98,9 +131,7 @@ export default function MyLessonsPage() {
                     <TableCell className="font-medium">{lesson.title}</TableCell>
                     <TableCell>{lesson.subject?.name || 'غير محدد'}</TableCell>
                     <TableCell>
-                      <Badge variant="default">
-                        معتمد
-                      </Badge>
+                      {getStatusBadge(lesson.status)}
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="flex justify-center gap-2">

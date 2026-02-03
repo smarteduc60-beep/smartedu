@@ -112,9 +112,7 @@ export default function CreateLessonPage() {
     fetchSupervisorInfo();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSave = async (status: 'draft' | 'approved') => {
     // Validation
     if (!formData.title.trim()) {
       toast({
@@ -155,6 +153,7 @@ export default function CreateLessonPage() {
         subjectId: supervisorInfo.subject.id,
         levelId: supervisorInfo.level.id,
         type: formData.isPublic ? 'public' : 'private',
+        status,
       };
 
       console.log('Sending payload size:', JSON.stringify(payload).length, 'bytes');
@@ -176,7 +175,7 @@ export default function CreateLessonPage() {
       if (result.success) {
         toast({
           title: 'تم الإنشاء',
-          description: 'تم إنشاء الدرس بنجاح',
+          description: status === 'draft' ? 'تم حفظ المسودة بنجاح' : 'تم نشر الدرس بنجاح',
         });
         router.push('/dashboard/subject-supervisor/lessons');
       } else {
@@ -219,7 +218,7 @@ export default function CreateLessonPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">عنوان الدرس *</Label>
               <Input 
@@ -364,7 +363,16 @@ export default function CreateLessonPage() {
               >
                 إلغاء
               </Button>
-              <Button type="submit" disabled={submitting || isFileUploading}>
+              <Button 
+                variant="secondary" 
+                type="button"
+                onClick={() => handleSave('draft')}
+                disabled={submitting || isFileUploading}
+              >
+                {submitting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
+                حفظ كمسودة
+              </Button>
+              <Button type="button" onClick={() => handleSave('approved')} disabled={submitting || isFileUploading}>
                 {submitting || isFileUploading ? (
                   <>
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
@@ -373,7 +381,7 @@ export default function CreateLessonPage() {
                 ) : (
                   <>
                     <Save className="ml-2 h-4 w-4" />
-                    <span>حفظ الدرس</span>
+                    <span>نشر الدرس</span>
                   </>
                 )}
               </Button>

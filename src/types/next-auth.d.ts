@@ -32,5 +32,7 @@ declare module 'next-auth/jwt' {
     roleId: number;
     stage_id?: number;
     needsProfileCompletion?: boolean;
+    refreshToken?: string;
+    accessToken?: string;
   }
 }

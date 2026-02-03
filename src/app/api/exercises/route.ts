@@ -47,6 +47,17 @@ async function handleExerciseFolderCreation(exercise: any) {
       action: 'EXERCISE_DRIVE_SETUP_SUCCESS',
       details: `Successfully created Drive folder for exercise ${exercise.id}. Folder ID: ${exerciseFolderId}`,
     });
+
+    // 3. نقل الملفات المرتبطة بالتمرين إلى المجلد الجديد
+    const filesToMove = [
+      extractFileId(exercise.questionFileUrl),
+      extractFileId(exercise.modelAnswerImage)
+    ].filter(Boolean) as string[];
+
+    if (filesToMove.length > 0) {
+      console.log(`[Exercise Drive Setup] Moving ${filesToMove.length} files to exercise folder...`);
+      await Promise.all(filesToMove.map(fileId => GoogleDriveService.moveFile(fileId, exerciseFolderId)));
+    }
   } catch (error: any) {
     await log({
       level: LogLevel.ERROR,
@@ -119,8 +130,10 @@ export async function POST(request: NextRequest) {
       questionRichContent,
       question, 
       questionFileIds, 
+      questionFileUrl,
       modelAnswer,
       modelAnswerFileIds,
+      modelAnswerImage,
       expectedResults,
       maxScore = 20,
       allowRetry = true,
@@ -169,6 +182,7 @@ export async function POST(request: NextRequest) {
       question: question || null,
       questionRichContent: questionRichContent || null,
       questionFileIds: questionFileIds || [],
+      questionFileUrl: questionFileUrl || null,
       displayOrder: order,
     };
 
@@ -176,6 +190,7 @@ export async function POST(request: NextRequest) {
     if (type === 'main') {
       exerciseData.modelAnswer = modelAnswer;
       exerciseData.modelAnswerFileIds = modelAnswerFileIds || [];
+      exerciseData.modelAnswerImage = modelAnswerImage || null;
       exerciseData.maxScore = parseFloat(String(maxScore));
       exerciseData.allowRetry = allowRetry;
       exerciseData.maxAttempts = parseInt(String(maxAttempts));
@@ -187,13 +202,18 @@ export async function POST(request: NextRequest) {
 
     const exercise = await prisma.exercise.create({
       data: exerciseData,
-      include: {
-        lesson: true, // Include the full lesson to get its driveFolderId
-      },
+    });
+
+    // Fetch lesson for drive folder creation separately to avoid include errors
+    const exerciseWithLesson = await prisma.exercise.findUnique({
+      where: { id: exercise.id },
+      include: { lesson: true },
     });
 
     // Fire-and-forget Google Drive folder creation
-    handleExerciseFolderCreation(exercise);
+    if (exerciseWithLesson) {
+      handleExerciseFolderCreation(exerciseWithLesson);
+    }
 
     return successResponse(exercise, 'تم إنشاء التمرين بنجاح', 201);
   } catch (error: any) {

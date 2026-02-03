@@ -83,6 +83,16 @@ export async function PATCH(
       isBanned,
     } = body;
 
+    // جلب المستخدم للتحقق من حالته (هل هو جديد؟)
+    const userToUpdate = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { userDetails: true }
+    });
+
+    if (!userToUpdate) {
+      return notFoundResponse('المستخدم غير موجود');
+    }
+
     // التحقق من البريد الإلكتروني إذا تم تغييره
     if (email) {
       const existingUser = await prisma.user.findFirst({
@@ -107,14 +117,21 @@ export async function PATCH(
       updateData.password = await bcrypt.hash(password, 10);
     }
     
-    // تحديث الدور إذا تم تقديمه (المدير فقط)
-    if (role && session.user.role === 'directeur') {
+    // السماح بتحديث الدور في حالتين:
+    // 1. إذا كان القائم بالتعديل هو المدير.
+    // 2. إذا كان المستخدم يقوم بتحديث ملفه الشخصي لأول مرة (لا يوجد userDetails).
+    const canUpdateRole = (session.user.role === 'directeur') || (session.user.id === userId && !userToUpdate.userDetails);
+
+    if (role && canUpdateRole) {
       const roleRecord = await prisma.role.findFirst({
         where: { name: role },
       });
       if (roleRecord) {
         updateData.roleId = roleRecord.id;
       }
+    } else if (role && !canUpdateRole) {
+      // تسجيل تحذير أمني إذا حاول مستخدم غير مصرح له تغيير الدور
+      console.warn(`User ${session.user.id} attempted to change role for user ${userId} without permission.`);
     }
 
     // تحديث المستخدم
