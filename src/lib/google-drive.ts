@@ -394,7 +394,8 @@ export async function listAllAccountFolders(): Promise<{ id: string; name: strin
  * دالة لاسترجاع معرف المجلد الجذري (للتوافق مع الواجهات القديمة)
  */
 export function getRootFolderId() {
-  return process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || null;
+  // استخدام المعرف المحدد كقيمة افتراضية لضمان الحفظ في المجلد الصحيح في حال غياب متغير البيئة
+  return process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || '17WMjpBNuwDLj-WWcwHYkVDgpesIig2zg';
 }
 
 // ========================================================
