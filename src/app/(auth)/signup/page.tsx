@@ -370,7 +370,7 @@ export default function SignupPage() {
             variant="outline" 
             className="w-full"
             onClick={handleGoogleSignIn}
-            disabled={isGoogleLoading}
+            disabled={true}
             type="button"
           >
             {isGoogleLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
