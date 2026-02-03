@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         orderBy: [
           { level: { displayOrder: 'asc' } }, // ترتيب حسب تسلسل المستوى أولاً
-          { createdAt: 'desc' }               // ثم الأحدث فالأقدم
+          { createdAt: 'asc' }                // ثم الأقدم فالأحدث (للحفاظ على التسلسل التعليمي)
         ],
       }),
       prisma.lesson.count({ where }),

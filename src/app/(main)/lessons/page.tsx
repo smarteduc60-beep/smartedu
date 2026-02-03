@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { ArrowLeft, Lock, Loader2, BookOpen } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, BookOpen, School, Library } from "lucide-react";
 import { useLessons } from "@/hooks";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -41,6 +41,58 @@ export default function LessonsPage() {
   const getLessonImage = (id: number) => {
     const imageName = `lesson${id}`;
     return PlaceHolderImages.find((img) => img.id === imageName);
+  };
+
+  const privateLessons = lessons.filter(l => l.type === 'private');
+  const publicLessons = lessons.filter(l => l.type !== 'private');
+
+  const renderLessonCard = (lesson: any) => {
+    const lessonImage = getLessonImage(lesson.id);
+
+    return (
+      <Card key={lesson.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-all duration-300">
+        <CardHeader className="relative p-0">
+          {lessonImage && (
+            <div className="relative aspect-video w-full">
+              <Image
+                src={lessonImage.imageUrl}
+                alt={lesson.title}
+                fill
+                className="object-cover"
+                data-ai-hint={lessonImage.imageHint}
+              />
+            </div>
+          )}
+          <div className="p-6">
+            <div className="flex justify-between items-start gap-2">
+              <div className="flex gap-2 flex-wrap">
+                <Badge variant="secondary">{lesson.subject?.name}</Badge>
+                <Badge variant={lesson.type === 'public' ? 'default' : 'outline'}>
+                  {lesson.type === 'public' ? 'عام' : 'خاص'}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground whitespace-nowrap">
+                بواسطة: {lesson.author?.name}
+              </p>
+            </div>
+            <CardTitle className="text-xl mt-2">{lesson.title}</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="flex-grow">
+          <CardDescription>
+            {lesson.description || (lesson.content ? lesson.content.replace(/<pre[^>]*>[\s\S]*?<\/pre>/g, '').replace(/<[^>]*>?/gm, '').substring(0, 100) + '...' : '')}
+          </CardDescription>
+        </CardContent>
+        <CardFooter>
+          <Link href={`/lessons/${lesson.id}`} className="w-full" passHref>
+            <Button className="w-full">
+              <span>ابدأ الدرس</span>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </CardFooter>
+      </Card>
+    );
   };
 
   if (isLoading) {
@@ -85,61 +137,37 @@ export default function LessonsPage() {
         </p>
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {lessons.map((lesson) => {
-          const lessonImage = getLessonImage(lesson.id);
-
-          return (
-            <Card key={lesson.id} className="flex flex-col overflow-hidden">
-              <CardHeader className="relative p-0">
-                {lessonImage && (
-                  <div className="relative aspect-video w-full">
-                    <Image
-                      src={lessonImage.imageUrl}
-                      alt={lesson.title}
-                      fill
-                      className="object-cover"
-                      data-ai-hint={lessonImage.imageHint}
-                    />
-                  </div>
-                )}
-                <div className="p-6">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex gap-2 flex-wrap">
-                      <Badge variant="secondary">{lesson.subject?.name}</Badge>
-                      <Badge variant={lesson.type === 'public' ? 'default' : 'outline'}>
-                        {lesson.type === 'public' ? 'عام' : 'خاص'}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-muted-foreground whitespace-nowrap">
-                      بواسطة: {lesson.author?.name}
-                    </p>
-                  </div>
-                  <CardTitle className="text-xl mt-2">{lesson.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                <CardDescription>
-                  {lesson.description || (lesson.content ? lesson.content.replace(/<pre[^>]*>[\s\S]*?<\/pre>/g, '').replace(/<[^>]*>?/gm, '').substring(0, 100) + '...' : '')}
-                </CardDescription>
-              </CardContent>
-              <CardFooter>
-                <Link href={`/lessons/${lesson.id}`} className="w-full" passHref>
-                  <Button className="w-full">
-                    <span>ابدأ الدرس</span>
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          );
-        })}
-        {lessons.length === 0 && (
+      {lessons.length === 0 ? (
           <p className="text-muted-foreground col-span-full text-center">
             لا توجد دروس متاحة حاليًا.
           </p>
-        )}
-      </div>
+      ) : (
+        <div className="space-y-12">
+          {privateLessons.length > 0 && (
+            <section>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-primary">
+                <span className="bg-primary/10 p-2 rounded-lg"><School className="h-6 w-6" /></span>
+                دروس صفي / دروس أستاذي
+              </h2>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 bg-blue-50/30 dark:bg-blue-900/10 p-6 rounded-xl border border-blue-100 dark:border-blue-800">
+                {privateLessons.map(renderLessonCard)}
+              </div>
+            </section>
+          )}
+
+          {publicLessons.length > 0 && (
+            <section>
+              <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <span className="bg-secondary/50 p-2 rounded-lg"><Library className="h-6 w-6" /></span>
+                المكتبة العامة / دروس إثرائية
+              </h2>
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {publicLessons.map(renderLessonCard)}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
     </div>
   );
 }
