@@ -67,7 +67,13 @@ export async function POST(request: NextRequest) {
    - Do NOT deduct for "lack of detail" if the core answer is right
    - Focus on ERRORS, not on "what's missing" unless explicitly required
 
-5. LANGUAGE: Provide feedback in the SAME LANGUAGE as the question.
+5. GEOMETRY & DRAWINGS (VERY IMPORTANT):
+   - The student CANNOT submit drawings, images, or geometric constructions.
+   - You MUST IGNORE any part of the question that asks to "Draw", "Construct", "Plot", or "Sketch" (e.g., "ارسم", "أنشئ", "عين نقطة").
+   - Do NOT penalize the student or deduct any marks for missing drawings or constructions.
+   - Your evaluation and score must be based ONLY on the analytical/theoretical parts of the answer (calculations, proofs, justifications, logical reasoning).
+
+6. LANGUAGE: Provide feedback in the SAME LANGUAGE as the student's question.
 
 ═══════════════════════════════════════
 

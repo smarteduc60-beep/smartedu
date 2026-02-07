@@ -28,6 +28,7 @@ import { RichTextEditor } from "@/components/editor";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { FileUpload } from "@/components/FileUpload";
+import InteractiveGeometryCanvas from "@/components/geometry/InteractiveGeometryCanvas";
 
 type ExerciseType = 'main' | 'support_with_results' | 'support_only';
 
@@ -69,6 +70,8 @@ export default function CreateExercisePage() {
   const [lastGeneratedQuestion, setLastGeneratedQuestion] = useState("");
   const [questionFileName, setQuestionFileName] = useState("");
   const [isFileUploading, setIsFileUploading] = useState(false);
+  const [isGeneratingGeometry, setIsGeneratingGeometry] = useState(false);
+  const [geometryCommands, setGeometryCommands] = useState<any[] | null>(null);
 
   const selectedLesson = lessons.find(l => String(l.id) === lessonId);
   const selectedLevel = levels.find(l => l.id === selectedLesson?.level?.id);
@@ -156,6 +159,65 @@ export default function CreateExercisePage() {
     }
   };
 
+  const handleGenerateGeometry = async () => {
+    if (!questionContent.trim()) {
+      toast({
+        title: "خطأ",
+        description: "يرجى كتابة نص السؤال أولاً.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingGeometry(true);
+    try {
+      const response = await fetch('/api/ai/generate-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: questionContent,
+          subject: selectedLesson?.subject?.name,
+          level: selectedLesson?.level?.name,
+          mode: 'geometry',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setGeometryCommands(result.data.geometryCommands);
+        toast({
+          title: "تم بنجاح",
+          description: "تم توليد الرسم الهندسي.",
+        });
+      } else {
+        throw new Error(result.error || "فشل في توليد الرسم");
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingGeometry(false);
+    }
+  };
+
+  const handleInsertGeometryImage = (imageDataUrl: string) => {
+    const imgTag = `<img src="${imageDataUrl}" alt="Geometry Diagram" />`;
+    setQuestionContent(prev => prev + imgTag);
+  };
+
+  const handleInsertGeometryToModelAnswer = (imageDataUrl: string) => {
+    const imgTag = `<img src="${imageDataUrl}" alt="Geometry Diagram" />`;
+    setModelAnswer(prev => prev + imgTag);
+  };
+
+  const handleResetGeometry = () => {
+    setGeometryCommands(null);
+  };
+
   const handleAddResult = () => {
     setExpectedResults([
       ...expectedResults,
@@ -220,6 +282,7 @@ export default function CreateExercisePage() {
         questionRichContent: questionContent,
         questionFileUrl: questionFileUrl || null,
         displayOrder,
+        geometryCommands,
       };
 
       if (exerciseType === 'main') {
@@ -447,6 +510,40 @@ export default function CreateExercisePage() {
                     placeholder="اكتب الحل النموذجي هنا، أو قم بتوليده تلقائياً..."
                   />
                 </div>
+
+            {/* Geometry Section */}
+            <div className="space-y-2 border rounded-lg p-4 bg-muted/20">
+              <div className="flex items-center justify-between mb-2">
+                <Label className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                  الرسم الهندسي (AI)
+                </Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateGeometry}
+                  disabled={isGeneratingGeometry || !questionContent}
+                >
+                  {isGeneratingGeometry ? (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  )}
+                  توليد رسم هندسي
+                </Button>
+              </div>
+              
+              {geometryCommands && (
+                <InteractiveGeometryCanvas
+                  commands={geometryCommands}
+                  onInsertImage={handleInsertGeometryImage}
+                  onInsertToModelAnswer={handleInsertGeometryToModelAnswer}
+                  onReset={handleResetGeometry}
+                  className="w-full"
+                />
+              )}
+            </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="modelAnswerImage">صورة الحل النموذجي (اختياري)</Label>

@@ -79,6 +79,7 @@ interface Exercise {
   allowRetry?: boolean;
   maxAttempts?: number;
   lessonId: number;
+  options?: { showAxes?: boolean; showGrid?: boolean; [key: string]: any };
 }
 
 export default function LessonDetailPage({ params }: { params: Promise<{ id: string }> }) {

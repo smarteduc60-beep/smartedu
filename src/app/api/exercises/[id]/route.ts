@@ -134,6 +134,7 @@ export async function PUT(
       type,
       question,
       questionRichContent,
+      geometryCommands,
       modelAnswer,
       modelAnswerImage,
       expectedResults,
@@ -152,6 +153,7 @@ export async function PUT(
     if (type !== undefined) updateData.type = type;
     if (question !== undefined) updateData.question = question;
     if (questionRichContent !== undefined) updateData.questionRichContent = questionRichContent;
+    if (geometryCommands !== undefined) updateData.geometryCommands = geometryCommands;
     if (questionFileUrl !== undefined) updateData.questionFileUrl = questionFileUrl;
 
     // Type-specific fields

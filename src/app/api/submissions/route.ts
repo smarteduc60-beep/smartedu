@@ -62,7 +62,38 @@ export async function GET(request: NextRequest) {
       orderBy: { submittedAt: 'desc' },
     });
 
-    return successResponse({ submissions });
+    // منطق إضافي: التحقق مما إذا كان يجب كشف الإجابة النموذجية
+    let revealedModelAnswer = null;
+
+    if (exerciseId && session.user.role === 'student') {
+      const exercise = await prisma.exercise.findUnique({
+        where: { id: parseInt(exerciseId) },
+        select: { 
+          maxAttempts: true, 
+          maxScore: true, 
+          modelAnswer: true,
+          options: true
+        }
+      });
+
+      if (exercise) {
+        const attemptsCount = submissions.length;
+        const maxScore = Number(exercise.maxScore || 20);
+        
+        const hasPerfectScore = submissions.some((sub) => {
+          const score = Number(sub.finalScore ?? sub.aiScore ?? 0);
+          return score >= maxScore;
+        });
+
+        const isMaxAttemptsReached = exercise.maxAttempts ? attemptsCount >= exercise.maxAttempts : false;
+
+        if (hasPerfectScore || isMaxAttemptsReached) {
+          revealedModelAnswer = exercise.modelAnswer;
+        }
+      }
+    }
+
+    return successResponse({ submissions, modelAnswer: revealedModelAnswer });
   } catch (error: any) {
     return errorResponse(error.message || 'فشل في جلب الإجابات', 500);
   }

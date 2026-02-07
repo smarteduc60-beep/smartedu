@@ -23,6 +23,7 @@ interface MainExerciseProps {
     maxScore?: number;
     allowRetry?: boolean;
     maxAttempts?: number;
+    options?: { showAxes?: boolean; showGrid?: boolean; [key: string]: any };
   };
   studentId: string;
   onSubmissionComplete?: () => void;
@@ -36,29 +37,43 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
   const [submission, setSubmission] = useState<any>(null);
   const [attempts, setAttempts] = useState<number>(0);
   const [bestScore, setBestScore] = useState<number | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [modelAnswer, setModelAnswer] = useState<string | undefined>(exercise.modelAnswer);
 
   useEffect(() => {
+    // إعادة تعيين الحالة عند تغيير التمرين لتجنب تداخل البيانات
+    setModelAnswer(exercise.modelAnswer);
+    setSubmission(null);
+    setAttempts(0);
+    setBestScore(null);
     fetchSubmissionHistory();
-  }, [exercise.id]);
+  }, [exercise.id, studentId]);
 
-  const fetchSubmissionHistory = async () => {
+  const fetchSubmissionHistory = async (silent = false) => {
+    if (!silent) setIsLoadingHistory(true);
     try {
       const response = await fetch(`/api/submissions?exerciseId=${exercise.id}&studentId=${studentId}`);
       const result = await response.json();
       
-      if (result.success && result.submissions?.length > 0) {
+      if (result.success && result.data?.submissions?.length > 0) {
         // حساب أفضل نتيجة من جميع المحاولات
-        const scores = result.submissions.map((s: any) => Number(s.finalScore || s.aiScore || 0));
+        const scores = result.data.submissions.map((s: any) => Number(s.finalScore || s.aiScore || 0));
         const max = Math.max(...scores);
         setBestScore(max);
         
-        // تعيين آخر محاولة للعرض الحالي (أو يمكن تعيين أفضل محاولة حسب الرغبة، هنا سنعرض آخر محاولة للتفاعل)
-        // لكن سنحتفظ بأفضل نتيجة للعرض النهائي
-        setSubmission(result.submissions[0]); // API returns desc order by date usually
-        setAttempts(result.submissions.length);
+        // تعيين آخر محاولة للعرض الحالي
+        setSubmission(result.data.submissions[0]); 
+        setAttempts(result.data.submissions.length);
+
+        // تحديث الإجابة النموذجية إذا تم إرجاعها من الـ API (لأن الطالب استحقها)
+        if (result.data.modelAnswer) {
+          setModelAnswer(result.data.modelAnswer);
+        }
       }
     } catch (error) {
       console.error('Error fetching submission history:', error);
+    } finally {
+      if (!silent) setIsLoadingHistory(false);
     }
   };
 
@@ -72,7 +87,6 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
       return;
     }
 
-    // التحقق من الواجهة الأمامية قبل الإرسال (التحقق الرئيسي في الواجهة الخلفية)
     if (exercise.maxAttempts && attempts >= exercise.maxAttempts) {
       toast({
         title: "تجاوزت الحد الأقصى",
@@ -105,7 +119,6 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
           description: "جارٍ تصحيح إجابتك بالذكاء الاصطناعي...",
         });
 
-        // طلب التصحيح بالـ AI
         const aiResponse = await fetch(`/api/submissions/${result.data.id}/evaluate`, {
           method: 'POST',
         });
@@ -115,9 +128,9 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
         if (aiResult.success) {
           const newScore = Number(aiResult.data.aiScore || 0);
           setSubmission(aiResult.data);
-          setAttempts(prev => prev + 1);
+          const newAttempts = attempts + 1;
+          setAttempts(newAttempts);
           
-          // تحديث أفضل نتيجة
           if (bestScore === null || newScore > bestScore) {
             setBestScore(newScore);
           }
@@ -126,6 +139,13 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
             title: "تم التصحيح",
             description: `حصلت على ${newScore} من ${exercise.maxScore}`,
           });
+
+          const isMaxReached = exercise.maxAttempts ? newAttempts >= exercise.maxAttempts : false;
+          const isPerfect = newScore >= (exercise.maxScore || 20);
+
+          if (isMaxReached || isPerfect) {
+            fetchSubmissionHistory(true);
+          }
 
           if (onSubmissionComplete) {
             onSubmissionComplete();
@@ -159,18 +179,24 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
     return "حاول مرة أخرى.";
   };
 
-  // شروط اكتمال التمرين: استنفاد المحاولات أو الحصول على العلامة الكاملة
   const maxScoreVal = exercise.maxScore || 20;
   const effectiveMaxAttempts = exercise.maxAttempts ?? Infinity;
   const isPerfectScore = bestScore !== null && bestScore >= maxScoreVal;
   const isMaxAttemptsReached = exercise.maxAttempts ? attempts >= exercise.maxAttempts : false;
   const isExerciseCompleted = isPerfectScore || isMaxAttemptsReached;
 
-  // السماح بالمحاولة فقط إذا لم يكتمل التمرين
   const canRetry = exercise.allowRetry && !isExerciseCompleted;
+
+  if (isLoadingHistory) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* السؤال */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -224,7 +250,6 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
         </CardContent>
       </Card>
 
-      {/* حالة اكتمال التمرين */}
       {isExerciseCompleted && (
         <Alert className={`border-2 ${isPerfectScore ? 'border-green-500 bg-green-50' : 'border-yellow-500 bg-yellow-50'}`}>
           {isPerfectScore ? <Trophy className="h-5 w-5 text-green-600" /> : <Lock className="h-5 w-5 text-yellow-600" />}
@@ -239,7 +264,6 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
         </Alert>
       )}
 
-      {/* منطقة الإجابة */}
       {!isExerciseCompleted && (!submission || canRetry) ? (
         <Card>
           <CardHeader>
@@ -306,7 +330,6 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
         </Card>
       ) : null}
 
-      {/* نتيجة التصحيح */}
       {submission && (
         <Card className="border-primary">
           <CardHeader>
@@ -321,8 +344,7 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* عرض الإجابة النموذجية */}
-            {exercise.modelAnswer && (attempts >= effectiveMaxAttempts || (submission.aiScore >= (exercise.maxScore || 20))) && (
+            {modelAnswer && ((!exercise.modelAnswer) || attempts >= effectiveMaxAttempts || (submission.aiScore >= (exercise.maxScore || 20))) && (
               <div className="space-y-2">
                 <h4 className="font-semibold text-lg">الإجابة النموذجية:</h4>
                 <div 
@@ -330,7 +352,7 @@ export default function MainExercise({ exercise, studentId, onSubmissionComplete
                   onContextMenu={(e) => e.preventDefault()}
                   style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none', msUserSelect: 'none' }}
                 >
-                  <MathContent content={exercise.modelAnswer} />
+                  <MathContent content={modelAnswer} />
                 </div>
               </div>
             )}

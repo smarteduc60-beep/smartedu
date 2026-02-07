@@ -131,6 +131,7 @@ export async function POST(request: NextRequest) {
       question, 
       questionFileIds, 
       questionFileUrl,
+      geometryCommands, // إضافة الحقل الجديد
       modelAnswer,
       modelAnswerFileIds,
       modelAnswerImage,
@@ -145,6 +146,11 @@ export async function POST(request: NextRequest) {
       return errorResponse('معرف الدرس والسؤال مطلوبان', 400);
     }
 
+    const parsedLessonId = parseInt(lessonId);
+    if (isNaN(parsedLessonId)) {
+        return errorResponse('معرف الدرس غير صالح', 400);
+    }
+
     if (type === 'main' && !modelAnswer) {
       return errorResponse('الحل النموذجي مطلوب للتمرين الرئيسي', 400);
     }
@@ -155,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     // التحقق من ملكية الدرس
     const lesson = await prisma.lesson.findUnique({
-      where: { id: parseInt(lessonId) },
+      where: { id: parsedLessonId },
     });
 
     if (!lesson) {
@@ -170,18 +176,19 @@ export async function POST(request: NextRequest) {
     let order = displayOrder;
     if (!order) {
       const lastExercise = await prisma.exercise.findFirst({
-        where: { lessonId: parseInt(lessonId) },
+        where: { lessonId: parsedLessonId },
         orderBy: { displayOrder: 'desc' },
       });
       order = lastExercise ? lastExercise.displayOrder + 1 : 1;
     }
 
     const exerciseData: any = {
-      lessonId: parseInt(lessonId),
+      lessonId: parsedLessonId,
       type,
       question: question || null,
       questionRichContent: questionRichContent || null,
-      questionFileIds: questionFileIds || [],
+      questionFileIds: Array.isArray(questionFileIds) ? questionFileIds : [],
+      geometryCommands: geometryCommands || null, // إضافة الحقل الجديد
       questionFileUrl: questionFileUrl || null,
       displayOrder: order,
     };
@@ -189,11 +196,13 @@ export async function POST(request: NextRequest) {
     // إضافة الحقول حسب نوع التمرين
     if (type === 'main') {
       exerciseData.modelAnswer = modelAnswer;
-      exerciseData.modelAnswerFileIds = modelAnswerFileIds || [];
+      exerciseData.modelAnswerFileIds = Array.isArray(modelAnswerFileIds) ? modelAnswerFileIds : [];
       exerciseData.modelAnswerImage = modelAnswerImage || null;
-      exerciseData.maxScore = parseFloat(String(maxScore));
-      exerciseData.allowRetry = allowRetry;
-      exerciseData.maxAttempts = parseInt(String(maxAttempts));
+      const parsedMaxScore = parseFloat(String(maxScore));
+      exerciseData.maxScore = isNaN(parsedMaxScore) ? 20 : parsedMaxScore;
+      exerciseData.allowRetry = Boolean(allowRetry);
+      const parsedMaxAttempts = parseInt(String(maxAttempts));
+      exerciseData.maxAttempts = isNaN(parsedMaxAttempts) ? 3 : parsedMaxAttempts;
     } else if (type === 'support_with_results') {
       exerciseData.expectedResults = expectedResults;
     }
@@ -202,17 +211,14 @@ export async function POST(request: NextRequest) {
 
     const exercise = await prisma.exercise.create({
       data: exerciseData,
-    });
-
-    // Fetch lesson for drive folder creation separately to avoid include errors
-    const exerciseWithLesson = await prisma.exercise.findUnique({
-      where: { id: exercise.id },
-      include: { lesson: true },
+      include: {
+        lesson: true,
+      },
     });
 
     // Fire-and-forget Google Drive folder creation
-    if (exerciseWithLesson) {
-      handleExerciseFolderCreation(exerciseWithLesson);
+    if (exercise) {
+      handleExerciseFolderCreation(exercise);
     }
 
     return successResponse(exercise, 'تم إنشاء التمرين بنجاح', 201);

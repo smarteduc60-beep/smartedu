@@ -1,8 +1,7 @@
 'use client';
 
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
@@ -40,6 +39,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MathExtension } from './extensions/MathExtension';
 import { TextDirection } from './extensions/TextDirection';
+import { ResizableImage } from './extensions/ResizableImage';
 import { uploadFileToDrive } from '@/lib/upload'; // Import the new upload utility
 import { Loader2 } from 'lucide-react'; // Import Loader2 icon
 
@@ -50,6 +50,7 @@ interface RichTextEditorProps {
   editable?: boolean;
   className?: string;
   googleDriveParentFolderId?: string; // New prop for Google Drive parent folder
+  onEditorReady?: (editor: Editor) => void; // Prop to pass editor instance up
 }
 
 export default function RichTextEditor({
@@ -59,6 +60,7 @@ export default function RichTextEditor({
   editable = true,
   className = '',
   googleDriveParentFolderId, // Destructure the new prop
+  onEditorReady,
 }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [colorPicker, setColorPicker] = useState('#000000');
@@ -73,7 +75,7 @@ export default function RichTextEditor({
           levels: [1, 2, 3],
         },
       }),
-      Image.configure({
+      ResizableImage.configure({
         inline: true,
         allowBase64: true,
       }),
@@ -117,6 +119,11 @@ export default function RichTextEditor({
       }, 0);
     }
   }, [content, editor]);
+
+  // Pass editor instance to parent component when it's ready
+  useEffect(() => {
+    if (editor && onEditorReady) onEditorReady(editor);
+  }, [editor, onEditorReady]);
 
   const insertMathSymbol = useCallback((latex: string) => {
     if (editor) {

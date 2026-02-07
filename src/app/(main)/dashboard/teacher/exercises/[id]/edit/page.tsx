@@ -27,6 +27,13 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { RichTextEditor } from "@/components/editor";
 import { FileUpload } from "@/components/FileUpload";
+import { Textarea } from "@/components/ui/textarea";
+import dynamic from "next/dynamic";
+
+const InteractiveGeometryCanvas = dynamic(() => import("@/app/InteractiveGeometryCanvas"), {
+  ssr: false,
+  loading: () => <div className="h-[400px] w-full bg-muted animate-pulse rounded-lg flex items-center justify-center text-muted-foreground">جاري تحميل لوحة الرسم...</div>
+});
 
 export default function EditExercisePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -50,6 +57,8 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingAnswer, setIsGeneratingAnswer] = useState(false);
   const [isFileUploading, setIsFileUploading] = useState(false);
+  const [geometryCommands, setGeometryCommands] = useState("");
+  const [isGeneratingGeometry, setIsGeneratingGeometry] = useState(false);
 
   const selectedLesson = Array.isArray(lessons) ? lessons.find((l: any) => String(l.id) === lessonId) : null;
   const selectedLevelData = Array.isArray(levels) ? levels.find((l: any) => l.id === selectedLesson?.level?.id) : null;
@@ -74,6 +83,9 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
         setQuestionFileUrl(exerciseData.questionFileUrl || "");
         if (exerciseData.questionFileUrl) {
           setQuestionFileName("الملف الحالي");
+        }
+        if (exerciseData.geometryCommands) {
+          setGeometryCommands(JSON.stringify(exerciseData.geometryCommands, null, 2));
         }
       } catch (error) {
         console.error('Error fetching exercise:', error);
@@ -134,6 +146,46 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
     }
   };
 
+  const handleGenerateGeometry = async () => {
+    if (!question.trim()) {
+      toast({
+        title: "خطأ",
+        description: "يرجى كتابة نص السؤال أولاً.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingGeometry(true);
+    try {
+      const response = await fetch('/api/ai/generate-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: question,
+          mode: 'geometry'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success && result.data.geometryCommands) {
+        setGeometryCommands(JSON.stringify(result.data.geometryCommands, null, 2));
+        toast({ title: "تم بنجاح", description: "تم توليد أوامر الرسم." });
+      } else {
+        throw new Error(result.error || "فشل في توليد الرسم");
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingGeometry(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -147,13 +199,26 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
     }
 
     setIsSubmitting(true);
-    const result = await updateExercise(Number(exerciseId), {
+    
+    const updateData: any = {
       lessonId: parseInt(lessonId),
       question,
       questionRichContent: question,
       modelAnswer,
       questionFileUrl: questionFileUrl || undefined,
-    } as any);
+    };
+
+    if (geometryCommands) {
+      try {
+        updateData.geometryCommands = JSON.parse(geometryCommands);
+      } catch (e) {
+        toast({ title: "خطأ", description: "تنسيق أوامر الرسم غير صحيح (JSON)", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    const result = await updateExercise(Number(exerciseId), updateData);
 
     setIsSubmitting(false);
 
@@ -190,6 +255,7 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
       <div className="grid gap-1">
         <h1 className="text-3xl font-bold tracking-tight">تعديل التمرين</h1>
         <p className="text-muted-foreground">
+
           قم بتحديث تفاصيل التمرين أدناه.
         </p>
       </div>
@@ -226,6 +292,48 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
                 onChange={setQuestion}
                 placeholder="اكتب نص السؤال هنا..."
               />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <Label>الرسم الهندسي (اختياري)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateGeometry}
+                  disabled={isGeneratingGeometry || !question}
+                >
+                  {isGeneratingGeometry ? (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  )}
+                  توليد رسم هندسي
+                </Button>
+              </div>
+              <div className="grid gap-4">
+                <Textarea
+                  value={geometryCommands}
+                  onChange={(e) => setGeometryCommands(e.target.value)}
+                  placeholder='[{"command": "create_point", ...}]'
+                  rows={5}
+                  className="font-mono text-xs"
+                  dir="ltr"
+                />
+                {geometryCommands && (
+                  <div className="border rounded-lg p-4 bg-white">
+                    <Label className="mb-2 block">معاينة الرسم:</Label>
+                    <InteractiveGeometryCanvas 
+                      commands={(() => {
+                        try { return JSON.parse(geometryCommands); }
+                        catch { return null; }
+                      })()} 
+                      height={400}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">

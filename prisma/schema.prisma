@@ -220,10 +220,12 @@ model Exercise {
   // محتوى التمرين
   question            String?  @db.Text // نص بسيط (قديم - للتوافق)
   questionRichContent String?  @map("question_rich_content") @db.Text // محتوى TipTap
+  geometryCommands    Json?    @map("geometry_commands")
   questionFileUrl     String?  @map("question_file_url") @db.VarChar(512)
   
   // الحل النموذجي (للتمرين الرئيسي)
   modelAnswer         String?  @map("model_answer") @db.Text
+  modelAnswerImage    String?  @map("model_answer_image") @db.VarChar(512)
   
   // النتائج المتوقعة (لتمارين الدعم + نتائج)
   expectedResults     Json?    @map("expected_results") // [{question: "1", result: "45", tolerance: 0.01}, ...]

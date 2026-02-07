@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -28,6 +28,15 @@ import { RichTextEditor } from "@/components/editor";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { FileUpload } from "@/components/FileUpload";
+import { Textarea } from "@/components/ui/textarea";
+import dynamic from "next/dynamic";
+import type { Editor } from '@tiptap/react';
+
+const InteractiveGeometryCanvas = dynamic(() => import("@/components/geometry/InteractiveGeometryCanvas"), {
+  ssr: false,
+  // Adding a loading state improves user experience
+  loading: () => <div className="h-[400px] w-full bg-muted animate-pulse rounded-lg flex items-center justify-center text-muted-foreground">جاري تحميل لوحة الرسم...</div>
+});
 
 type ExerciseType = 'main' | 'support_with_results' | 'support_only';
 
@@ -71,6 +80,10 @@ export default function CreateExercisePage() {
   const [lastGeneratedQuestion, setLastGeneratedQuestion] = useState("");
   const [questionFileName, setQuestionFileName] = useState("");
   const [isFileUploading, setIsFileUploading] = useState(false);
+  const [geometryCommands, setGeometryCommands] = useState("");
+  const [questionEditor, setQuestionEditor] = useState<Editor | null>(null);
+  const [modelAnswerEditor, setModelAnswerEditor] = useState<Editor | null>(null);
+  const [isGeneratingGeometry, setIsGeneratingGeometry] = useState(false);
 
   const selectedLesson = lessons.find(l => String(l.id) === lessonId);
   const selectedLevelData = levels.find(l => l.id === selectedLesson?.level?.id);
@@ -159,6 +172,60 @@ export default function CreateExercisePage() {
     }
   };
 
+  // Callback to insert geometry image into the editor
+  const handleInsertDrawing = useCallback((imageDataUrl: string) => {
+    if (questionEditor) {
+      questionEditor.chain().focus().insertContentAt(questionEditor.state.doc.content.size, `<img src="${imageDataUrl}" />`).run();
+    }
+  }, [questionEditor]);
+
+  // Callback to insert geometry image into the model answer editor
+  const handleInsertToModelAnswer = useCallback((imageDataUrl: string) => {
+    if (modelAnswerEditor) {
+      modelAnswerEditor.chain().focus().insertContentAt(modelAnswerEditor.state.doc.content.size, `<img src="${imageDataUrl}" />`).run();
+    }
+  }, [modelAnswerEditor]);
+
+  const handleGenerateGeometry = async () => {
+    if (!questionContent.trim()) {
+      toast({
+        title: "خطأ",
+        description: "يرجى كتابة نص السؤال أولاً.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingGeometry(true);
+    try {
+      const response = await fetch('/api/ai/generate-answer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: questionContent,
+          mode: 'geometry'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success && result.data.geometryCommands) {
+        setGeometryCommands(JSON.stringify(result.data.geometryCommands, null, 2));
+        toast({ title: "تم بنجاح", description: "تم توليد أوامر الرسم." });
+      } else {
+        throw new Error(result.error || "فشل في توليد الرسم");
+      }
+    } catch (error: any) {
+      toast({
+        title: "خطأ",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingGeometry(false);
+    }
+  };
+
   const handleAddResult = () => {
     setExpectedResults([
       ...expectedResults,
@@ -224,6 +291,10 @@ export default function CreateExercisePage() {
         questionFileUrl: questionFileUrl || null,
         displayOrder,
       };
+
+      if (geometryCommands) {
+        exerciseData.geometryCommands = JSON.parse(geometryCommands);
+      }
 
       if (exerciseType === 'main') {
         exerciseData.modelAnswer = modelAnswer;
@@ -393,8 +464,52 @@ export default function CreateExercisePage() {
               <RichTextEditor
                 content={questionContent}
                 onChange={setQuestionContent}
+                onEditorReady={setQuestionEditor}
                 placeholder="اكتب السؤال هنا... يمكنك إضافة صور وجداول"
               />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <Label>الرسم الهندسي (اختياري)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerateGeometry}
+                  disabled={isGeneratingGeometry || !questionContent}
+                >
+                  {isGeneratingGeometry ? (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="ml-2 h-4 w-4" />
+                  )}
+                  توليد رسم هندسي
+                </Button>
+              </div>
+              <div className="grid gap-4">
+                <Textarea
+                  value={geometryCommands}
+                  onChange={(e) => setGeometryCommands(e.target.value)}
+                  placeholder='[{"command": "create_point", ...}]'
+                  rows={5}
+                  className="font-mono text-xs"
+                  dir="ltr"
+                />
+                {geometryCommands && (
+                  <div className="border rounded-lg p-4 bg-white">
+                    <InteractiveGeometryCanvas 
+                      commands={(() => {
+                        try { return JSON.parse(geometryCommands); }
+                        catch { return null; }
+                      })()} 
+                      onInsertImage={handleInsertDrawing}
+                      onInsertToModelAnswer={exerciseType === 'main' ? handleInsertToModelAnswer : undefined}
+                      onReset={() => setGeometryCommands("")}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -444,6 +559,7 @@ export default function CreateExercisePage() {
                   <RichTextEditor
                     content={modelAnswer}
                     onChange={setModelAnswer}
+                    onEditorReady={setModelAnswerEditor}
                     placeholder="اكتب الحل النموذجي هنا، أو قم بتوليده تلقائياً..."
                   />
                 </div>
