@@ -27,7 +27,12 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { FileUpload } from "@/components/FileUpload";
 import { notFound } from "next/navigation";
-import InteractiveGeometryCanvas from "@/components/geometry/InteractiveGeometryCanvas";
+import dynamic from "next/dynamic";
+
+const InteractiveGeometryCanvas = dynamic(() => import("@/components/geometry/InteractiveGeometryCanvas"), {
+  ssr: false,
+  loading: () => <div className="h-[400px] w-full bg-muted animate-pulse rounded-lg flex items-center justify-center text-muted-foreground">جاري تحميل لوحة الرسم...</div>
+});
 
 type ExerciseType = 'main' | 'support_with_results' | 'support_only';
 
