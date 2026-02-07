@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-// @ts-ignore
-import JXG from 'jsxgraph'; // Use the main export
 // The CSS is now imported in the root layout to avoid package export errors
 import { GeometryCommand, renderFromCommands } from '@/lib/geometry-interpreter';
 
@@ -25,32 +23,37 @@ export default function InteractiveGeometryCanvas({
     // التأكد من أن الكود يعمل فقط في المتصفح
     if (typeof window === 'undefined' || !document.getElementById(boxId.current)) return;
 
-    // تهيئة اللوحة (Board) إذا لم تكن مهيأة
-    if (!boardRef.current) {
-      boardRef.current = JXG.JSXGraph.initBoard(boxId.current, {
-        boundingbox: [-2, 8, 12, -2], // إحداثيات افتراضية [left, top, right, bottom]
-        axis: false, // إخفاء المحاور افتراضياً (يمكن تفعيلها حسب الحاجة)
-        showCopyright: false,
-        showNavigation: true, // أزرار التكبير والتصغير
-        pan: { enabled: true },
-        zoom: { enabled: true },
-        resize: { enabled: true } 
-      });
-    }
+    // استيراد المكتبة ديناميكياً لتجنب مشاكل SSR
+    import('jsxgraph').then((mod) => {
+      const JXG = mod.default || mod;
 
-    const board = boardRef.current;
-
-    // تنظيف اللوحة وإعادة الرسم عند تغير الأوامر
-    if (commands && Array.isArray(commands)) {
-        JXG.JSXGraph.freeBoard(board);
+      // تهيئة اللوحة (Board) إذا لم تكن مهيأة
+      if (!boardRef.current) {
         boardRef.current = JXG.JSXGraph.initBoard(boxId.current, {
-            boundingbox: [-2, 8, 12, -2],
-            axis: false,
-            showCopyright: false,
-            showNavigation: true
+          boundingbox: [-2, 8, 12, -2], // إحداثيات افتراضية [left, top, right, bottom]
+          axis: false, // إخفاء المحاور افتراضياً (يمكن تفعيلها حسب الحاجة)
+          showCopyright: false,
+          showNavigation: true, // أزرار التكبير والتصغير
+          pan: { enabled: true },
+          zoom: { enabled: true },
+          resize: { enabled: true } 
         });
-        renderFromCommands(boardRef.current, commands);
-    }
+      }
+
+      const board = boardRef.current;
+
+      // تنظيف اللوحة وإعادة الرسم عند تغير الأوامر
+      if (commands && Array.isArray(commands)) {
+          JXG.JSXGraph.freeBoard(board);
+          boardRef.current = JXG.JSXGraph.initBoard(boxId.current, {
+              boundingbox: [-2, 8, 12, -2],
+              axis: false,
+              showCopyright: false,
+              showNavigation: true
+          });
+          renderFromCommands(boardRef.current, commands);
+      }
+    });
 
   }, [commands]);
 
