@@ -42,9 +42,11 @@ export default function InteractiveGeometryCanvas({
       // Always initialize the board to show axes and grid
       boardRef.current = JXG.JSXGraph.initBoard(containerRef.current.id, {
         boundingbox: [-5, 5, 5, -5],
+        axis: true,
         axis: showAxes,
         showCopyright: false,
         showNavigation: true,
+        grid: true,
         grid: showAxes,
         keepAspectRatio: true,
       });
