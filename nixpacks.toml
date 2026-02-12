@@ -1,0 +1,23 @@
+# Nixpacks Configuration for Railway
+# https://nixpacks.com/docs/configuration/file
+
+[phases.setup]
+nixPkgs = ["nodejs_18", "openssl"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+# Build WITHOUT DATABASE_URL - Prisma generate only needs schema
+cmds = [
+  "npx prisma generate",
+  "npm run build"
+]
+
+[start]
+# Deploy phase - DATABASE_URL is available here
+cmd = "npx prisma db push --accept-data-loss && npm run seed && npm start"
+
+[variables]
+# Dummy DATABASE_URL for build phase (won't be used)
+DATABASE_URL = "mysql://dummy:dummy@localhost:3306/dummy"

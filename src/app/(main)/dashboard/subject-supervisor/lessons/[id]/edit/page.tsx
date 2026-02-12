@@ -1,0 +1,385 @@
+
+'use client';
+
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Save, Loader2, Paperclip } from "lucide-react";
+import { notFound, useRouter } from "next/navigation";
+import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
+import { RichTextEditor } from "@/components/editor";
+import { FileUpload } from "@/components/FileUpload";
+
+// دالة مساعدة لتحويل روابط Google Drive القديمة إلى روابط Proxy
+const getProxiedUrl = (url: string) => {
+  if (!url) return "";
+  // إضافة لاحقة وهمية للصورة لكي يتعرف عليها مكون FileUpload والمتصفح كصورة
+  const suffix = "&t=image.jpg";
+  if (url.startsWith('/api/images/proxy')) return url.includes(suffix) ? url : `${url}${suffix}`;
+  
+  const idMatch = url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if ((url.includes('drive.google.com') || url.includes('googleusercontent.com')) && idMatch && idMatch[1]) {
+    return `/api/images/proxy?fileId=${idMatch[1]}${suffix}`;
+  }
+  
+  return url;
+};
+
+interface Lesson {
+  id: string;
+  title: string;
+  content: string;
+  videoUrl: string | null;
+  type: 'public' | 'private';
+  subject: { id: number; name: string };
+  level: { id: number; name: string };
+}
+
+export default function EditSupervisorLessonPage({ params }: { params: Promise<{ id: string }> }) {
+  const { toast } = useToast();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [lesson, setLesson] = useState<Lesson | null>(null);
+  const [lessonId, setLessonId] = useState<string>('');
+  const [formData, setFormData] = useState({
+    title: '',
+    content: '',
+    videoUrl: '',
+    imageUrl: '',
+    pdfBase64: '',
+    pdfUrl: '',
+    isPublic: false,
+  });
+
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [showPdfUpload, setShowPdfUpload] = useState(false);
+  const [showPptUpload, setShowPptUpload] = useState(false);
+  const [isFileUploading, setIsFileUploading] = useState(false);
+
+  useEffect(() => {
+    const fetchLesson = async () => {
+      const resolvedParams = await params;
+      setLessonId(resolvedParams.id);
+      
+      try {
+        const response = await fetch(`/api/lessons/${resolvedParams.id}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setLesson(result.data);
+          setFormData({
+            title: result.data.title,
+            content: result.data.content || '',
+            videoUrl: result.data.videoUrl || '',
+            imageUrl: getProxiedUrl(result.data.imageUrl || ''),
+            pdfBase64: result.data.pdfUrl || '',
+            pdfUrl: result.data.pdfUrl || '',
+            isPublic: result.data.type === 'public',
+          });
+
+          if (result.data.imageUrl) setShowImageUpload(true);
+          if (result.data.pdfUrl) setShowPdfUpload(true);
+        } else {
+          notFound();
+        }
+      } catch (error) {
+        console.error('Error fetching lesson:', error);
+        notFound();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLesson();
+  }, [params]);
+
+  const handleSave = async (status: 'draft' | 'approved') => {
+    // Validation
+    if (!formData.title.trim()) {
+      toast({
+        title: 'خطأ',
+        description: 'يرجى إدخال عنوان الدرس',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!formData.content.trim()) {
+      toast({
+        title: 'خطأ',
+        description: 'يرجى إدخال محتوى الدرس',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const payload: any = {
+        title: formData.title.trim(),
+        content: formData.content,
+        videoUrl: formData.videoUrl?.trim() || null,
+        imageUrl: formData.imageUrl?.trim() || null, // سيحتوي على رابط البروكسي الجديد
+        pdfUrl: formData.pdfUrl?.trim() || null,
+        type: formData.isPublic ? 'public' : 'private',
+        status,
+      };
+
+      console.log('Sending payload size:', JSON.stringify(payload).length, 'bytes');
+
+      const response = await fetch(`/api/lessons/${lessonId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Server error:', errorText);
+        throw new Error(`فشل في الحفظ: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast({
+          title: 'تم التحديث',
+          description: status === 'draft' ? 'تم حفظ المسودة بنجاح' : 'تم نشر التعديلات بنجاح',
+        });
+        router.push('/dashboard/subject-supervisor/lessons');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (error: any) {
+      console.error('Submit error:', error);
+      toast({
+        title: 'خطأ',
+        description: error.message || 'فشل في تحديث الدرس. قد يكون الملف كبيراً جداً',
+        variant: 'destructive',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!lesson) {
+    notFound();
+  }
+
+  return (
+    <div className="flex flex-col gap-8 max-w-4xl mx-auto">
+      <div className="grid gap-1">
+        <h1 className="text-3xl font-bold tracking-tight">تعديل الدرس: {lesson.title}</h1>
+        <p className="text-muted-foreground">
+          قم بتحديث تفاصيل الدرس.
+        </p>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>تفاصيل الدرس</CardTitle>
+          <CardDescription>
+            {lesson.subject.name} - {lesson.level.name}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="title">عنوان الدرس *</Label>
+              <Input 
+                id="title" 
+                placeholder="مثال: مقدمة في الجبر" 
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="subject">المادة</Label>
+                <Input 
+                  id="subject" 
+                  value={lesson.subject.name} 
+                  readOnly 
+                  disabled 
+                  className="bg-muted"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="level">المستوى</Label>
+                <Input 
+                  id="level" 
+                  value={lesson.level.name} 
+                  readOnly 
+                  disabled 
+                  className="bg-muted"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="content">محتوى الدرس *</Label>
+              <RichTextEditor 
+                content={formData.content}
+                onChange={(content) => setFormData({ ...formData, content })}
+                placeholder="اكتب محتوى الدرس هنا..."
+              />
+              <p className="text-xs text-muted-foreground">
+                استخدم شريط الأدوات لتنسيق النص وإضافة معادلات رياضية
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-2 space-x-reverse">
+              <Switch 
+                id="lesson-type" 
+                checked={formData.isPublic}
+                onCheckedChange={(checked) => setFormData({ ...formData, isPublic: checked })}
+              />
+              <Label htmlFor="lesson-type">جعله درسًا عامًا (متاح لجميع الطلاب في هذا المستوى)</Label>
+            </div>
+
+            {/* قسم المرفقات والقائمة المنسدلة */}
+            <div className="space-y-4 border rounded-lg p-4 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <Paperclip className="w-4 h-4" />
+                  المرفقات
+                </Label>
+                
+                <Select 
+                  disabled={isFileUploading || submitting} 
+                  onValueChange={(value) => {
+                    if (value === 'image') setShowImageUpload(true);
+                    if (value === 'pdf') setShowPdfUpload(true);
+                    if (value === 'ppt') setShowPptUpload(true);
+                  }}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="إضافة مرفق..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {!showImageUpload && <SelectItem value="image">صورة الدرس</SelectItem>}
+                    {!showPdfUpload && <SelectItem value="pdf">ملف الدرس (PDF)</SelectItem>}
+                    {!showPptUpload && <SelectItem value="ppt" disabled>ملف عرض تقديمي (PowerPoint) - قريباً</SelectItem>}
+                    <SelectItem value="video" disabled>فيديو (قريباً)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="video-url">رابط الفيديو (يوتيوب)</Label>
+                  <Input 
+                    id="video-url" 
+                    placeholder="https://www.youtube.com/watch?v=..." 
+                    value={formData.videoUrl}
+                    onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    disabled={submitting}
+                  />
+                </div>
+
+                {showImageUpload && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                    <FileUpload
+                      label="صورة الدرس"
+                      accept="image/*"
+                      maxSizeMB={5}
+                      value={formData.imageUrl}
+                      onChange={(fileInfo) => {
+                        setFormData({ ...formData, imageUrl: getProxiedUrl(fileInfo?.fileUrl || "") });
+                      }}
+                      onUploadStatusChange={setIsFileUploading}
+                      description="قم بتحميل صورة الغلاف للدرس (JPG, PNG, GIF, حتى 5 ميجابايت)"
+                      stage={lesson.level.name} // Using level name as stage info is nested or implied
+                      subject={lesson.subject.name}
+                      teacher="Supervisor"
+                      lesson={formData.title}
+                    />
+                  </div>
+                )}
+
+                {showPdfUpload && (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                    <FileUpload
+                      label="ملف الدرس (PDF)"
+                      accept=".pdf"
+                      maxSizeMB={10}
+                      value={formData.pdfUrl}
+                      onChange={(fileInfo) => setFormData({ ...formData, pdfUrl: fileInfo?.fileUrl || "" })}
+                      onUploadStatusChange={setIsFileUploading}
+                      description="قم بتحميل ملف PDF للدرس (حتى 10 ميجابايت)"
+                      stage={lesson.level.name}
+                      subject={lesson.subject.name}
+                      teacher="Supervisor"
+                      lesson={formData.title}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <Button 
+                variant="outline" 
+                type="button"
+                onClick={() => router.back()}
+                disabled={submitting || isFileUploading}
+              >
+                إلغاء
+              </Button>
+              <Button 
+                variant="secondary" 
+                type="button"
+                onClick={() => handleSave('draft')}
+                disabled={submitting || isFileUploading}
+              >
+                {submitting ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Save className="ml-2 h-4 w-4" />}
+                حفظ كمسودة
+              </Button>
+              <Button type="button" onClick={() => handleSave('approved')} disabled={submitting || isFileUploading}>
+                {submitting || isFileUploading ? (
+                  <>
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    <span>{isFileUploading ? "جاري رفع الملفات..." : "جاري الحفظ..."}</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="ml-2 h-4 w-4" />
+                    <span>نشر التعديلات</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

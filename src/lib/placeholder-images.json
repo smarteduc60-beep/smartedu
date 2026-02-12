@@ -1,0 +1,88 @@
+{
+  "placeholderImages": [
+    {
+      "id": "avatar1",
+      "description": "Student avatar",
+      "imageUrl": "https://images.unsplash.com/photo-1708426238272-994fcddabca4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwwfHx8fDE3NjQ4ODQ5ODV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait person"
+    },
+    {
+      "id": "avatar2",
+      "description": "Teacher avatar",
+      "imageUrl": "https://images.unsplash.com/photo-1580893472468-01373fe4c97e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxwb3J0cmFpdCUyMHBlcnNvbnxlbnwwfHx8fDE3NjQ4ODQ5ODV8MA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait person"
+    },
+    {
+      "id": "avatar3",
+      "description": "Director avatar",
+      "imageUrl": "https://images.unsplash.com/photo-1715423058726-ddea1ec51b66?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8cG9ydHJhaXQlMjBwcm9mZXNzaW9uYWx8ZW58MHx8fHwxNzY0ODg4MzQ3fDA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait professional"
+    },
+    {
+      "id": "avatar4",
+      "description": "Parent avatar",
+      "imageUrl": "https://images.unsplash.com/photo-1576765974026-6a4a1f6a1a3e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxwb3J0cmFpdCUyMG1hbnxlbnwwfHx8fDE3NjUxNzU4MjZ8MA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait man"
+    },
+    {
+      "id": "avatar5",
+      "description": "Student avatar 2",
+      "imageUrl": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwb3J0cmFpdCUyMG1hbnxlbnwwfHx8fDE3NjUxNzU4MjZ8MA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait man"
+    },
+    {
+      "id": "avatar6",
+      "description": "Teacher avatar 2",
+      "imageUrl": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxwb3J0cmFpdCUyMHdvbWFufGVufDB8fHx8MTc2NTI0NDYwNnww&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait woman"
+    },
+    {
+      "id": "avatar7",
+      "description": "Supervisor avatar",
+      "imageUrl": "https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxwb3J0cmFpdCUyMHByb2Zlc3Npb25hbCUyMG1hbnxlbnwwfHx8fDE3NjUzMzEyNTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "portrait professional"
+    },
+    {
+      "id": "lesson1",
+      "description": "Math lesson thumbnail",
+      "imageUrl": "https://images.unsplash.com/photo-1758685848697-b5fb55f87407?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtYXRoZW1hdGljcyUyMGJsYWNrYm9hcmR8ZW58MHx8fHwxNzY0OTQ4MDU5fDA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "mathematics blackboard"
+    },
+    {
+      "id": "lesson2",
+      "description": "Arabic lesson thumbnail",
+      "imageUrl": "https://images.unsplash.com/photo-1720701574998-d68020bce2bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhcmFiaWMlMjBjYWxsaWdyYXBoeXxlbnwwfHx8fDE3NjQ5MTczNTV8MA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "arabic calligraphy"
+    },
+    {
+      "id": "lesson3",
+      "description": "Science lesson thumbnail",
+      "imageUrl": "https://images.unsplash.com/photo-1764759647959-90d68e0a1c79?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzY2llbmNlJTIwcGxhbnR8ZW58MHx8fHwxNzY0OTMzMDYzfDA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "science plant"
+    },
+    {
+      "id": "lesson4",
+      "description": "Math lesson 2 thumbnail",
+      "imageUrl": "https://images.unsplash.com/photo-1509228468518-180dd4864904?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtYXRoJTIwYWJzdHJhY3R8ZW58MHx8fHwxNzY1MzMxNDMzfDA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "math abstract"
+    },
+    {
+      "id": "subject-math",
+      "description": "Math subject thumbnail",
+      "imageUrl": "https://images.unsplash.com/photo-1758685734463-98672a67dd1c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxtYXRoZW1hdGljcyUyMGNoYWxrYm9hcmR8ZW58MHx8fHwxNzY0ODkxMjYwfDA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "mathematics chalkboard"
+    },
+    {
+      "id": "subject-arabic",
+      "description": "Arabic subject thumbnail",
+      "imageUrl": "https://images.unsplash.com/photo-1720701574998-d68020bce2bd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxhcmFiaWMlMjBjYWxsaWdyYXBoeXxlbnwwfHx8fDE3NjQ5MTczNTV8MA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "arabic calligraphy"
+    },
+    {
+      "id": "subject-science",
+      "description": "Science subject thumbnail",
+      "imageUrl": "https://images.unsplash.com/photo-1759334640037-a9bcc1c5d919?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzY2llbmNlJTIwcGxhbnR8ZW58MHx8fHwxNzY0OTMzMDYzfDA&ixlib.rb-4.1.0&q=80&w=1080",
+      "imageHint": "science plant"
+    }
+  ]
+}

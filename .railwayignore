@@ -1,0 +1,56 @@
+# Railway Ignore File
+# الملفات التي لا يجب رفعها إلى Railway
+
+# Development files
+.env
+.env.local
+.env.development
+.env.test
+*.log
+npm-debug.log*
+
+# Build artifacts (سيتم بناؤها على Railway)
+.next/
+out/
+
+# Testing
+coverage/
+.nyc_output/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (غير ضروري في Production)
+docs/
+*.md
+!README.md
+
+# Development scripts
+*.ps1
+*.bat
+*.sh
+test-*.js
+
+# Backups
+backups/
+*.sql
+*.dump
+
+# Certificates (استخدم Railway Secrets)
+certificates/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Development dependencies
+node_modules/

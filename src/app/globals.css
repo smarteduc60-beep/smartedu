@@ -1,0 +1,244 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-body), sans-serif;
+}
+
+@layer base {
+  :root {
+    --font-body: 'Amiri';
+    --background: 234 43% 94%; /* #E8EAF6 - light blue */
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 225 48% 48%; /* #3F51B5 - deep blue */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 265 44% 58%; /* #7E57C2 - purple */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 225 48% 48%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+    --sidebar-background: 225 48% 48%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 225 48% 48%;
+    --sidebar-accent: 225 48% 55%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 225 48% 40%;
+    --sidebar-ring: 225 48% 60%;
+  }
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 225 48% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 265 44% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 225 48% 48%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 210 40% 98%;
+    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
+    --sidebar-accent: 217.2 32.6% 17.5%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body), sans-serif;
+  }
+}
+
+/* TipTap Editor Styles */
+.tiptap {
+  @apply text-foreground;
+  direction: rtl;
+  text-align: right;
+}
+
+.tiptap h1 {
+  @apply text-2xl font-bold mb-4;
+}
+
+.tiptap h2 {
+  @apply text-xl font-bold mb-3;
+}
+
+.tiptap h3 {
+  @apply text-lg font-bold mb-2;
+}
+
+.tiptap p {
+  @apply mb-2;
+}
+
+.tiptap ul {
+  @apply list-disc mr-6 mb-2;
+}
+
+.tiptap ol {
+  @apply list-decimal mr-6 mb-2;
+}
+
+.tiptap img {
+  @apply max-w-full h-auto rounded-lg my-4;
+}
+
+.tiptap table {
+  @apply border-collapse border border-border w-full my-4;
+}
+
+.tiptap th {
+  @apply border border-border px-3 py-2 bg-muted font-bold text-right;
+}
+
+.tiptap td {
+  @apply border border-border px-3 py-2 text-right;
+}
+
+.tiptap a {
+  @apply text-primary underline;
+}
+
+.tiptap mark {
+  @apply px-1 py-0.5 rounded;
+}
+
+.tiptap u {
+  @apply underline;
+}
+
+.tiptap [data-type="math"] {
+  @apply inline-block mx-1 px-2 py-1 bg-blue-50 dark:bg-blue-950 rounded;
+}
+
+.tiptap iframe {
+  @apply w-full max-w-3xl mx-auto my-4 rounded-lg;
+}
+
+/* Text Alignment */
+.tiptap [style*="text-align: left"] {
+  text-align: left !important;
+}
+
+.tiptap [style*="text-align: center"] {
+  text-align: center !important;
+}
+
+.tiptap [style*="text-align: right"] {
+  text-align: right !important;
+}
+
+.tiptap [style*="text-align: justify"] {
+  text-align: justify !important;
+}
+
+/* Direction Support */
+.tiptap[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+
+.tiptap[dir="ltr"] ul,
+.tiptap[dir="ltr"] ol {
+  margin-right: 0;
+  margin-left: 1.5rem;
+}
+
+.tiptap[dir="ltr"] th,
+.tiptap[dir="ltr"] td {
+  text-align: left;
+}
+
+/* Math Content Styles */
+.math-content-rtl {
+  direction: rtl;
+}
+
+.math-block {
+  text-align: center;
+  margin: 1rem 0;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+.math-inline {
+  display: inline-block;
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* KaTeX math rendering - force LTR */
+.katex,
+.katex-display,
+.katex-html {
+  direction: ltr !important;
+  unicode-bidi: embed !important;
+}
+
+/* Ensure math symbols display correctly in RTL context */
+.tiptap .math-node,
+.tiptap span[data-type="math"] {
+  direction: ltr;
+  unicode-bidi: embed;
+  display: inline-block;
+}
+
+/* Fix for math in prose/content */
+.prose .katex,
+.prose .math-inline,
+.prose .math-block {
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
+/* Specific fix for integral and other math operators */
+.katex .mord,
+.katex .mop,
+.katex .mbin,
+.katex .mrel,
+.katex .mopen,
+.katex .mclose,
+.katex .mpunct {
+  direction: ltr !important;
+}

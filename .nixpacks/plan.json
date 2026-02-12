@@ -1,0 +1,19 @@
+{
+  "phases": {
+    "setup": {
+      "nixPkgs": ["nodejs_18", "openssl"]
+    },
+    "install": {
+      "cmds": ["npm ci"]
+    },
+    "build": {
+      "cmds": [
+        "npx prisma generate",
+        "npm run build"
+      ]
+    }
+  },
+  "start": {
+    "cmd": "npx prisma db push && npm run seed && npm start"
+  }
+}

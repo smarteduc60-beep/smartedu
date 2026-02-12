@@ -1,0 +1,303 @@
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 بدء ملء قاعدة البيانات...');
+
+  // 1. إنشاء الأدوار
+  console.log('📝 إنشاء الأدوار...');
+  const roles = await Promise.all([
+    prisma.role.upsert({
+      where: { name: 'directeur' },
+      update: {},
+      create: { name: 'directeur' },
+    }),
+    prisma.role.upsert({
+      where: { name: 'supervisor_general' },
+      update: {},
+      create: { name: 'supervisor_general' },
+    }),
+    prisma.role.upsert({
+      where: { name: 'supervisor_specific' },
+      update: {},
+      create: { name: 'supervisor_specific' },
+    }),
+    prisma.role.upsert({
+      where: { name: 'teacher' },
+      update: {},
+      create: { name: 'teacher' },
+    }),
+    prisma.role.upsert({
+      where: { name: 'student' },
+      update: {},
+      create: { name: 'student' },
+    }),
+    prisma.role.upsert({
+      where: { name: 'parent' },
+      update: {},
+      create: { name: 'parent' },
+    }),
+  ]);
+
+  const roleMap = {
+    directeur: roles[0].id,
+    supervisor_general: roles[1].id,
+    supervisor_specific: roles[2].id,
+    teacher: roles[3].id,
+    student: roles[4].id,
+    parent: roles[5].id,
+  };
+
+  console.log('✅ تم إنشاء الأدوار بنجاح');
+
+  // 2. إنشاء المراحل الدراسية
+  console.log('📚 إنشاء المراحل الدراسية...');
+  const stage1 = await prisma.stage.upsert({
+    where: { id: 1 },
+    update: {},
+    create: {
+      id: 1,
+      name: 'مرحلة التعليم الإبتدائي',
+      displayOrder: 1,
+    },
+  });
+
+  const stage2 = await prisma.stage.upsert({
+    where: { id: 2 },
+    update: {},
+    create: {
+      id: 2,
+      name: 'مرحلة التعليم المتوسط',
+      displayOrder: 2,
+    },
+  });
+
+  const stage3 = await prisma.stage.upsert({
+    where: { id: 3 },
+    update: {},
+    create: {
+      id: 3,
+      name: 'مرحلة التعليم الثانوي',
+      displayOrder: 3,
+    },
+  });
+
+  console.log('✅ تم إنشاء المراحل الدراسية بنجاح');
+
+  // 3. إنشاء المستويات
+  console.log('📊 إنشاء المستويات...');
+  await prisma.level.createMany({
+    data: [
+      { id: 1, name: 'الصف الأول الابتدائي', stageId: stage1.id, displayOrder: 1 },
+      { id: 2, name: 'الصف الثاني الابتدائي', stageId: stage1.id, displayOrder: 2 },
+      { id: 3, name: 'أولى متوسط', stageId: stage2.id, displayOrder: 1 },
+      { id: 4, name: 'ثانية متوسط', stageId: stage2.id, displayOrder: 2 },
+      { id: 5, name: 'ثالثة متوسط', stageId: stage2.id, displayOrder: 3 },
+      { id: 6, name: 'رابعة متوسط', stageId: stage2.id, displayOrder: 4 },
+    ],
+    skipDuplicates: true,
+  });
+
+  console.log('✅ تم إنشاء المستويات بنجاح');
+
+  // 4. إنشاء المواد
+  console.log('📖 إنشاء المواد...');
+  const subjects = [
+    { id: 1, name: 'الرياضيات', description: 'مادة الرياضيات للمرحلة الابتدائية', stageId: stage1.id, levelIds: [1] },
+    { id: 2, name: 'اللغة العربية', description: 'مادة اللغة العربية للمرحلة الابتدائية', stageId: stage1.id, levelIds: [1] },
+    { id: 3, name: 'العلوم', description: 'مادة العلوم للمرحلة الابتدائية', stageId: stage1.id, levelIds: [1] },
+    { id: 4, name: 'الرياضيات', description: 'مادة الرياضيات للمرحلة المتوسطة', stageId: stage2.id, levelIds: [] },
+    { id: 5, name: 'اللغة العربية', description: 'مادة اللغة العربية للمرحلة المتوسطة', stageId: stage2.id, levelIds: [] },
+    { id: 6, name: 'العلوم الطبيعية', description: 'مادة العلوم الطبيعية للمرحلة المتوسطة', stageId: stage2.id, levelIds: [] },
+    { id: 7, name: 'اللغة الفرنسية', description: 'مادة اللغة الفرنسية للمرحلة المتوسطة', stageId: stage2.id, levelIds: [] },
+  ];
+
+  for (const subject of subjects) {
+    await prisma.subject.upsert({
+      where: { id: subject.id },
+      update: {},
+      create: {
+        id: subject.id,
+        name: subject.name,
+        description: subject.description,
+        stageId: subject.stageId,
+        levels: subject.levelIds.length > 0 ? {
+          connect: subject.levelIds.map((id) => ({ id })),
+        } : undefined,
+      },
+    });
+  }
+
+  console.log('✅ تم إنشاء المواد بنجاح');
+
+  // 5. إنشاء المستخدمين
+  console.log('👥 إنشاء المستخدمين...');
+  const hashedPassword = await bcrypt.hash('password123', 10);
+  const directorPassword = await bcrypt.hash('Lakhdar14013@Djedid', 10);
+
+  // المدير
+  const director = await prisma.user.upsert({
+    where: { email: 'Ladj.director@smartedu.com' },
+    update: {},
+    create: {
+      firstName: 'لخضر',
+      lastName: 'جديد',
+      email: 'Ladj.director@smartedu.com',
+      password: directorPassword,
+      image: 'https://placehold.co/200x200/3F51B5/FFFFFF?text=AK',
+      roleId: roleMap.directeur,
+    },
+  });
+
+  // مشرف المادة
+  const supervisor = await prisma.user.upsert({
+    where: { email: 'Nassir.supervisor@smartedu.com' },
+    update: {},
+    create: {
+      firstName: 'ناصر',
+      lastName: 'عنتري',
+      email: 'Nassir.supervisor@smartedu.com',
+      password: hashedPassword,
+      image: 'https://placehold.co/200x200/7E57C2/FFFFFF?text=YF',
+      roleId: roleMap.supervisor_specific,
+      userDetails: {
+        create: {
+          subjectId: 1,
+          teacherCode: 'T-SUPER-01',
+        },
+      },
+    },
+  });
+
+  // معلم
+  const teacher = await prisma.user.upsert({
+    where: { email: 'ahmed.teacher@smartedu.com' },
+    update: {},
+    create: {
+      firstName: 'Ahmed',
+      lastName: 'Mahmoud',
+      email: 'ahmed.teacher@smartedu.com',
+      password: hashedPassword,
+      image: 'https://placehold.co/200x200/2196F3/FFFFFF?text=AM',
+      roleId: roleMap.teacher,
+      userDetails: {
+        create: {
+          subjectId: 1,
+          teacherCode: 'T9876',
+        },
+      },
+    },
+  });
+
+  // ولي أمر
+  const parent = await prisma.user.upsert({
+    where: { email: 'khaled.parent@smartedu.com' },
+    update: {},
+    create: {
+      firstName: 'خالد',
+      lastName: 'جديد',
+      email: 'khaled.parent@smartedu.com',
+      password: hashedPassword,
+      image: 'https://placehold.co/200x200/FF9800/FFFFFF?text=KG',
+      roleId: roleMap.parent,
+      userDetails: {
+        create: {
+          parentCode: 'P54321',
+        },
+      },
+    },
+  });
+
+  // طالب 1
+  const student1 = await prisma.user.upsert({
+    where: { email: 'aya.student@smartedu.com' },
+    update: {},
+    create: {
+      firstName: 'Aya',
+      lastName: 'Djedid',
+      email: 'aya.student@smartedu.com',
+      password: hashedPassword,
+      image: 'https://placehold.co/200x200/4CAF50/FFFFFF?text=FG',
+      roleId: roleMap.student,
+      userDetails: {
+        create: {
+          levelId: 1,
+          aiEvalMode: 'auto',
+        },
+      },
+    },
+  });
+
+  // طالب 2
+  const student2 = await prisma.user.upsert({
+    where: { email: 'omar.student@smartedu.com' },
+    update: {},
+    create: {
+      firstName: 'Omar',
+      lastName: 'Hassan',
+      email: 'omar.student@smartedu.com',
+      password: hashedPassword,
+      image: 'https://placehold.co/200x200/F44336/FFFFFF?text=OG',
+      roleId: roleMap.student,
+      userDetails: {
+        create: {
+          levelId: 3,
+          aiEvalMode: 'auto',
+        },
+      },
+    },
+  });
+
+  console.log('✅ تم إنشاء المستخدمين بنجاح');
+
+  // 6. إنشاء الروابط
+  console.log('🔗 إنشاء الروابط...');
+
+  // ربط المعلم بالطلاب
+  await prisma.teacherStudentLink.createMany({
+    data: [
+      { teacherId: teacher.id, studentId: student1.id },
+      { teacherId: supervisor.id, studentId: student2.id },
+    ],
+    skipDuplicates: true,
+  });
+
+  // ربط ولي الأمر بالطلاب
+  await prisma.parentChildLink.createMany({
+    data: [
+      { parentId: parent.id, childId: student1.id },
+      { parentId: parent.id, childId: student2.id },
+    ],
+    skipDuplicates: true,
+  });
+
+  console.log('✅ تم إنشاء الروابط بنجاح');
+
+  console.log('\n✨ تم ملء قاعدة البيانات بنجاح!');
+  console.log('\n📋 بيانات الدخول التجريبية:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('المدير:');
+  console.log('  البريد: Ladj.director@smartedu.com');
+  console.log('  كلمة المرور: Lakhdar14013@Djedid');
+  console.log('\nالمعلم:');
+  console.log('  البريد: ahmed.teacher@smartedu.com');
+  console.log('  كلمة المرور: password123');
+  console.log('\nالطالب:');
+  console.log('  البريد: aya.student@smartedu.com');
+  console.log('  كلمة المرور: password123');
+  console.log('\nولي الأمر:');
+  console.log('  البريد: khaled.parent@smartedu.com');
+  console.log('  كلمة المرور: password123');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+}
+
+main()
+  .catch((e) => {
+    console.error('❌ خطأ في ملء قاعدة البيانات:', e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

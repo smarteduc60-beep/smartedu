@@ -1,0 +1,14 @@
+بافتراضي أن القيد المفروض على استخدام `npx` قد تم رفعه، يمكنك تجربة الأمر التالي لتشغيل السكريبت:
+
+`npx tsx prisma/create-drive-folders.mts`
+
+إذا واجهت مشكلة مع `tsx` (مثلاً إذا لم يكن مثبتًا)، يمكنك تجربة:
+
+`npx ts-node --esm prisma/create-drive-folders.mts`
+
+يرجى التأكد من أن متغيرات البيئة التالية مضبوطة بشكل صحيح في ملف `.env` الخاص بك:
+*   `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+*   `GOOGLE_PRIVATE_KEY`
+*   `GOOGLE_DRIVE_ROOT_FOLDER_ID`
+
+الآن، هل يمكنك تشغيل أحد هذه الأوامر؟ وإذا نجح الأمر، يرجى مشاركة الناتج.

@@ -1,0 +1,446 @@
+// SmartEdu Platform - Prisma Schema
+// Database: MySQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Authentication & User Management
+// ============================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============================================
+// Core Tables
+// ============================================
+
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique @db.VarChar(50)
+  users User[]
+
+  @@map("roles")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  firstName     String    @map("first_name") @db.VarChar(100)
+  lastName      String    @map("last_name") @db.VarChar(100)
+  email         String    @unique @db.VarChar(255)
+  emailVerified DateTime? @map("email_verified")
+  image         String?   @map("avatar_url") @db.VarChar(255)
+  password      String?   @map("password_hash") @db.VarChar(255)
+  roleId        Int       @map("role_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  role        Role         @relation(fields: [roleId], references: [id])
+  userDetails UserDetails?
+  accounts    Account[]
+  sessions    Session[]
+
+  authoredLessons     Lesson[]
+  authoredSubmissions Submission[] @relation("StudentSubmissions")
+  sentMessages        Message[]    @relation("SentMessages")
+  receivedMessages    Message[]    @relation("ReceivedMessages")
+  notifications       Notification[] @relation("UserNotifications")
+  logs                Log[]        @relation("UserLogs")
+  backups             Backup[]     @relation("UserBackups")
+
+  studentPromotions StudentPromotion[] @relation("StudentPromotions")
+  parentPromotions  StudentPromotion[] @relation("ParentPromotions")
+
+  parentLinks ParentChildLink[] @relation("ParentUser")
+  childLinks  ParentChildLink[] @relation("ChildUser")
+
+  teacherLinks TeacherStudentLink[] @relation("TeacherUser")
+  studentLinks TeacherStudentLink[] @relation("StudentUser")
+
+  @@map("users")
+}
+
+model UserDetails {
+  userId         String  @id @map("user_id")
+  stageId        Int?    @map("stage_id")
+  levelId        Int?    @map("level_id")
+  subjectId      Int?    @map("subject_id")
+  teacherCode    String? @unique @map("teacher_code") @db.VarChar(20)
+  parentCode     String? @unique @map("parent_code") @db.VarChar(20)
+  aiEvalMode     String  @default("auto") @map("ai_eval_mode") @db.VarChar(10)
+  allowMessaging Boolean @default(false) @map("allow_messaging")
+
+  // Google Drive Integration - Main folder for the teacher within their subject
+  teacherDriveFolderId String? @unique @map("teacher_drive_folder_id") @db.VarChar(255)
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stage   Stage?   @relation(fields: [stageId], references: [id])
+  level   Level?   @relation(fields: [levelId], references: [id])
+  subject Subject? @relation(fields: [subjectId], references: [id])
+
+  @@map("user_details")
+}
+
+// ============================================
+// Content Structure Tables
+// ============================================
+
+model Stage {
+  id           Int    @id @default(autoincrement())
+  name         String @db.VarChar(100)
+  displayOrder Int    @map("display_order")
+  driveFolderId String? @unique @map("drive_folder_id") @db.VarChar(255)
+
+  levels      Level[]
+  subjects    Subject[]
+  userDetails UserDetails[]
+
+  @@map("stages")
+}
+
+model Level {
+  id           Int    @id @default(autoincrement())
+  name         String @db.VarChar(100)
+  stageId      Int    @map("stage_id")
+  displayOrder Int    @map("display_order")
+  driveFolderId String? @unique @map("drive_folder_id") @db.VarChar(255)
+
+  stage       Stage         @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  subjects    Subject[]
+  lessons     Lesson[]
+  userDetails UserDetails[]
+
+  promotionsFrom StudentPromotion[] @relation("PromotionFromLevel")
+  promotionsTo   StudentPromotion[] @relation("PromotionToLevel")
+
+  @@unique([name, stageId])
+  @@map("levels")
+}
+
+model Subject {
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(100)
+  description String? @db.Text
+  stageId     Int?    @map("stage_id")
+  driveFolderId String? @unique @map("drive_folder_id") @db.VarChar(255)
+
+  levels      Level[]
+  stage       Stage?        @relation(fields: [stageId], references: [id])
+  lessons     Lesson[]
+  userDetails UserDetails[]
+
+  @@map("subjects")
+}
+
+// ============================================
+// Content Tables
+// ============================================
+
+model Lesson {
+  id        Int      @id @default(autoincrement())
+  title     String   @db.VarChar(255)
+  content   String?  @db.Text
+  videoUrl  String?  @map("video_url") @db.VarChar(512)
+  imageUrl  String?  @map("image_url") @db.VarChar(512)
+  pdfUrl    String?  @map("pdf_url") @db.VarChar(512)
+  authorId  String?  @map("author_id")
+  subjectId Int?     @map("subject_id")
+  levelId   Int?     @map("level_id")
+  type      String   @default("private") @db.VarChar(10)
+  status    String   @default("pending") @db.VarChar(20)
+  isLocked  Boolean  @default(false) @map("is_locked")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // حقول مضافة لدعم خاصية الرفع المباشر (Direct Upload)
+  fileUrl     String?  @map("file_url") @db.VarChar(512)
+  driveFileId String?  @map("drive_file_id") @db.VarChar(255)
+  stageName   String?  @map("stage_name") @db.VarChar(100)
+  subjectName String?  @map("subject_name") @db.VarChar(100)
+  teacherName String?  @map("teacher_name") @db.VarChar(100)
+
+  // Google Drive Integration
+  driveFolderId         String? @map("drive_folder_id") @db.VarChar(255) // Folder inside the teacher's "Lessons" directory
+  lessonFileIds         Json    @default("[]") @map("lesson_file_ids") // Array of Google Drive File IDs
+
+  author    User?      @relation(fields: [authorId], references: [id])
+  subject   Subject?   @relation(fields: [subjectId], references: [id])
+  level     Level?     @relation(fields: [levelId], references: [id])
+  exercises Exercise[]
+
+  @@map("lessons")
+}
+
+model Exercise {
+  id                  Int      @id @default(autoincrement())
+  lessonId            Int      @map("lesson_id")
+  type                String   @default("main") @db.VarChar(30) // 'main', 'support_with_results', 'support_only'
+  
+  // محتوى التمرين
+  question            String?  @db.Text // نص بسيط (قديم - للتوافق)
+  questionRichContent String?  @map("question_rich_content") @db.Text // محتوى TipTap
+  geometryCommands    Json?    @map("geometry_commands")
+  questionFileUrl     String?  @map("question_file_url") @db.VarChar(512)
+  
+  // الحل النموذجي (للتمرين الرئيسي)
+  modelAnswer         String?  @map("model_answer") @db.Text
+  modelAnswerImage    String?  @map("model_answer_image") @db.VarChar(512)
+  
+  // النتائج المتوقعة (لتمارين الدعم + نتائج)
+  expectedResults     Json?    @map("expected_results") // [{question: "1", result: "45", tolerance: 0.01}, ...]
+  
+  // الإعدادات
+  maxScore            Decimal? @map("max_score") @db.Decimal(5, 2) @default(20)
+  allowRetry          Boolean  @map("allow_retry") @default(true)
+  maxAttempts         Int?     @map("max_attempts") @default(3)
+  displayOrder        Int       @map("display_order")
+  
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime? @map("updated_at")
+
+  // Google Drive Integration
+  driveFolderId       String? @unique @map("drive_folder_id") @db.VarChar(255)
+  exerciseFileIds     Json    @default("[]") @map("exercise_file_ids")
+  questionFileIds     Json    @default("[]") @map("question_file_ids") // Array of Google Drive File IDs
+  modelAnswerFileIds  Json    @default("[]") @map("model_answer_file_ids") // Array of Google Drive File IDs for the model answer
+
+  lesson      Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+
+  @@map("exercises")
+}
+
+// ============================================
+// User Activity Tables
+// ============================================
+
+model Submission {
+  id                 Int       @id @default(autoincrement())
+  studentId          String    @map("student_id")
+  exerciseId         Int       @map("exercise_id")
+  
+  // إجابة التلميذ
+  answerText         String?   @map("answer_text") @db.Text
+  answerRichContent  String?   @map("answer_rich_content") @db.Text // محتوى TipTap
+  
+  // نتائج التلميذ (لتمارين الدعم + نتائج)
+  studentResults     Json?     @map("student_results") // [{question: "1", answer: "45"}, ...]
+  comparisonResults  Json?     @map("comparison_results") // [{question: "1", correct: true}, ...]
+  correctCount       Int?      @map("correct_count") // عدد الإجابات الصحيحة
+  totalCount         Int?      @map("total_count") // إجمالي الأسئلة
+  
+  // المحاولات والنقاط
+  attemptNumber      Int       @default(1) @map("attempt_number")
+  bestScore          Decimal?  @map("best_score") @db.Decimal(5, 2) // أفضل نتيجة
+  
+  // تصحيح AI (للتمرين الرئيسي)
+  aiFeedback         String?   @map("ai_feedback") @db.Text
+  aiScore            Decimal?  @map("ai_score") @db.Decimal(5, 2)
+  
+  // التصحيح النهائي
+  finalScore         Decimal?  @map("final_score") @db.Decimal(5, 2)
+  teacherNotes       String?   @map("teacher_notes") @db.Text
+  status             String    @default("pending") @db.VarChar(20)
+  
+  submittedAt        DateTime  @default(now()) @map("submitted_at")
+  gradedAt           DateTime? @map("graded_at")
+
+  // Google Drive Integration
+  submissionFileIds Json @default("[]") @map("submission_file_ids") // Array of Google Drive File IDs
+
+  student  User     @relation("StudentSubmissions", fields: [studentId], references: [id])
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([studentId, exerciseId])
+  @@map("submissions")
+}
+
+// ============================================
+// Relationship Tables
+// ============================================
+
+model ParentChildLink {
+  parentId String @map("parent_id")
+  childId  String @map("child_id")
+
+  parent User @relation("ParentUser", fields: [parentId], references: [id], onDelete: Cascade)
+  child  User @relation("ChildUser", fields: [childId], references: [id], onDelete: Cascade)
+
+  @@id([parentId, childId])
+  @@map("parent_child_links")
+}
+
+model TeacherStudentLink {
+  teacherId String @map("teacher_id")
+  studentId String @map("student_id")
+
+  teacher User @relation("TeacherUser", fields: [teacherId], references: [id], onDelete: Cascade)
+  student User @relation("StudentUser", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([teacherId, studentId])
+  @@map("teacher_student_links")
+}
+
+// ============================================
+// Communication Tables
+// ============================================
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  senderId    String   @map("sender_id")
+  recipientId String   @map("recipient_id")
+  subject     String   @db.VarChar(255)
+  content     String   @db.Text
+  isRead      Boolean  @default(false) @map("is_read")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  sender    User @relation("SentMessages", fields: [senderId], references: [id])
+  recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id])
+
+  @@map("messages")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  title     String   @db.VarChar(255)
+  message   String   @db.Text
+  type      String   @db.VarChar(50) // submission_graded, message_received, etc
+  relatedId Int?     @map("related_id") // ID of related submission/message
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ============================================
+// System Management Tables
+// ============================================
+
+model Log {
+  id         String   @id @default(cuid())
+  level      String   @db.VarChar(20)  // INFO, WARNING, ERROR, SUCCESS, DEBUG
+  category   String   @db.VarChar(50)  // AUTH, USER, LESSON, EXERCISE, etc
+  action     String   @db.VarChar(255) // USER_LOGIN, EXERCISE_CREATED, etc
+  userId     String?  @map("user_id")
+  targetId   String?  @map("target_id") // ID of affected resource
+  details    String?  @db.Text         // JSON string with additional data
+  ipAddress  String?  @db.VarChar(50)  @map("ip_address")
+  userAgent  String?  @db.Text         @map("user_agent")
+  timestamp  DateTime @default(now())
+
+  user User? @relation("UserLogs", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([level])
+  @@index([category])
+  @@index([userId])
+  @@index([timestamp])
+  @@map("logs")
+}
+
+model Backup {
+  id          String   @id @default(cuid())
+  filename    String   @db.VarChar(255)
+  filepath    String   @db.VarChar(500)
+  size        BigInt   // File size in bytes
+  type        String   @db.VarChar(20)  // FULL, INCREMENTAL, DIFFERENTIAL
+  status      String   @db.VarChar(20)  // PENDING, COMPLETED, FAILED
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now())  @map("created_at")
+
+  createdBy User @relation("UserBackups", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@map("backups")
+}
+
+// ============================================
+// Academic Year & Student Promotion
+// ============================================
+
+model AcademicYear {
+  id        String   @id @default(cuid())
+  name      String   @db.VarChar(100)  // "2024-2025"
+  startDate DateTime @map("start_date") // September 1st
+  endDate   DateTime @map("end_date")   // June 30th
+  isCurrent Boolean  @default(false) @map("is_current")
+  status    String   @default("active") @db.VarChar(20) // active, ended, archived
+  createdAt DateTime @default(now()) @map("created_at")
+
+  promotions StudentPromotion[]
+
+  @@index([isCurrent])
+  @@index([status])
+  @@map("academic_years")
+}
+
+model StudentPromotion {
+  id             String   @id @default(cuid())
+  academicYearId String   @map("academic_year_id")
+  studentId      String   @map("student_id")
+  parentId       String   @map("parent_id")
+  fromLevelId    Int      @map("from_level_id")
+  toLevelId      Int?     @map("to_level_id")
+  status         String   @default("pending") @db.VarChar(20) // pending, approved, rejected, completed
+  parentResponse String?  @db.VarChar(10) // yes, no
+  messageId      Int?     @map("message_id") // Link to parent message
+  notifiedAt     DateTime? @map("notified_at")
+  respondedAt    DateTime? @map("responded_at")
+  promotedAt     DateTime? @map("promoted_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  student      User         @relation("StudentPromotions", fields: [studentId], references: [id], onDelete: Cascade)
+  parent       User         @relation("ParentPromotions", fields: [parentId], references: [id], onDelete: Cascade)
+  fromLevel    Level        @relation("PromotionFromLevel", fields: [fromLevelId], references: [id])
+  toLevel      Level?       @relation("PromotionToLevel", fields: [toLevelId], references: [id])
+
+  @@unique([academicYearId, studentId])
+  @@index([status])
+  @@index([parentResponse])
+  @@map("student_promotions")
+}
