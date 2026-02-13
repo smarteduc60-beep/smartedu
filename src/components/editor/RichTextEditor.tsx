@@ -35,6 +35,8 @@ import {
   MoveLeft,
   MoveRight,
   Sigma,
+  Save,
+  Indent,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, useId } from 'react';
 import { MathExtension } from './extensions/MathExtension';
@@ -56,6 +58,7 @@ interface RichTextEditorProps {
   lesson?: string;
   onEditorReady?: (editor: Editor) => void; // Prop to pass editor instance up
   id?: string;
+  onSave?: () => void;
 }
 
 export default function RichTextEditor({
@@ -71,6 +74,7 @@ export default function RichTextEditor({
   lesson,
   onEditorReady,
   id,
+  onSave,
 }: RichTextEditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [colorPicker, setColorPicker] = useState('#000000');
@@ -226,6 +230,12 @@ export default function RichTextEditor({
     }
   }, [editor]);
 
+  const insertTab = useCallback(() => {
+    if (editor) {
+      editor.chain().focus().insertContent('\u2003').run();
+    }
+  }, [editor]);
+
   if (!editor) {
     return null;
   }
@@ -245,7 +255,7 @@ export default function RichTextEditor({
         disabled={isUploading}
       />
       {editable && (
-        <div className="flex flex-wrap gap-1 p-2 border-b bg-muted/50">
+        <div className="sticky top-0 z-10 flex flex-wrap gap-1 p-2 border-b bg-muted">
           {/* Text Formatting */}
           <Button
             type="button"
@@ -448,6 +458,31 @@ export default function RichTextEditor({
           >
             <MoveLeft className="h-4 w-4" />
           </Button>
+
+          {/* Tab & Save */}
+          <div className="w-px h-8 bg-border mx-1" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={insertTab}
+            title="إزاحة (Tab)"
+            disabled={isUploading}
+          >
+            <Indent className="h-4 w-4" />
+          </Button>
+          {onSave && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onSave}
+              title="حفظ"
+              disabled={isUploading}
+            >
+              <Save className="h-4 w-4" />
+            </Button>
+          )}
 
           {/* Insert */}
           <div className="w-px h-8 bg-border mx-1" />

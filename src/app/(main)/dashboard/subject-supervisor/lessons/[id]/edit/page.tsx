@@ -110,7 +110,7 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
     fetchLesson();
   }, [params]);
 
-  const handleSave = async (status: 'draft' | 'approved') => {
+  const handleSave = async (status: 'draft' | 'approved', shouldRedirect = true) => {
     // Validation
     if (!formData.title.trim()) {
       toast({
@@ -146,7 +146,7 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
       console.log('Sending payload size:', JSON.stringify(payload).length, 'bytes');
 
       const response = await fetch(`/api/lessons/${lessonId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -164,7 +164,9 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
           title: 'تم التحديث',
           description: status === 'draft' ? 'تم حفظ المسودة بنجاح' : 'تم نشر التعديلات بنجاح',
         });
-        router.push('/dashboard/subject-supervisor/lessons');
+        if (shouldRedirect) {
+          router.push('/dashboard/subject-supervisor/lessons');
+        }
       } else {
         throw new Error(result.error);
       }
@@ -248,11 +250,12 @@ export default function EditSupervisorLessonPage({ params }: { params: Promise<{
               <Label htmlFor="content">محتوى الدرس *</Label>
               <RichTextEditor 
                 content={formData.content}
-                onChange={(content) => setFormData({ ...formData, content })}
+                onChange={(content) => setFormData(prev => ({ ...prev, content }))}
                 placeholder="اكتب محتوى الدرس هنا..."
+                onSave={() => handleSave('draft', false)}
               />
               <p className="text-xs text-muted-foreground">
-                استخدم شريط الأدوات لتنسيق النص وإضافة معادلات رياضية
+                استخدم شريط الأدوات لتنسيق النص، إضافة معادلات، أو الحفظ السريع (Tab/Save).
               </p>
             </div>
 

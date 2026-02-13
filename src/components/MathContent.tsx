@@ -151,7 +151,7 @@ export default function MathContent({ content, className = '' }: MathContentProp
   return (
     <div
       ref={contentRef}
-      className={cn("prose prose-sm max-w-none dark:prose-invert math-content-rtl", className)}
+      className={cn("prose max-w-none dark:prose-invert math-content-rtl", className)}
       dir="auto"
     />
   );

@@ -118,8 +118,8 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
     fetchSupervisorInfo();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent, shouldRedirect = true) => {
+    if (e) e.preventDefault();
     
     // Validation
     if (!formData.title.trim()) {
@@ -184,7 +184,9 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
           title: 'تم الإنشاء',
           description: 'تم إنشاء الدرس بنجاح',
         });
-        router.push('/dashboard/subject-supervisor/lessons');
+        if (shouldRedirect) {
+          router.push('/dashboard/subject-supervisor/lessons');
+        }
       } else {
         throw new Error(result.error);
       }
@@ -225,7 +227,7 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={(e) => handleSubmit(e)} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="title">عنوان الدرس *</Label>
               <Input 
@@ -271,6 +273,7 @@ export default function CreateLessonClient({ googleDriveParentFolderId }: Create
                 subject={supervisorInfo?.subject.name}
                 teacher={session?.user?.name || "Supervisor"}
                 lesson={formData.title || "New Lesson"}
+                onSave={() => handleSubmit(undefined, false)}
               />
               <p className="text-xs text-muted-foreground">
                 استخدم شريط الأدوات لتنسيق النص وإضافة معادلات رياضية. يمكنك الآن رفع الصور مباشرة.
