@@ -6,16 +6,27 @@ import { GoogleDriveService } from '@/lib/google-drive';
 import { log, LogLevel, LogCategory } from '@/lib/logger';
 
 /**
+ * Helper to extract file ID from URL
+ */
+function extractFileId(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const match = url.match(/id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/fileId=([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+/**
  * Handles the creation of a Google Drive folder for a new exercise.
  * Path: /<LESSON_FOLDER>/Exercise <EXERCISE_ID>
  * @param exercise - The newly created exercise object, with its parent lesson included.
+ * @param userId - The ID of the user initiating the creation.
  */
-async function handleExerciseFolderCreation(exercise: any) {
+async function handleExerciseFolderCreation(exercise: any, userId: string) {
   if (!exercise.lesson?.driveFolderId) {
     await log({
       level: LogLevel.WARNING,
       category: LogCategory.DRIVE,
       action: 'EXERCISE_DRIVE_SETUP_SKIPPED',
+      userId,
       details: `Skipping Drive folder creation for exercise ${exercise.id} because parent lesson ${exercise.lessonId} has no Drive folder.`,
     });
     return;
@@ -29,6 +40,7 @@ async function handleExerciseFolderCreation(exercise: any) {
       level: LogLevel.INFO,
       category: LogCategory.DRIVE,
       action: 'EXERCISE_DRIVE_SETUP_START',
+      userId,
       details: `Starting Drive folder setup for exercise "${exerciseFolderName}" (ID: ${exercise.id}).`,
     });
 
@@ -45,6 +57,7 @@ async function handleExerciseFolderCreation(exercise: any) {
       level: LogLevel.SUCCESS,
       category: LogCategory.DRIVE,
       action: 'EXERCISE_DRIVE_SETUP_SUCCESS',
+      userId,
       details: `Successfully created Drive folder for exercise ${exercise.id}. Folder ID: ${exerciseFolderId}`,
     });
 
@@ -63,6 +76,7 @@ async function handleExerciseFolderCreation(exercise: any) {
       level: LogLevel.ERROR,
       category: LogCategory.DRIVE,
       action: 'EXERCISE_DRIVE_SETUP_FAILED',
+      userId,
       details: {
         message: `Failed to create Google Drive folder for exercise ${exercise.id}.`,
         error: error.message,
@@ -218,7 +232,7 @@ export async function POST(request: NextRequest) {
 
     // Fire-and-forget Google Drive folder creation
     if (exercise) {
-      handleExerciseFolderCreation(exercise);
+      handleExerciseFolderCreation(exercise, session.user.id);
     }
 
     return successResponse(exercise, 'تم إنشاء التمرين بنجاح', 201);
