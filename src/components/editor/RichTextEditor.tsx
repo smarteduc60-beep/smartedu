@@ -36,7 +36,7 @@ import {
   MoveRight,
   Sigma,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useId } from 'react';
 import { MathExtension } from './extensions/MathExtension';
 import { TextDirection } from './extensions/TextDirection';
 import { ResizableImage } from './extensions/ResizableImage';
@@ -76,9 +76,10 @@ export default function RichTextEditor({
   const [colorPicker, setColorPicker] = useState('#000000');
   const [bgColorPicker, setBgColorPicker] = useState('#ffff00');
   const [isUploading, setIsUploading] = useState(false); // New state for upload loading
+  const generatedId = useId();
 
   // Generate unique IDs for internal inputs
-  const uniqueId = id || `rte-${Math.random().toString(36).substr(2, 9)}`;
+  const uniqueId = id || `rte-${generatedId.replace(/:/g, '')}`;
   const uploadInputId = `${uniqueId}-image-upload`;
   const textColorInputId = `${uniqueId}-text-color`;
   const bgColorInputId = `${uniqueId}-bg-color`;

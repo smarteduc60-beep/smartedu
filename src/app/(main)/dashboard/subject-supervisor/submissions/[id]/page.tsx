@@ -25,10 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-<<<<<<< HEAD
 import MathContent from "@/components/MathContent";
-=======
->>>>>>> 257a51c31ba7376760ae3f803f536d95981475a4
 
 export default function ReviewSubmissionPage({ params }: { params: { id: string } }) {
   const { id } = params;
