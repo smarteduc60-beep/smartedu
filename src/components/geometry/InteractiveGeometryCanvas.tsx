@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useId } from 'react';
 import JXG from 'jsxgraph';
 import { renderFromCommands, GeometryCommand } from '@/lib/geometry-interpreter';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,8 @@ export default function InteractiveGeometryCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [showAxes, setShowAxes] = useState(true);
+  const uniqueId = useId();
+  const containerId = `jxgbox-${uniqueId.replace(/:/g, '')}`;
 
   useEffect(() => {
     // Cleanup previous board instance if it exists
@@ -40,7 +42,7 @@ export default function InteractiveGeometryCanvas({
 
     if (containerRef.current) {
       // Always initialize the board to show axes and grid
-      boardRef.current = JXG.JSXGraph.initBoard(containerRef.current.id, {
+      boardRef.current = JXG.JSXGraph.initBoard(containerId, {
         boundingbox: [-5, 5, 5, -5],
         axis: true,
         axis: showAxes,
@@ -70,7 +72,7 @@ export default function InteractiveGeometryCanvas({
         boardRef.current = null; 
       }
     };
-  }, [commands, showAxes]);
+  }, [commands, showAxes, containerId]);
 
   const handleCaptureAndInsert = async (targetCallback: (url: string) => void, targetName: string) => {
     if (boardRef.current && containerRef.current) {
@@ -149,7 +151,7 @@ export default function InteractiveGeometryCanvas({
   return (
     <div className={`space-y-2 ${className}`}>
       <div
-        id="jxgbox" // JSXGraph needs a unique ID
+        id={containerId} // JSXGraph needs a unique ID
         ref={containerRef}
         className="jxgbox w-full h-[400px] border rounded-lg bg-muted"
         style={{ direction: 'ltr' }} // Ensure LTR for the canvas
