@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/api-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
-import { GoogleDriveService } from '@/lib/google-drive';
+import { GoogleDriveService, resolveHierarchy } from '@/lib/google-drive';
 import { log, LogLevel, LogCategory } from '@/lib/logger';
 
 /**
@@ -21,33 +21,53 @@ function extractFileId(url: string | null | undefined): string | null {
  * @param userId - The ID of the user initiating the creation.
  */
 async function handleExerciseFolderCreation(exercise: any, userId: string) {
-  if (!exercise.lesson?.driveFolderId) {
-    await log({
-      level: LogLevel.WARNING,
-      category: LogCategory.DRIVE,
-      action: 'EXERCISE_DRIVE_SETUP_SKIPPED',
-      userId,
-      details: `Skipping Drive folder creation for exercise ${exercise.id} because parent lesson ${exercise.lessonId} has no Drive folder.`,
-    });
-    return;
-  }
-
   try {
-    const lessonFolderId = exercise.lesson.driveFolderId;
-    const exerciseFolderName = `Exercise ${exercise.id}`;
+    // 1. Fetch full hierarchy details to verify/fix structure
+    const fullLesson = await prisma.lesson.findUnique({
+      where: { id: exercise.lessonId },
+      include: {
+        subject: { include: { stage: true } },
+        author: true
+      }
+    });
+
+    if (!fullLesson || !fullLesson.subject || !fullLesson.subject.stage || !fullLesson.author) {
+      throw new Error("Incomplete lesson hierarchy data (Stage/Subject/Author missing)");
+    }
+
+    const stageName = fullLesson.subject.stage.name;
+    const subjectName = fullLesson.subject.name;
+    const teacherName = `${fullLesson.author.firstName} ${fullLesson.author.lastName}`;
+    const lessonTitle = fullLesson.title.replace(/[\\/:"*?<>|]+/g, '_').trim();
+
+    // 2. Resolve Hierarchy (Stage > Subject > Teacher > Lesson)
+    // This ensures all folders exist in the correct order
+    const hierarchy = [stageName, subjectName, teacherName, lessonTitle];
 
     await log({
       level: LogLevel.INFO,
       category: LogCategory.DRIVE,
       action: 'EXERCISE_DRIVE_SETUP_START',
       userId,
-      details: `Starting Drive folder setup for exercise "${exerciseFolderName}" (ID: ${exercise.id}).`,
+      details: `Verifying hierarchy for exercise ${exercise.id}: ${hierarchy.join(' > ')}`,
     });
 
-    // 1. Get or create the Exercise folder inside the parent Lesson folder
+    const lessonFolderId = await resolveHierarchy(hierarchy);
+
+    // 3. Update Lesson if folder ID is different (Self-healing)
+    if (fullLesson.driveFolderId !== lessonFolderId) {
+       await prisma.lesson.update({
+         where: { id: fullLesson.id },
+         data: { driveFolderId: lessonFolderId }
+       });
+       console.log(`[Drive] Self-healed lesson folder ID for lesson ${fullLesson.id}`);
+    }
+
+    // 4. Get or create the Exercise folder inside the parent Lesson folder
+    const exerciseFolderName = `Exercise ${exercise.id}`;
     const exerciseFolderId = await GoogleDriveService.getOrCreateFolder(exerciseFolderName, lessonFolderId);
 
-    // 2. Update the exercise record with the new folder ID
+    // 5. Update the exercise record with the new folder ID
     await prisma.exercise.update({
       where: { id: exercise.id },
       data: { driveFolderId: exerciseFolderId },
@@ -61,7 +81,7 @@ async function handleExerciseFolderCreation(exercise: any, userId: string) {
       details: `Successfully created Drive folder for exercise ${exercise.id}. Folder ID: ${exerciseFolderId}`,
     });
 
-    // 3. نقل الملفات المرتبطة بالتمرين إلى المجلد الجديد
+    // 6. نقل الملفات المرتبطة بالتمرين إلى المجلد الجديد
     const filesToMove = [
       extractFileId(exercise.questionFileUrl),
       extractFileId(exercise.modelAnswerImage)
