@@ -72,7 +72,7 @@ export default function LessonsPage() {
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground whitespace-nowrap">
-                بواسطة: {lesson.author?.name}
+                بواسطة: {lesson.author ? `${lesson.author.firstName} ${lesson.author.lastName}` : 'غير معروف'}
               </p>
             </div>
             <CardTitle className="text-xl mt-2">{lesson.title}</CardTitle>

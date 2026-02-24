@@ -47,7 +47,7 @@ const getPdfPreviewUrl = (url: string) => {
 interface Lesson {
   id: number;
   title: string;
-  content: string;
+  content: string | null;
   videoUrl?: string;
   pdfUrl?: string;
   imageUrl?: string;
