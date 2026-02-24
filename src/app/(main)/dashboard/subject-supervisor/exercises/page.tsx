@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, FilePenLine, Trash2, Search, Loader2 } from "lucide-react";
+import { PlusCircle, FilePenLine, Trash2, Search, Loader2, FileQuestion, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -21,90 +22,32 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
+import { useExercises, useLessons } from "@/hooks";
+import { cn } from "@/lib/utils";
 
-interface Exercise {
-  id: number;
-  question: string;
-  lesson: {
-    id: number;
-    title: string;
-  };
-}
-
-export default function SupervisorExercisesPage() {
-  const [exercises, setExercises] = useState<Exercise[]>([]);
-  const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
+// مكون فرعي لعرض تمارين درس محدد
+function LessonExercisesList({ lessonId }: { lessonId: number }) {
+  const { exercises, isLoading, deleteExercise, refetch } = useExercises({ lessonId });
   const { toast } = useToast();
-
-  useEffect(() => {
-    fetchExercises();
-  }, []);
-
-  useEffect(() => {
-    if (searchQuery) {
-      const filtered = exercises.filter(
-        (ex) =>
-          ex.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          ex.lesson.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredExercises(filtered);
-    } else {
-      setFilteredExercises(exercises);
-    }
-  }, [searchQuery, exercises]);
-
-  const fetchExercises = async () => {
-    try {
-      const response = await fetch('/api/subject-supervisor/exercises');
-      const result = await response.json();
-
-      console.log('📥 Exercises API response:', result);
-
-      if (result.success) {
-        // البيانات الآن مباشرة في result.data
-        const exercisesData = Array.isArray(result.data) ? result.data : [];
-        console.log('✅ Exercises data:', exercisesData);
-        setExercises(exercisesData);
-        setFilteredExercises(exercisesData);
-      } else {
-        console.error('❌ API returned error:', result.error);
-        toast({
-          title: 'خطأ',
-          description: result.error || 'فشل في جلب التمارين',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('❌ Error fetching exercises:', error);
-      toast({
-        title: 'خطأ',
-        description: 'حدث خطأ أثناء جلب التمارين',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleDelete = async (id: number) => {
     if (!confirm('هل أنت متأكد من حذف هذا التمرين؟')) return;
 
-    try {
-      const response = await fetch(`/api/exercises/${id}`, {
-        method: 'DELETE',
-      });
-
-      const result = await response.json();
-
+    const result = await deleteExercise(id);
+    
       if (result.success) {
         toast({
           title: 'تم الحذف',
           description: 'تم حذف التمرين بنجاح',
         });
-        fetchExercises();
+        refetch();
       } else {
         toast({
           title: 'خطأ',
@@ -112,15 +55,91 @@ export default function SupervisorExercisesPage() {
           variant: 'destructive',
         });
       }
-    } catch (error) {
-      console.error('Error deleting exercise:', error);
-      toast({
-        title: 'خطأ',
-        description: 'حدث خطأ أثناء حذف التمرين',
-        variant: 'destructive',
-      });
-    }
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  }
+
+  if (exercises.length === 0) {
+    return <div className="text-center p-4 text-muted-foreground">لا توجد تمارين في هذا الدرس.</div>;
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>نص السؤال</TableHead>
+          <TableHead>النوع</TableHead>
+          <TableHead className="text-center">الإجراءات</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {exercises.map((exercise) => {
+          const getPlainText = (html: string) => {
+            if (!html) return '';
+            return html.replace(/<[^>]*>/g, '').substring(0, 100);
+          };
+          const questionText = exercise.questionRichContent 
+            ? getPlainText(exercise.questionRichContent) + '...'
+            : (exercise.question || 'سؤال بدون نص').substring(0, 100) + '...';
+
+          return (
+            <TableRow key={exercise.id}>
+              <TableCell className="font-medium truncate max-w-md">
+                {questionText}
+              </TableCell>
+              <TableCell>
+                <Badge 
+                  variant="outline"
+                  className={cn(
+                    "font-normal",
+                    exercise.type === 'main' && "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
+                    exercise.type === 'support_with_results' && "bg-green-50 text-green-700 border-green-200 hover:bg-green-100",
+                    exercise.type === 'support_only' && "bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                  )}
+                >
+                  {exercise.type === 'main' ? 'رئيسي' : (exercise.type === 'support_with_results' ? 'دعم+نتائج' : 'دعم')}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center">
+                <div className="flex justify-center gap-2">
+                  <Link href={`/dashboard/subject-supervisor/exercises/${exercise.id}/edit`}>
+                    <Button variant="ghost" size="icon" title="تعديل">
+                      <FilePenLine className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    title="حذف" 
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(exercise.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+export default function SupervisorExercisesPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [openItem, setOpenItem] = useState<string>("");
+  const [page, setPage] = useState(1);
+  
+  // جلب الدروس بدلاً من التمارين
+  const { lessons, isLoading, refetch, pagination } = useLessons({ page, limit: 10 });
+
+  // تصفية الدروس حسب البحث
+  const filteredLessons = lessons.filter(lesson => 
+    lesson.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (isLoading) {
     return (
@@ -136,7 +155,7 @@ export default function SupervisorExercisesPage() {
         <div className="grid gap-1">
           <h1 className="text-3xl font-bold tracking-tight">إدارة التمارين</h1>
           <p className="text-muted-foreground">
-            قم بإدارة جميع التمارين في دروس المادة.
+            قم بإدارة التمارين مرتبة حسب الدروس.
           </p>
         </div>
         <Link href="/dashboard/subject-supervisor/exercises/create">
@@ -151,7 +170,7 @@ export default function SupervisorExercisesPage() {
         <CardHeader>
           <CardTitle>قائمة التمارين</CardTitle>
           <CardDescription>
-            جميع التمارين المتاحة في دروس هذه المادة.
+            اختر درساً لعرض التمارين المرتبطة به.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -159,7 +178,7 @@ export default function SupervisorExercisesPage() {
             <div className="relative">
               <Search className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="ابحث في التمارين أو الدروس..."
+                placeholder="ابحث عن درس..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pr-10"
@@ -167,51 +186,57 @@ export default function SupervisorExercisesPage() {
             </div>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>نص السؤال</TableHead>
-                <TableHead>الدرس المرتبط</TableHead>
-                <TableHead className="text-center">الإجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredExercises.length > 0 ? (
-                filteredExercises.map((exercise) => (
-                    <TableRow key={exercise.id}>
-                        <TableCell className="font-medium max-w-md">
-                          <div className="truncate">{exercise.question}</div>
-                        </TableCell>
-                        <TableCell>{exercise.lesson.title}</TableCell>
-                        <TableCell className="text-center">
-                            <div className="flex justify-center gap-2">
-                                <Link href={`/dashboard/subject-supervisor/exercises/${exercise.id}/edit`}>
-                                    <Button variant="ghost" size="icon" title="تعديل">
-                                        <FilePenLine className="h-4 w-4" />
-                                    </Button>
-                                </Link>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  title="حذف" 
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => handleDelete(exercise.id)}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </TableCell>
-                    </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center h-24">
-                    {searchQuery ? 'لا توجد نتائج للبحث' : 'لا توجد تمارين في هذه المادة بعد.'}
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+          {filteredLessons.length > 0 ? (
+            <Accordion type="single" collapsible value={openItem} onValueChange={setOpenItem} className="w-full">
+              {filteredLessons.map((lesson: any) => (
+                <AccordionItem key={lesson.id} value={lesson.id.toString()}>
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center gap-2">
+                      <FileQuestion className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium">{lesson.title}</span>
+                      <Badge variant="secondary" className="text-xs font-normal">
+                        {lesson.level?.name}
+                      </Badge>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {openItem === lesson.id.toString() && <LessonExercisesList lessonId={lesson.id} />}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              {searchQuery ? 'لا توجد دروس تطابق بحثك.' : 'لم تقم بإنشاء أي دروس بعد.'}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1 || isLoading}
+              >
+                <ChevronRight className="h-4 w-4 ml-1" />
+                السابق
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                صفحة {pagination.page} من {pagination.totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                disabled={page === pagination.totalPages || isLoading}
+              >
+                التالي
+                <ChevronLeft className="h-4 w-4 mr-1" />
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

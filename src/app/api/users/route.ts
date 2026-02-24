@@ -6,6 +6,9 @@ import bcrypt from 'bcryptjs';
 import { GoogleDriveService } from '@/lib/google-drive';
 import { log, LogLevel, LogCategory } from '@/lib/logger';
 
+// إضافة هذا السطر لمنع التخزين المؤقت وضمان جلب الأرقام الصحيحة دائماً
+export const dynamic = 'force-dynamic';
+
 /**
  * Handles the creation of the necessary folder structure in Google Drive for a new teacher.
  * Stage > Subject > Teacher Name > Level

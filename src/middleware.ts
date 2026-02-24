@@ -63,5 +63,6 @@ export const config = {
     '/messages/:path*',
     '/profile/:path*',
     '/subjects/:path*',
+    // الصفحات العامة (/login, /signup, /forgot-password, /reset-password) غير مدرجة هنا وبالتالي فهي متاحة للجميع
   ],
 };

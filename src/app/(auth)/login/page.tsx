@@ -23,7 +23,6 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -74,20 +73,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    try {
-      await signIn('google', { callbackUrl: '/dashboard' });
-    } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تسجيل الدخول عبر Google",
-        variant: "destructive",
-      });
-      setIsGoogleLoading(false);
-    }
-  };
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-2xl">
@@ -114,7 +99,12 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">كلمة المرور</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">كلمة المرور</Label>
+                <Link href="/forgot-password" className="text-sm text-muted-foreground underline hover:text-primary">
+                  نسيت كلمة المرور؟
+                </Link>
+              </div>
               <div className="relative">
                 <Input 
                   id="password" 
@@ -146,26 +136,6 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <div className="relative w-full">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
-                أو استمر باستخدام
-              </span>
-            </div>
-          </div>
-          <Button 
-            variant="outline" 
-            className="w-full" 
-            onClick={handleGoogleSignIn}
-            disabled={isGoogleLoading}
-            type="button"
-          >
-            {isGoogleLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-            تسجيل الدخول باستخدام Google
-          </Button>
           <div className="mt-4 text-center text-sm">
             ليس لديك حساب؟{" "}
             <Link href="/signup" className="underline">

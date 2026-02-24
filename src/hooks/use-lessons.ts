@@ -56,8 +56,16 @@ interface UseLessonsParams {
   };
 }
 
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 interface UseLessonsReturn {
   lessons: Lesson[];
+  pagination: Pagination | null;
   isLoading: boolean;
   error: string | null;
   createLesson: (data: CreateLessonData) => Promise<{ success: boolean; data?: Lesson; error?: string }>;
@@ -67,6 +75,7 @@ interface UseLessonsReturn {
 export function useLessons(params?: UseLessonsParams): UseLessonsReturn {
   const { data: session } = useSession();
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -106,6 +115,9 @@ export function useLessons(params?: UseLessonsParams): UseLessonsReturn {
         // API returns { success: true, data: { lessons: [...], pagination: {...} } }
         const lessonsData = result.data?.lessons || result.data || [];
         setLessons(Array.isArray(lessonsData) ? lessonsData : []);
+        if (result.data?.pagination) {
+          setPagination(result.data.pagination);
+        }
       } else {
         setError(result.error || 'فشل في تحميل الدروس');
       }
@@ -178,6 +190,7 @@ export function useLessons(params?: UseLessonsParams): UseLessonsReturn {
 
   return {
     lessons,
+    pagination,
     isLoading,
     error,
     createLesson,

@@ -6,6 +6,9 @@ import { GoogleDriveService, getRootFolderId } from '@/lib/google-drive';
 import { log, LogLevel, LogCategory } from '@/lib/logger';
 import { saveBase64ToFile } from '@/lib/file-handler';
 
+// منع التخزين المؤقت لضمان ظهور البيانات المحدثة فوراً
+export const dynamic = 'force-dynamic';
+
 // Configure API route to accept larger payloads
 export const config = {
   api: {
@@ -101,6 +104,8 @@ export async function GET(request: NextRequest) {
           levelId: true,
         },
       });
+
+      console.log(`[API Lessons] Supervisor Check: User ${session.user.id}, Subject ${userDetails?.subjectId}, Level ${userDetails?.levelId}`);
 
       if (!userDetails?.subjectId || !userDetails?.levelId) {
         return successResponse({

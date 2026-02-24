@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -35,11 +35,18 @@ export default function MyLessonsPage() {
   const { data: session } = useSession();
   const { toast } = useToast();
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
   
-  const { lessons, isLoading, deleteLesson } = useLessons({
+  const { lessons, isLoading, deleteLesson, pagination } = useLessons({
     authorId: session?.user?.id,
     status: statusFilter === 'all' ? undefined : statusFilter,
+    page,
+    limit: 20,
   });
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter]);
 
   const getStatusBadge = (status?: string) => {
     switch (status) {
@@ -167,6 +174,28 @@ export default function MyLessonsPage() {
               )}
             </TableBody>
           </Table>
+
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={!pagination || page === 1 || isLoading}
+            >
+              السابق
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              الصفحة {pagination?.page || 1} من {pagination?.totalPages || 1}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!pagination || page >= (pagination?.totalPages || 1) || isLoading}
+            >
+              التالي
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

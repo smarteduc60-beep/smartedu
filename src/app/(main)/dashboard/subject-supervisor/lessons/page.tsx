@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, FilePenLine, Eye, Trash2, FileQuestion, Loader2, Search } from "lucide-react";
+import { PlusCircle, FilePenLine, Eye, Trash2, FileQuestion, Loader2, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -43,25 +43,39 @@ interface Lesson {
   createdAt: string;
 }
 
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
 export default function SupervisorLessonsPage() {
   const { toast } = useToast();
   const { data: session } = useSession();
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [pagination, setPagination] = useState<Pagination | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [supervisorInfo, setSupervisorInfo] = useState<{ subject: string; level: string } | null>(null);
+  const ITEMS_PER_PAGE = 20;
 
   useEffect(() => {
     const fetchLessons = async () => {
       try {
+        setLoading(true);
         // جلب الدروس - الـ API سيصفي تلقائياً حسب المشرف
-        const response = await fetch('/api/lessons');
+        const response = await fetch(`/api/lessons?page=${currentPage}&limit=${ITEMS_PER_PAGE}`);
         const result = await response.json();
 
         if (result.success) {
           // API returns lessons in result.data.lessons
           const lessonsData = result.data?.lessons || result.lessons || [];
           setLessons(lessonsData);
+          if (result.data?.pagination) {
+            setPagination(result.data.pagination);
+          }
           
           // جلب معلومات المشرف للعرض
           if (lessonsData.length > 0 && lessonsData[0].subject && lessonsData[0].level) {
@@ -81,7 +95,7 @@ export default function SupervisorLessonsPage() {
     if (session?.user) {
       fetchLessons();
     }
-  }, [session]);
+  }, [session, currentPage]);
 
   const handleDelete = async (lessonId: string) => {
     if (!confirm('هل أنت متأكد من حذف هذا الدرس؟')) return;
@@ -148,7 +162,7 @@ export default function SupervisorLessonsPage() {
             <div>
               <CardTitle>قائمة الدروس</CardTitle>
               <CardDescription>
-                دروسك فقط ({filteredLessons.length})
+                {pagination ? `عرض ${lessons.length} من أصل ${pagination.total} درس` : `دروسك فقط (${filteredLessons.length})`}
               </CardDescription>
             </div>
             <div className="relative w-64">
@@ -226,6 +240,33 @@ export default function SupervisorLessonsPage() {
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination Controls */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-end space-x-2 py-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronRight className="h-4 w-4" />
+                السابق
+              </Button>
+              <div className="text-sm text-muted-foreground">
+                صفحة {currentPage} من {pagination.totalPages}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.totalPages))}
+                disabled={currentPage === pagination.totalPages}
+              >
+                التالي
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

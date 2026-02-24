@@ -22,7 +22,7 @@ export default function RootLayout({
         {/* Add JSXGraph CSS globally via CDN */}
         <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/jsxgraph/distrib/jsxgraph.css" />
       </head>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
         <AuthProvider>
           {children}
         </AuthProvider>

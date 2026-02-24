@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/api-auth';
 import { successResponse, errorResponse } from '@/lib/api-response';
+// منع التخزين المؤقت لضمان ظهور الإحصائيات المحدثة فوراً
+export const dynamic = 'force-dynamic';
 
 // GET /api/subject-supervisor/dashboard
 export async function GET(request: NextRequest) {

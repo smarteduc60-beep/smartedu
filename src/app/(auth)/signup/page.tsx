@@ -46,7 +46,6 @@ export default function SignupPage() {
   const [stage, setStage] = useState<string>('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   
   const [stages, setStages] = useState<Stage[]>([]);
   const [levels, setLevels] = useState<Level[]>([]);
@@ -169,20 +168,6 @@ export default function SignupPage() {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    try {
-      await signIn('google', { callbackUrl: '/complete-profile' });
-    } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تسجيل الدخول عبر Google",
-        variant: "destructive",
-      });
-      setIsGoogleLoading(false);
     }
   };
 
@@ -356,26 +341,6 @@ export default function SignupPage() {
           </form>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <div className="relative w-full">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
-                أو استمر باستخدام
-              </span>
-            </div>
-          </div>
-          <Button 
-            variant="outline" 
-            className="w-full"
-            onClick={handleGoogleSignIn}
-            disabled={true}
-            type="button"
-          >
-            {isGoogleLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-            إنشاء حساب باستخدام Google
-          </Button>
           <div className="mt-4 text-center text-sm">
             لديك حساب بالفعل؟{" "}
             <Link href="/login" className="underline">
