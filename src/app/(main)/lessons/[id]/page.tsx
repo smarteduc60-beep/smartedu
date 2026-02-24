@@ -212,7 +212,7 @@ export default function LessonDetailPage({ params }: { params: Promise<{ id: str
         </CardHeader>
         <CardContent>
           <MathContent 
-            content={lesson.content}
+            content={lesson.content || ''}
             className="prose prose-lg max-w-none dark:prose-invert text-foreground" 
           />
         </CardContent>
