@@ -46,6 +46,7 @@ interface Exercise {
   geometryCommands?: any;
   type: ExerciseType;
   questionRichContent: string;
+  question?: string;
   questionFileUrl?: string | null;
   modelAnswer: string | null;
   modelAnswerImage: string | null;
@@ -100,7 +101,7 @@ export default function EditExercisePage({ params }: { params: Promise<{ id: str
           const ex = result.data;
           setExercise(ex);
           setExerciseType(ex.type);
-          setQuestionContent(ex.questionRichContent || '');
+          setQuestionContent(ex.questionRichContent || ex.question || '');
           setGeometryCommands(ex.geometryCommands || null);
           setQuestionFileUrl(ex.questionFileUrl || "");
           if (ex.questionFileUrl) {
