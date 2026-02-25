@@ -57,6 +57,16 @@ export async function GET(
       );
     }
 
+    // محاولة تحليل النتائج المتوقعة إذا كانت موجودة كنص
+    let parsedExpectedResults = exercise.expectedResults;
+    try {
+      if (exercise.expectedResults && typeof exercise.expectedResults === 'string') {
+        parsedExpectedResults = JSON.parse(exercise.expectedResults);
+      }
+    } catch (e) {
+      // في حال الفشل، نتركها كما هي
+    }
+
     // Convert Decimal fields to numbers
     const exerciseData = {
       ...exercise,
@@ -65,6 +75,7 @@ export async function GET(
       question: exercise.question || exercise.questionRichContent || '',
       modelAnswer: exercise.modelAnswer || '',
       questionFileUrl: exercise.questionFileUrl || '',
+      expectedResults: parsedExpectedResults,
     };
 
     return NextResponse.json({
@@ -166,7 +177,7 @@ export async function PUT(
     }
 
     if (type === 'support_with_results' || existingExercise.type === 'support_with_results') {
-      if (expectedResults !== undefined) updateData.expectedResults = expectedResults;
+      if (expectedResults !== undefined) updateData.expectedResults = JSON.stringify(expectedResults);
     }
 
     const updatedExercise = await prisma.exercise.update({

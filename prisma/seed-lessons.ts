@@ -287,12 +287,12 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 01:</strong> حوّل الكسور التالية إلى أعداد عشرية:</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "3/10", result: "0.3" },
             { question: "7/10", result: "0.7" },
             { question: "9/10", result: "0.9" },
             { question: "1/10", result: "0.1" }
-          ],
+          ]),
           displayOrder: 1,
           maxScore: 4,
         }
@@ -304,12 +304,12 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 02:</strong> حوّل الكسور التالية إلى أعداد عشرية:</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "25/100", result: "0.25" },
             { question: "47/100", result: "0.47" },
             { question: "83/100", result: "0.83" },
             { question: "5/100", result: "0.05" }
-          ],
+          ]),
           displayOrder: 2,
           maxScore: 4,
         }
@@ -321,12 +321,12 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 03:</strong> حوّل الأعداد العشرية التالية إلى كسور (مثال: 4/10):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.4", result: "4/10" },
             { question: "0.6", result: "6/10" },
             { question: "0.9", result: "9/10" },
             { question: "0.2", result: "2/10" }
-          ],
+          ]),
           displayOrder: 3,
           maxScore: 4,
         }
@@ -338,12 +338,12 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 04:</strong> حوّل الأعداد العشرية التالية إلى كسور (مثال: 25/100):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.25", result: "25/100" },
             { question: "0.37", result: "37/100" },
             { question: "0.81", result: "81/100" },
             { question: "0.09", result: "9/100" }
-          ],
+          ]),
           displayOrder: 4,
           maxScore: 4,
         }
@@ -355,12 +355,12 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 05:</strong> اكتب الأعداد التالية بالكلمات:</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.3", result: "ثلاثة أجزاء من عشرة" },
             { question: "0.7", result: "سبعة أجزاء من عشرة" },
             { question: "0.5", result: "خمسة أجزاء من عشرة" },
             { question: "0.1", result: "جزء من عشرة" }
-          ],
+          ]),
           displayOrder: 5,
           maxScore: 4,
         }
@@ -374,13 +374,13 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 06:</strong> أكمل الجدول (حول إلى عدد عشري):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "3/100", result: "0.03" },
             { question: "3/10", result: "0.3" },
             { question: "7/1000", result: "0.007" },
             { question: "45/100", result: "0.45" },
             { question: "8/1000", result: "0.008" }
-          ],
+          ]),
           displayOrder: 6,
           maxScore: 5,
         }
@@ -392,13 +392,13 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 07:</strong> أكمل الفراغ بالعدد المناسب:</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.8 = ؟ / 10", result: "8" },
             { question: "0.8 = ؟ / 100", result: "80" },
             { question: "0.08 = ؟ / 100", result: "8" },
             { question: "0.35 = 35 / ؟", result: "100" },
             { question: "0.125 = 125 / ؟", result: "1000" }
-          ],
+          ]),
           displayOrder: 7,
           maxScore: 5,
         }
@@ -410,11 +410,11 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 08:</strong> رتّب الأعداد التالية من الأصغر إلى الأكبر (افصل بينها بفاصلة):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.5 – 0.3 – 0.8 – 0.1", result: "0.1, 0.3, 0.5, 0.8" },
             { question: "0.25 – 0.5 – 0.75 – 0.1", result: "0.1, 0.25, 0.5, 0.75" },
             { question: "0.125 – 0.25 – 0.5 – 0.05", result: "0.05, 0.125, 0.25, 0.5" }
-          ],
+          ]),
           displayOrder: 8,
           maxScore: 3,
         }
@@ -426,11 +426,11 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 09:</strong> رتّب الأعداد التالية من الأكبر إلى الأصغر (افصل بينها بفاصلة):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.9 – 0.45 – 0.7 – 0.65", result: "0.9, 0.7, 0.65, 0.45" },
             { question: "1.2 – 1.09 – 1.5 – 1.05", result: "1.5, 1.2, 1.09, 1.05" },
             { question: "0.375 – 0.5 – 0.25 – 0.75", result: "0.75, 0.5, 0.375, 0.25" }
-          ],
+          ]),
           displayOrder: 9,
           maxScore: 3,
         }
@@ -442,14 +442,14 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 10:</strong> ضع الرمز المناسب (< أو > أو =):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.7 ؟ 0.5", result: ">" },
             { question: "0.25 ؟ 0.3", result: "<" },
             { question: "0.75 ؟ 0.8", result: "<" },
             { question: "0.09 ؟ 0.1", result: "<" },
             { question: "0.125 ؟ 0.13", result: "<" },
             { question: "1.5 ؟ 1.50", result: "=" }
-          ],
+          ]),
           displayOrder: 10,
           maxScore: 6,
         }
@@ -461,13 +461,13 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 11:</strong> اكتب الكسر بعد الاختزال (مثال: 1/2):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.5", result: "1/2" },
             { question: "0.25", result: "1/4" },
             { question: "0.75", result: "3/4" },
             { question: "0.2", result: "1/5" },
             { question: "0.125", result: "1/8" }
-          ],
+          ]),
           displayOrder: 11,
           maxScore: 5,
         }
@@ -479,14 +479,14 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 12:</strong> اقرأ الأعداد العشرية (اكتبها بالكلمات):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.45", result: "خمسة وأربعون جزءاً من مئة" },
             { question: "0.08", result: "ثمانية أجزاء من مئة" },
             { question: "2.5", result: "اثنان ونصف" },
             { question: "3.75", result: "ثلاثة وخمسة وسبعون جزءاً من مئة" },
             { question: "1.05", result: "واحد وخمسة أجزاء من مئة" },
             { question: "0.007", result: "سبعة أجزاء من ألف" }
-          ],
+          ]),
           displayOrder: 12,
           maxScore: 6,
         }
@@ -500,13 +500,13 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 13:</strong> أكمل المتسلسلات (اكتب العدد التالي فقط):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.1 – 0.2 – 0.3 – 0.4", result: "0.5" },
             { question: "0.25 – 0.5 – 0.75 – 1", result: "1.25" },
             { question: "0.1 – 0.3 – 0.5 – 0.7", result: "0.9" },
             { question: "0.01 – 0.02 – 0.03 – 0.04", result: "0.05" },
             { question: "0.125 – 0.25 – 0.375 – 0.5", result: "0.625" }
-          ],
+          ]),
           displayOrder: 13,
           maxScore: 5,
         }
@@ -518,11 +518,11 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 14:</strong> رتب الكسور التالية تصاعدياً بعد تحويلها ذهنياً (اكتب الكسور مرتبة مفصولة بفاصلة):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "3/10, 75/100, 4/10, 8/100", result: "8/100, 3/10, 4/10, 75/100" },
             { question: "25/100, 1/10, 5/100, 5/10", result: "5/100, 1/10, 25/100, 5/10" },
             { question: "125/1000, 25/100, 3/10, 5/100", result: "5/100, 125/1000, 25/100, 3/10" }
-          ],
+          ]),
           displayOrder: 14,
           maxScore: 3,
         }
@@ -534,13 +534,13 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 15:</strong> أوجد العدد المجهول:</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.5 + ؟ = 1", result: "0.5" },
             { question: "؟ + 0.25 = 1", result: "0.75" },
             { question: "0.75 – ؟ = 0.25", result: "0.5" },
             { question: "؟ – 0.3 = 0.5", result: "0.8" },
             { question: "0.125 × 4 = ؟", result: "0.5" }
-          ],
+          ]),
           displayOrder: 15,
           maxScore: 5,
         }
@@ -581,13 +581,13 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 17:</strong> أيها الأكبر؟ (اكتب العدد الأكبر أو "=" إذا تساويا):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.3 أم 0.30؟", result: "=" },
             { question: "0.5 أم 0.50؟", result: "=" },
             { question: "0.25 أم 0.3؟", result: "0.3" },
             { question: "0.125 أم 0.13؟", result: "0.13" },
             { question: "1.4 أم 1.40؟", result: "=" }
-          ],
+          ]),
           displayOrder: 17,
           maxScore: 5,
         }
@@ -601,13 +601,13 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 18:</strong> سر الأعداد المفقودة (اكتب العدد العشري):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "جزء صحيح 3، وجزء عشري 25 من مئة", result: "3.25" },
             { question: "جزء صحيح 0، وجزء عشري 75 من مئة", result: "0.75" },
             { question: "جزء صحيح 2، وجزء عشري 5 من عشرة", result: "2.5" },
             { question: "جزء صحيح 1، وجزء عشري 125 من ألف", result: "1.125" },
             { question: "جزء صحيح 0، وجزء عشري 7 من ألف", result: "0.007" }
-          ],
+          ]),
           displayOrder: 18,
           maxScore: 5,
         }
@@ -619,13 +619,13 @@ async function main() {
           lessonId: decimalLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 19:</strong> أحجية الكسور (أكمل الفراغ الناقص):</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "0.25 = ؟/100", result: "25" },
             { question: "0.75 = 3/؟", result: "4" },
             { question: "0.2 = ؟/10", result: "2" },
             { question: "0.125 = 1/؟", result: "8" },
             { question: "0.4 = 2/؟", result: "5" }
-          ],
+          ]),
           displayOrder: 19,
           maxScore: 5,
         }
@@ -710,9 +710,9 @@ async function main() {
           lessonId: islamicLesson.id,
           type: 'support_with_results',
           questionRichContent: '<p><strong>التمرين 01:</strong> أكمل الفراغ: عدد أركان الإيمان هو ......</p>',
-          expectedResults: [
+          expectedResults: JSON.stringify([
             { question: "عدد الأركان", result: "6" }
-          ],
+          ]),
           displayOrder: 1,
           maxScore: 5,
         }

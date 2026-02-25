@@ -3,18 +3,32 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const teacherEmail = 'ladj14013@gmail.com';
+  const teacherEmail = 'Math.teacher.1cem@smartedu.com';
   
   console.log(`🔍 Searching for teacher: ${teacherEmail}...`);
 
-  const teacher = await prisma.user.findUnique({
+  let teacher = await prisma.user.findUnique({
     where: { email: teacherEmail },
     include: { userDetails: true }
   });
 
   if (!teacher) {
-    console.error(`❌ Teacher with email ${teacherEmail} not found.`);
-    return;
+    console.log(`⚠️ Teacher not found. Creating teacher: ${teacherEmail}...`);
+    const teacherRole = await prisma.role.findUnique({ where: { name: 'teacher' } });
+    if (!teacherRole) throw new Error("Teacher role not found. Please run seed.ts first.");
+
+    teacher = await prisma.user.create({
+      data: {
+        email: teacherEmail,
+        firstName: 'Ladj',
+        lastName: 'Teacher',
+        roleId: teacherRole.id,
+        userDetails: {
+          create: { teacherCode: 'T-LADJ-MATH' }
+        }
+      },
+      include: { userDetails: true }
+    });
   }
 
   // 1. Find Level
@@ -433,7 +447,7 @@ async function main() {
         lessonId: lesson.id,
         question: ex.question,
         modelAnswer: 'modelAnswer' in ex ? ex.modelAnswer : undefined,
-        expectedResults: 'expectedResults' in ex ? ex.expectedResults : undefined,
+        expectedResults: 'expectedResults' in ex ? JSON.stringify(ex.expectedResults) : undefined,
         type: ex.type,
         displayOrder: index + 1,
       },

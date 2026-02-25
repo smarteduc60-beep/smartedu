@@ -24,8 +24,20 @@ interface SupportWithResultsExerciseProps {
 
 export default function SupportWithResultsExercise({ exercise }: SupportWithResultsExerciseProps) {
   const { toast } = useToast();
-  const expectedResults = exercise.expectedResults || [];
   
+  // معالجة آمنة للنتائج المتوقعة سواء كانت نصاً أو مصفوفة
+  let parsedResults: any[] = [];
+  try {
+    if (Array.isArray(exercise.expectedResults)) {
+      parsedResults = exercise.expectedResults;
+    } else if (typeof exercise.expectedResults === 'string') {
+      parsedResults = JSON.parse(exercise.expectedResults);
+    }
+  } catch (e) {
+    console.error("Failed to parse expectedResults", e);
+  }
+  const expectedResults = Array.isArray(parsedResults) ? parsedResults : [];
+
   const [studentAnswers, setStudentAnswers] = useState<Record<string, string>>(
     expectedResults.reduce((acc: any, item: any) => {
       acc[item.question] = '';

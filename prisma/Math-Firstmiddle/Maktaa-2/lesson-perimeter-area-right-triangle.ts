@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const teacherEmail = 'ladj14013@gmail.com';
+  const teacherEmail = 'Math.teacher.1cem@smartedu.com';
   
   console.log(`🔍 Searching for teacher: ${teacherEmail}...`);
 

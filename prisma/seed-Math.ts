@@ -5,6 +5,20 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 إضافة دروس الرياضيات للمستوى: أولى متوسط...');
 
+  // 1. البحث عن المادة والمستوى ديناميكياً (لضمان العمل في أي بيئة)
+  const subject = await prisma.subject.findFirst({
+    where: { name: 'الرياضيات' }
+  });
+
+  const level = await prisma.level.findFirst({
+    where: { name: { contains: 'أولى متوسط' } }
+  });
+
+  if (!subject || !level) {
+    console.error('❌ خطأ: لم يتم العثور على مادة "الرياضيات" أو مستوى "أولى متوسط" في قاعدة البيانات.');
+    return;
+  }
+
   // تأكد أن دور المعلم موجود
   let teacherRole = await prisma.role.findUnique({ where: { name: 'teacher' } });
   if (!teacherRole) {
@@ -27,8 +41,8 @@ async function main() {
       roleId: teacherRole.id,
       userDetails: {
         create: {
-          subjectId: 4, // الرياضيات (المرحلة المتوسطة)
-          levelId: 3, // أولى متوسط
+          subjectId: subject.id,
+          levelId: level.id,
           teacherCode: 'T-MATH-1CEM',
         },
       },
@@ -132,7 +146,7 @@ async function main() {
 
   for (const l of lessons) {
     // تحقق ما إذا كان الدرس موجوداً مسبقاً
-    const existing = await prisma.lesson.findFirst({ where: { title: l.title, levelId: 3 } });
+    const existing = await prisma.lesson.findFirst({ where: { title: l.title, levelId: level.id } });
     let lessonRecord;
     if (!existing) {
       lessonRecord = await prisma.lesson.create({
@@ -140,13 +154,14 @@ async function main() {
           title: l.title,
           content: l.content,
           authorId: teacher.id,
-          subjectId: 4,
-          levelId: 3,
+          subjectId: subject.id,
+          levelId: level.id,
           teacherName: 'Math.teacher.1cem@smartedu.com',
           subjectName: 'الرياضيات',
           stageName: 'مرحلة التعليم المتوسط',
           type: 'public',
-          status: 'published',
+          status: 'approved',
+          published: true,
         },
       });
     } else {
@@ -277,7 +292,7 @@ async function main() {
             lessonId: lessonRecord.id,
             type: 'support_with_results',
             question: ex.question,
-            expectedResults: ex.expectedResults,
+            expectedResults: JSON.stringify(ex.expectedResults),
             maxScore: 5,
             displayOrder: 1,
           },
