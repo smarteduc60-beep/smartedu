@@ -51,6 +51,7 @@ interface Lesson {
   videoUrl?: string;
   pdfUrl?: string;
   imageUrl?: string;
+  teacherName?: string | null;
   subject?: {
     id: number;
     name: string;
@@ -188,9 +189,9 @@ export default function LessonDetailPage({ params }: { params: Promise<{ id: str
           <Badge variant="secondary" className="mb-2">{lesson.subject.name}</Badge>
         )}
         <h1 className="text-4xl font-bold tracking-tight">{lesson.title}</h1>
-        {lesson.author && (
+        {(lesson.author || lesson.teacherName) && (
           <p className="text-muted-foreground mt-2">
-            الأستاذ: {lesson.author.firstName} {lesson.author.lastName}
+            الأستاذ: {lesson.author ? `${lesson.author.firstName} ${lesson.author.lastName}` : lesson.teacherName}
           </p>
         )}
       </div>
