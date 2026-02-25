@@ -446,6 +446,7 @@ async function main() {
       data: {
         lessonId: lesson.id,
         question: ex.question,
+        questionRichContent: ex.question.replace(/\n/g, '<br>'), // تخزين السؤال كتنسيق غني لدعم العرض في الواجهة
         modelAnswer: 'modelAnswer' in ex ? ex.modelAnswer : undefined,
         expectedResults: 'expectedResults' in ex ? JSON.stringify(ex.expectedResults) : undefined,
         type: ex.type,
