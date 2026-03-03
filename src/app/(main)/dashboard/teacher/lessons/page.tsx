@@ -30,6 +30,7 @@ import {
 import { useLessons } from "@/hooks";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
+import { Pagination } from "@/components/ui/pagination";
 
 export default function MyLessonsPage() {
   const { data: session } = useSession();
@@ -174,28 +175,15 @@ export default function MyLessonsPage() {
               )}
             </TableBody>
           </Table>
-
-          <div className="flex items-center justify-center gap-2 mt-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={!pagination || page === 1 || isLoading}
-            >
-              السابق
-            </Button>
-            <span className="text-sm text-muted-foreground">
-              الصفحة {pagination?.page || 1} من {pagination?.totalPages || 1}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => p + 1)}
-              disabled={!pagination || page >= (pagination?.totalPages || 1) || isLoading}
-            >
-              التالي
-            </Button>
-          </div>
+          
+          {pagination && pagination.totalPages > 1 && (
+            <Pagination
+              currentPage={page}
+              totalPages={pagination.totalPages}
+              onPageChange={setPage}
+              className="mt-6"
+            />
+          )}
         </CardContent>
       </Card>
     </div>

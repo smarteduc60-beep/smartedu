@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, FilePenLine, Trash2, Search, Loader2, FileQuestion, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, FilePenLine, Trash2, Search, Loader2, FileQuestion } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -31,6 +31,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useExercises, useLessons } from "@/hooks";
 import { cn } from "@/lib/utils";
+import { Pagination } from "@/components/ui/pagination";
 
 // مكون فرعي لعرض تمارين درس محدد
 function LessonExercisesList({ lessonId }: { lessonId: number }) {
@@ -213,29 +214,12 @@ export default function SupervisorExercisesPage() {
 
           {/* Pagination Controls */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1 || isLoading}
-              >
-                <ChevronRight className="h-4 w-4 ml-1" />
-                السابق
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                صفحة {pagination.page} من {pagination.totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
-                disabled={page === pagination.totalPages || isLoading}
-              >
-                التالي
-                <ChevronLeft className="h-4 w-4 mr-1" />
-              </Button>
-            </div>
+            <Pagination
+              currentPage={page}
+              totalPages={pagination.totalPages}
+              onPageChange={setPage}
+              className="mt-6"
+            />
           )}
         </CardContent>
       </Card>

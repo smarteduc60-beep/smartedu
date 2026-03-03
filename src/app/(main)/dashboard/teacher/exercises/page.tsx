@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, FilePenLine, Trash2, Loader2, FileQuestion, ChevronLeft, ChevronRight } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import {
   Table,
@@ -30,6 +31,7 @@ import { useExercises, useLessons } from "@/hooks";
 import { useSession } from "next-auth/react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Pagination } from "@/components/ui/pagination";
 
 // مكون فرعي لعرض تمارين درس محدد
 function LessonExercisesList({ lessonId }: { lessonId: number }) {
@@ -126,16 +128,22 @@ function LessonExercisesList({ lessonId }: { lessonId: number }) {
 }
 
 export default function MyExercisesPage() {
+  const [searchQuery, setSearchQuery] = useState("");
   const { data: session } = useSession();
   const [openItem, setOpenItem] = useState<string>("");
   const [page, setPage] = useState(1);
   
   // جلب الدروس فقط
-  const { lessons, isLoading, pagination } = useLessons({ 
+  const { lessons, isLoading, refetch, pagination } = useLessons({ 
     authorId: session?.user?.id,
     page,
     limit: 10
   });
+
+  // تصفية الدروس حسب البحث
+  const filteredLessons = lessons.filter(lesson => 
+    lesson.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (isLoading) {
     return (
@@ -169,10 +177,21 @@ export default function MyExercisesPage() {
             اختر درساً لعرض التمارين المرتبطة به.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {lessons.length > 0 ? (
+        <CardContent>          
+          <div className="mb-4">
+            <div className="relative">
+              <Input
+                placeholder="ابحث عن درس..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pr-10"
+              />
+            </div>
+          </div>
+
+          {filteredLessons.length > 0 ? (
             <Accordion type="single" collapsible value={openItem} onValueChange={setOpenItem} className="w-full">
-              {lessons.map((lesson) => (
+              {filteredLessons.map((lesson) => (
                 <AccordionItem key={lesson.id} value={lesson.id.toString()}>
                   <AccordionTrigger className="hover:no-underline">
                     <div className="flex items-center gap-2">

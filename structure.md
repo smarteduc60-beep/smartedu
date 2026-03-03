@@ -21,9 +21,20 @@
 | `src/lib/logger.ts` | نظام تسجيل الأحداث (Logging System). | `log`, `getLogs`, `cleanOldLogs`, `logger.*` |
 | `src/lib/google-drive.ts` | التعامل مع Google Drive API (رفع، إدارة مجلدات). | `uploadFile`, `findOrCreateFolder`, `uploadFileToHierarchy`, `getFileStream` |
 | `src/lib/mail.ts` | خدمة البريد الإلكتروني (Nodemailer). | `sendPasswordResetEmail` |
-# 🏗️ هيكلية المشروع (Project Structure)
 
-```markdown
+---
+
+## 🎨 مكونات الواجهة (`src/components/ui`)
+تحتوي على مكونات واجهة المستخدم القابلة لإعادة الاستخدام والمبنية على shadcn/ui.
+
+| المسار | الدور | أهم الخصائص (Props) |
+| :--- | :--- | :--- |
+| `src/components/ui/pagination.tsx` | مكون التنقل بين الصفحات مع أزرار (الأول، السابق، التالي، الأخير). | `currentPage`, `totalPages`, `onPageChange` |
+
+---
+
+## 🗂️ نظرة عامة على المشروع (Project Structure)
+
 هذا المستند يقدّم جردًا موجزًا ومسارات أساسية لمساعدة المطوّرين على التنقل بسرعة داخل المستودع.
 
 ---
@@ -61,12 +72,21 @@
 - `prisma/seed.ts` وملفات `prisma/seed-*.ts` — سكربتات تعبئة البيانات التجريبية.
 - `prisma/seed-math-1cem.ts` — سكربت بذر دروس الرياضيات للسنة الأولى متوسط.
 - `prisma/Math-Firstmiddle/` — مجلد يحتوي على سكربتات الدروس الفردية (مثل `lesson-division-decimals.ts`).
+- `prisma/Math-Firstmiddle/Maktaa-1/` — مجلد يحتوي على دروس المقطع الأول (مثل `lesson-decimal-numbers.ts`).
+- `prisma/Math-Firstmiddle/Maktaa-1/lesson-decimal-numbers.ts` — سكربت درس العدد العشري والكتابة العشرية.
+- `prisma/Math-Firstmiddle/Maktaa-1/lesson-decimal-fractions.ts` — سكربت درس الكسور العشرية.
 - `prisma/Math-Firstmiddle/Maktaa-2/` — مجلد يحتوي على دروس المقطع الثاني (مثل `lesson-parallel-perpendicular.ts`).
+- `prisma/Math-Firstmiddle/lesson-multiplication-decimals.ts` — سكربت درس ضرب عدد طبيعي أو عشري في 0,1 أو 0,01 أو 0,001.
 - `prisma/Math-Firstmiddle/lesson-multiplication-decimals.ts` — سكربت درس الضرب في 0.1، 0.01، 0.001.
 - `prisma/Math-Firstmiddle/lesson-division-by-10-100-1000.ts` — سكربت درس القسمة على 10، 100، 1000.
 - `prisma/Math-Firstmiddle/lesson-number-line.ts` — سكربت درس التعليم على نصف مستقيم مدرّج.
 - `prisma/Math-Firstmiddle/lesson-compare-decimals.ts` — سكربت درس مقارنة وترتيب الأعداد العشرية.
 - `prisma/Math-Firstmiddle/lesson-operations-decimals.ts` — سكربت درس جمع وطرح وضرب الأعداد العشرية.
+- `prisma/Math-Firstmiddle/Maktaa-1/lesson-multiplication-by-10-100-1000.ts` — سكربت درس ضرب عدد طبيعي أو عشري في 10، 100، 1000.
+- `prisma/Math-Firstmiddle/Maktaa-1/lesson-division-by-10-100-1000.ts` — سكربت درس قسمة عدد طبيعي أو عشري على 10، 100، 1000.
+- `prisma/Math-Firstmiddle/lesson-number-line.ts` — سكربت درس التعليم على نصف مستقيم مدرّج.
+- `prisma/Math-Firstmiddle/lesson-number-line.ts` — سكربت درس التعليم على نصف مستقيم مدرّج.
+- `prisma/Math-Firstmiddle/lesson-compare-decimals.ts` — سكربت درس مقارنة وترتيب الأعداد العشرية.
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-parallel-perpendicular.ts` — سكربت درس التوازي والتعامد.
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-construction-parallel-perpendicular.ts` — سكربت درس الإنشاءات الهندسية (توازي/تعامد) والمصطلحات.
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-perpendicular-relations.ts` — سكربت درس المستقيمان العموديان وعلاقات التوازي والتعامد.
@@ -79,11 +99,21 @@
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-perimeter-area-right-triangle.ts` — سكربت درس محيط ومساحة المثلث القائم.
 - `prisma/Math-Firstmiddle/Maktaa-3/lesson-euclidean-division.ts` — سكربت درس القسمة الإقليدية والمساواة المعبرة عنها.
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-angles-terminology.ts` — سكربت درس الزاوية (مصطلحات وترميزات).
+- `prisma/Math-Firstmiddle/Maktaa-3/lesson-divisibility-rules.ts` — سكربت درس قواعد قابلية القسمة على 2، 3، 4، 5، 9.
+- `prisma/Math-Firstmiddle/Maktaa-3/lesson-decimal-division.ts` — سكربت درس القسمة العشرية.
+- `prisma/Math-Firstmiddle/Maktaa-3/lesson-rounding-to-unit.ts` — سكربت درس القيمة المقربة إلى الوحدة (مع تمثيل بياني).
+- `prisma/Math-Firstmiddle/Maktaa-4/lesson-axial-symmetry-construction.ts` — سكربت درس إنشاء نظير الأشكال البسيطة.
+- `prisma/Math-Firstmiddle/Maktaa-4/lesson-axial-symmetry-properties.ts` — سكربت درس خواص التناظر المحوري.
+- `prisma/Math-Firstmiddle/Maktaa-4/lesson-axial-symmetry-shape-construction.ts` — سكربت درس استعمال التناظر المحوري لإنشاء الأشكال.
+- `prisma/Math-Firstmiddle/Maktaa-4/lesson-segment-axis-angle-bisector.ts` — سكربت درس محور قطعة مستقيم ومنصف زاوية.
 - `prisma/verify-lesson.ts` — سكربت للتحقق من وجود درس معين وتفاصيله في قاعدة البيانات.
+- `prisma/seed-island-game.ts` — سكربت لإضافة درس تجريبي من نوع "لعبة جزيرة الأعداد".
+- `prisma/seed-game-lesson.ts` — سكربت لإضافة درس تجريبي من نوع لعبة.
 - `prisma/fix-user-details.ts` — سكربت لإصلاح بيانات المستخدم وربطه بالمادة والمستوى الصحيحين.
 - `prisma/debug-teacher-content.ts` — سكربت تشخيصي لعرض حالة دروس المعلم وأسباب إخفائها.
 - `prisma/fix-lessons-visibility.ts` — سكربت لإصلاح مشاكل النشر وتطابق المواد للدروس المخفية.
 - `prisma/check-teacher-lessons.ts` — سكربت لجرد وعرض كافة الدروس المرتبطة بمعلم معين.
+- `prisma/test-connection.ts` — سكربت بسيط لاختبار الاتصال بقاعدة البيانات وتشخيص المشاكل.
 - `src/lib/google-drive.ts` — تكامل Google Drive (تحذير: يعتمد مفاتيح خدمة — استخدم متغيرات بيئة فقط).
 - `src/ai/` — تحقق من ملفات `dev.ts` و`genkit` عند تشغيل تدفقات AI محلياً.
 - `next.config.ts`, `tsconfig.json`, `postcss.config.mjs`, `tailwind.config.ts` — إعدادات البنية والـ CSS.
@@ -116,5 +146,3 @@
 ---
 
 هذا الملف موجّه للقراءة السريعة؛ للاطّلاع التفصيلي على وظائف كل ملف انظر التعليقات داخل المجلدات أو افتح الملفات مباشرة.
-
-```

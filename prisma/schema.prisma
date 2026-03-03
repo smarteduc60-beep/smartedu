@@ -188,6 +188,8 @@ model Lesson {
   subjectName   String?    @map("subject_name") @db.VarChar(100)
   teacherName   String?    @map("teacher_name") @db.VarChar(100)
   published     Boolean    @default(false)
+  contentType   String     @default("ARTICLE") @db.VarChar(20) // ARTICLE, GAME, VIDEO
+  gameConfig    Json?      @map("game_config") // إعدادات اللعبة إذا كان النوع GAME
   exercises     Exercise[]
   author        User?      @relation(fields: [authorId], references: [id])
   level         Level?     @relation(fields: [levelId], references: [id])

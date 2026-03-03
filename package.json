@@ -17,6 +17,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:math1": "tsx prisma/seed-math-1cem.ts",
     "db:studio": "prisma studio"
   },
   "prisma": {

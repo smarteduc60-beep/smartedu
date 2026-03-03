@@ -14,6 +14,7 @@ import MainExercise from "./components/MainExercise";
 import SupportWithResultsExercise from "./components/SupportWithResultsExercise";
 import SupportOnlyExercise from "./components/SupportOnlyExercise";
 import MathContent from "@/components/MathContent";
+import { GameRenderer } from "@/components/games/GameRenderer";
 
 // دالة مساعدة لتحويل روابط Google Drive القديمة إلى روابط Proxy
 const getProxiedUrl = (url: string) => {
@@ -52,6 +53,8 @@ interface Lesson {
   pdfUrl?: string;
   imageUrl?: string;
   teacherName?: string | null;
+  contentType?: string;
+  gameConfig?: any;
   subject?: {
     id: number;
     name: string;
@@ -64,6 +67,7 @@ interface Lesson {
     id: string;
     firstName: string;
     lastName: string;
+    image?: string;
   };
 }
 
@@ -212,10 +216,16 @@ export default function LessonDetailPage({ params }: { params: Promise<{ id: str
           <CardTitle>محتوى الدرس</CardTitle>
         </CardHeader>
         <CardContent>
-          <MathContent 
-            content={lesson.content || ''}
-            className="prose prose-lg max-w-none dark:prose-invert text-foreground" 
-          />
+          {lesson.contentType === 'GAME' && lesson.gameConfig ? (
+            <div className="my-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <GameRenderer config={lesson.gameConfig} />
+            </div>
+          ) : (
+            <MathContent 
+              content={lesson.content || ''}
+              className="prose prose-lg max-w-none dark:prose-invert text-foreground" 
+            />
+          )}
         </CardContent>
       </Card>
 

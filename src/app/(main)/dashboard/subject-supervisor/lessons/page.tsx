@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, FilePenLine, Eye, Trash2, FileQuestion, Loader2, Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { PlusCircle, FilePenLine, Eye, Trash2, FileQuestion, Loader2, Search } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { useSession } from "next-auth/react";
+import { Pagination } from "@/components/ui/pagination";
 
 interface Lesson {
   id: string;
@@ -243,29 +244,12 @@ export default function SupervisorLessonsPage() {
 
           {/* Pagination Controls */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-end space-x-2 py-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronRight className="h-4 w-4" />
-                السابق
-              </Button>
-              <div className="text-sm text-muted-foreground">
-                صفحة {currentPage} من {pagination.totalPages}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, pagination.totalPages))}
-                disabled={currentPage === pagination.totalPages}
-              >
-                التالي
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagination.totalPages}
+              onPageChange={setCurrentPage}
+              className="mt-6"
+            />
           )}
         </CardContent>
       </Card>

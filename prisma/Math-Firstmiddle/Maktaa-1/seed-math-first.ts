@@ -1,6 +1,0 @@
-import "./lesson-number-line"
-import "./lesson-compare-decimals"
-import "./lesson-operations-decimals"
-import "./lesson-division-by-10-100-1000"
-import "./lesson-multiplication-decimals"
-import "./lesson-division-decimals"

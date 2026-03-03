@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { ArrowLeft, Lock, Loader2, BookOpen, School, Library } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, BookOpen, School, Library, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useLessons } from "@/hooks";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -24,10 +24,13 @@ export default function LessonsPage() {
   const searchParams = useSearchParams();
   const subjectId = searchParams.get('subject');
   const [subjectName, setSubjectName] = useState<string>('');
+  const [page, setPage] = useState(1);
   
-  const { lessons, isLoading, error } = useLessons({
+  const { lessons, pagination, isLoading, error } = useLessons({
     subjectId: subjectId ? parseInt(subjectId) : undefined,
     status: 'approved',
+    page,
+    limit: 12,
   });
 
   // جلب اسم المادة
@@ -166,6 +169,52 @@ export default function LessonsPage() {
               </div>
             </section>
           )}
+        </div>
+      )}
+
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-8">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setPage(1)}
+            disabled={page === 1 || isLoading}
+            title="الصفحة الأولى"
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1 || isLoading}
+            title="السابقة"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          
+          <span className="text-sm text-muted-foreground mx-2">
+            صفحة {pagination.page} من {pagination.totalPages}
+          </span>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+            disabled={page === pagination.totalPages || isLoading}
+            title="التالية"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setPage(pagination.totalPages)}
+            disabled={page === pagination.totalPages || isLoading}
+            title="الصفحة الأخيرة"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
         </div>
       )}
     </div>
