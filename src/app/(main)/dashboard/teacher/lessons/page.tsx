@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, FilePenLine, Eye, Trash2, Loader2 } from "lucide-react";
+import { PlusCircle, FilePenLine, Eye, Trash2, Loader2, Gamepad } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -135,8 +135,18 @@ export default function MyLessonsPage() {
             <TableBody>
               {lessons.length > 0 ? (
                 lessons.map((lesson) => (
-                  <TableRow key={lesson.id}>
-                    <TableCell className="font-medium">{lesson.title}</TableCell>
+                  <TableRow key={lesson.id} className={(lesson as any).contentType === 'GAME' ? 'bg-blue-50' : ''}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-3">
+                        {(lesson as any).contentType === 'GAME' && (
+                          <div className="flex items-center gap-2">
+                            <Gamepad className="h-4 w-4 text-blue-600" />
+                            <Badge className="bg-blue-100 text-blue-800 border-0">لعبة</Badge>
+                          </div>
+                        )}
+                        <span>{lesson.title}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{lesson.subject?.name || 'غير محدد'}</TableCell>
                     <TableCell>
                       {getStatusBadge(lesson.status)}

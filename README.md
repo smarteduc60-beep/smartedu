@@ -61,7 +61,11 @@ npm run dev
 - `npx tsx prisma/Math-Firstmiddle/lesson-compare-decimals.ts` — إضافة درس مقارنة وترتيب الأعداد العشرية
 - `npx tsx prisma/Math-Firstmiddle/lesson-operations-decimals.ts` — إضافة درس جمع وطرح وضرب الأعداد العشرية
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-parallel-perpendicular.ts` — إضافة درس التوازي والتعامد
-- `npx tsx prisma/Math-Firstmiddle/Maktaa-1/lesson-multiplication-by-10-100-1000.ts` — إضافة درس ضرب عدد طبيعي أو عشري في 10، 100، 1000
+- `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-perpendicular-relations.ts` — إضافة درس تقاطع وتعامد مستقيمين
+- `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-segment-midpoint.ts` — إضافة درس نقل طول وتعيين منتصف قطعة مستقيم
+- `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-geometric-terms.ts` — إضافة درس مصطلحات وترميزات هندسية
+- `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-circle-terminology.ts` — إضافة درس الدائرة (تسميات وتعاريف)
+- `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-special-triangles.ts` — إضافة درس المثلثات الخاصة (الإنشاء والخواص)
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-1/lesson-division-by-10-100-1000.ts` — إضافة درس قسمة عدد طبيعي أو عشري على 10، 100، 1000
 - `npx tsx prisma/Math-Firstmiddle/lesson-number-line.ts` — إضافة درس التعليم على نصف مستقيم مدرّج
 - `npx tsx prisma/Math-Firstmiddle/lesson-number-line.ts` — إضافة درس التعليم على نصف مستقيم مدرّج
@@ -70,9 +74,9 @@ npm run dev
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-perpendicular-relations.ts` — إضافة درس المستقيمان العموديان وعلاقات التوازي والتعامد
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-circle-terminology.ts` — إضافة درس الدائرة (تسميات وتعاريف)
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-special-triangles.ts` — إضافة درس المثلثات الخاصة (الإنشاء والخواص)
-- `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-special-quadrilaterals.ts` — إضافة درس الرباعيات الخاصة (المربع، المستطيل، المعين)
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-measurement-units.ts` — إضافة درس وحدات القياس (الأطوال، المساحات، الأوزان)
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-area-perimeter.ts` — إضافة درس مفهوم المساحة والمحيط
+- `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-perimeter-area-square-rectangle.ts` — إضافة درس محيط ومساحة المربع والمستطيل
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-perimeter-area-square-rectangle.ts` — إضافة درس محيط ومساحة المربع والمستطيل
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-perimeter-area-right-triangle.ts` — إضافة درس محيط ومساحة المثلث القائم
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-3/lesson-euclidean-division.ts` — إضافة درس القسمة الإقليدية والمساواة المعبرة عنها
@@ -82,10 +86,12 @@ npm run dev
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-3/lesson-rounding-to-unit.ts` — إضافة درس القيمة المقربة إلى الوحدة
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-4/lesson-axial-symmetry-construction.ts` — إضافة درس إنشاء نظير الأشكال البسيطة
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-4/lesson-axial-symmetry-properties.ts` — إضافة درس خواص التناظر المحوري
-- `npx tsx prisma/Math-Firstmiddle/Maktaa-4/lesson-axial-symmetry-shape-construction.ts` — إضافة درس استعمال التناظر المحوري لإنشاء الأشكال
 - `npx tsx prisma/Math-Firstmiddle/Maktaa-4/lesson-segment-axis-angle-bisector.ts` — إضافة درس محور قطعة مستقيم ومنصف زاوية
+- `npx tsx prisma/Math-Firstmiddle/Maktaa-2/lesson-parallel-lines.ts` — إضافة درس توازي مستقيمين
+- `npx tsx prisma/Math-Firstmiddle/Maktaa-2/seed-future-engineer-game.ts` — إضافة لعبة "مهندسو المستقبل"
+- `npx tsx prisma/Math-Firstmiddle/Maktaa-2/seed-future-engineer-game.ts` — إضافة لعبة "مهندسو المستقبل"
 - `npx tsx prisma/verify-lesson.ts` — التحقق من تفاصيل درس معين في قاعدة البيانات
-- `npx tsx prisma/seed-island-game.ts` — إضافة درس تجريبي من نوع "لعبة جزيرة الأعداد"
+- `npx tsx prisma/Math-Firstmiddle/Maktaa-1/seed-island-game.ts` — إضافة درس تجريبي من نوع "لعبة جزيرة الأعداد"
 - `npx tsx prisma/seed-game-lesson.ts` — إضافة درس تجريبي من نوع لعبة (ترتيب الأعداد)
 - `npx tsx prisma/fix-user-details.ts` — إصلاح بيانات المستخدم وربطه بالمادة والمستوى
 - `npx tsx prisma/debug-teacher-content.ts` — تشخيص شامل لدروس المعلم وأسباب عدم ظهورها
@@ -122,6 +128,15 @@ npm run dev
 ## 🔐 ملاحظات أمان
 - لا تدرج مفاتيح أو أسرار في المستودع.
 - استخدم متغيرات البيئة فقط، وتحقق من صلاحيات الحسابات (Service Accounts) المستخدمة في Google Drive.
+
+## 🗄️ أرشيف الملفات غير المستخدمة (`Non/`)
+بهدف ترتيب المستودع وتقليل الضوضاء، تم إنشاء مجلد `Non/` في جذر المشروع لنقل الملفات المؤرشفة/المولّدة تلقائيًا وغير المطلوبة في المستودع الرئيسي. الملفات المنقولة (مارس 2026):
+
+- `Non/.next/` — مخرجات البناء المؤقتة.
+- `Non/tsconfig.tsbuildinfo` — ملف تخزين الحالة لعملية TypeScript (cache).
+- `Non/full_code_dump.txt` — تفريغ كبير للكود وملاحظات قديمة.
+
+لن يتم حذف هذه الملفات نهائيًا؛ هي مؤرشفة داخل `Non/` للحفاظ على السجل والقدرة على استرجاعها عند الحاجة.
 
 ## أين أبدأ للتطوير؟
 - إعداد DB وبيئة التطوير (`prisma`, `.env`).

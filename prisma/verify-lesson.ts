@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  const lessonTitle = "إنشاء مستقيم يشمل نقطة ويوازي مستقيمًا - مستقيم يشمل نقطة ويعامد مستقيمًا + مصطلحات وترميزات";
+  const lessonTitle = "مغامرة جزيرة الأعداد";
   
   console.log(`🔍 Searching for lesson: "${lessonTitle}"`);
 

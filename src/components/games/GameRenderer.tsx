@@ -1,18 +1,22 @@
 'use client';
 
 import React from 'react';
-import { SortingGame, GameItem } from '../../../prisma/SortingGame';
 import { IslandGame } from './IslandGame';
+import FutureEngineerGame from './FutureEngineerGame';
+import MatchingGame from './MatchingGame'; // Import the new MatchingGame component
 
-export type GameType = 'SORTING' | 'ISLAND';
+const SortingGamePlaceholder = () => (
+  <div className="text-center p-8">
+    <p className="font-medium">لعبة الترتيب</p>
+    <p className="text-sm text-muted-foreground">مكون اللعبة قيد التطوير</p>
+  </div>
+);
 
-export interface GameConfig {
-  type: GameType;
-  data: {
-    items: GameItem[];
-    direction?: 'asc' | 'desc';
-  };
-}
+// Make GameConfig more flexible to accommodate different game types
+export type GameConfig = {
+  type: string;
+  [key: string]: any;
+};
 
 interface GameRendererProps {
   config: any; // نستخدم any هنا لأن نوع Json من Prisma عام
@@ -29,16 +33,16 @@ export function GameRenderer({ config }: GameRendererProps) {
 
   const gameConfig = config as GameConfig;
 
-  switch (gameConfig.type) {
+  // Use toUpperCase() for case-insensitive matching
+  switch (gameConfig.type?.toUpperCase()) {
     case 'SORTING':
-      return (
-        <SortingGame 
-          items={gameConfig.data.items} 
-          direction={gameConfig.data.direction} 
-        />
-      );
+      return <SortingGamePlaceholder />;
     case 'ISLAND':
       return <IslandGame />;
+    case 'FUTURE_ENGINEER':
+      return <FutureEngineerGame gameConfig={gameConfig as any} />;
+    case 'MATCHING_GAME':
+      return <MatchingGame title={gameConfig.title} description={gameConfig.description} pairs={gameConfig.pairs} />;
     default:
       return (
         <div className="p-4 text-center text-red-500 bg-red-50 rounded-lg my-4">

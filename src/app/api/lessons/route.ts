@@ -377,7 +377,9 @@ export async function POST(request: NextRequest) {
         isLocked,
         status: status || 'approved', // الحالة الافتراضية معتمدة إذا لم تحدد
         driveFolderId: driveFolderId, // حفظ معرف المجلد
-        lessonFileIds: lessonFileIds, // حفظ معرفات الملفات
+        lessonFileIds: JSON.stringify(lessonFileIds), // حفظ معرفات الملفات
+        published: true,
+        contentType: 'ARTICLE',
       },
     });
 

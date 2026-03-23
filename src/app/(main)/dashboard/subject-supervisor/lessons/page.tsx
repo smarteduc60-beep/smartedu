@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, FilePenLine, Eye, Trash2, FileQuestion, Loader2, Search } from "lucide-react";
+import { PlusCircle, FilePenLine, Eye, Trash2, FileQuestion, Loader2, Search, Gamepad } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -30,6 +30,7 @@ interface Lesson {
   title: string;
   description: string | null;
   type: 'public' | 'private';
+  contentType?: string | null; // e.g. 'GAME'
   subject?: {
     id: number;
     name: string;
@@ -191,8 +192,18 @@ export default function SupervisorLessonsPage() {
             <TableBody>
               {filteredLessons.length > 0 ? (
                 filteredLessons.map((lesson) => (
-                  <TableRow key={lesson.id}>
-                    <TableCell className="font-medium">{lesson.title}</TableCell>
+                  <TableRow key={lesson.id} className={lesson.contentType === 'GAME' ? 'bg-blue-50' : ''}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          {lesson.contentType === 'GAME' && (
+                            <div className="flex items-center gap-2">
+                              <Gamepad className="h-4 w-4 text-blue-600" />
+                              <Badge className="bg-blue-100 text-blue-800 border-0">لعبة</Badge>
+                            </div>
+                          )}
+                          <span>{lesson.title}</span>
+                        </div>
+                      </TableCell>
                     <TableCell>
                       {lesson.level?.name || 'غير محدد'}
                     </TableCell>

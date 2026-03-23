@@ -49,6 +49,8 @@
 - `public/` — ملفات ثابتة (صور، ملفات تحميل وغيرها).
 - `docs/` — توثيق إضافي ووثائق التصميم.
 
+- `Non/` — مجلد أرشيف يحتوي ملفات مُنشأة أو قديمة تم نقلها لتخفيف الفوضى في الجذر. مثال: `.next/`، `tsconfig.tsbuildinfo`، `full_code_dump.txt`.
+
 ---
 
 ## 📁 `src/` — نظرة عامة
@@ -68,6 +70,10 @@
 ## 🗂️ نقاط مهمة داخل المشروع
 
 - `prisma/schema.prisma` — نموذج البيانات المركزي؛ راجع قبل أي تغيير في الموديلات.
+- `src/components/games/FutureEngineerGame.tsx` — مكون لعبة "مهندس المستقبل" الذي تم إنشاؤه لإصلاح خطأ البناء.
+- `src/components/games/MatchingGame.tsx` — مكون لعبة المطابقة (صل بين الأعمدة).
+- `src/components/games/IslandGame.tsx` — مكون لعبة جزيرة الأعداد.
+- `src/components/games/GameRenderer.tsx` — المكون الرئيسي الذي يعرض الألعاب بناءً على نوعها.
 - `prisma/migrations/` — ملفات المايجريشن (تاريخية).
 - `prisma/seed.ts` وملفات `prisma/seed-*.ts` — سكربتات تعبئة البيانات التجريبية.
 - `prisma/seed-math-1cem.ts` — سكربت بذر دروس الرياضيات للسنة الأولى متوسط.
@@ -89,12 +95,17 @@
 - `prisma/Math-Firstmiddle/lesson-compare-decimals.ts` — سكربت درس مقارنة وترتيب الأعداد العشرية.
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-parallel-perpendicular.ts` — سكربت درس التوازي والتعامد.
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-construction-parallel-perpendicular.ts` — سكربت درس الإنشاءات الهندسية (توازي/تعامد) والمصطلحات.
-- `prisma/Math-Firstmiddle/Maktaa-2/lesson-perpendicular-relations.ts` — سكربت درس المستقيمان العموديان وعلاقات التوازي والتعامد.
+- `prisma/Math-Firstmiddle/Maktaa-2/lesson-perpendicular-relations.ts` — سكربت درس تقاطع وتعامد مستقيمين.
+- `prisma/Math-Firstmiddle/Maktaa-2/lesson-segment-midpoint.ts` — سكربت درس نقل طول وتعيين منتصف قطعة مستقيم.
+- `prisma/Math-Firstmiddle/Maktaa-2/lesson-geometric-terms.ts` — سكربت درس مصطلحات وترميزات هندسية.
+- `prisma/Math-Firstmiddle/Maktaa-2/lesson-circle-terminology.ts` — سكربت درس الدائرة (تسميات وتعاريف)
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-circle-terminology.ts` — سكربت درس الدائرة (تسميات وتعاريف).
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-special-triangles.ts` — سكربت درس المثلثات الخاصة (الإنشاء والخواص).
-- `prisma/Math-Firstmiddle/Maktaa-2/lesson-special-quadrilaterals.ts` — سكربت درس الرباعيات الخاصة (المربع، المستطيل، المعين).
+- `prisma/Math-Firstmiddle/Maktaa-2/lesson-special-triangles.ts` — سكربت درس المثلثات الخاصة (الإنشاء والخواص).
+- `prisma/Math-Firstmiddle/Maktaa-2/lesson-special-quadrilaterals.ts` — سكربت درس إنشاء المستطيل، المربع، المعين.
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-measurement-units.ts` — سكربت درس وحدات القياس (الأطوال، المساحات، الأوزان).
-- `prisma/Math-Firstmiddle/Maktaa-2/lesson-area-perimeter.ts` — سكربت درس مفهوم المساحة والمحيط.
+- `prisma/Math-Firstmiddle/Maktaa-2/lesson-area-by-tiling.ts` — سكربت درس تعيين مساحة سطح مستو باستعمال رصف بسيط.
+- `prisma/Math-Firstmiddle/Maktaa-2/lesson-perimeter-area-square-rectangle.ts` — سكربت درس محيط ومساحة المربع والمستطيل.
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-perimeter-area-square-rectangle.ts` — سكربت درس محيط ومساحة المربع والمستطيل.
 - `prisma/Math-Firstmiddle/Maktaa-2/lesson-perimeter-area-right-triangle.ts` — سكربت درس محيط ومساحة المثلث القائم.
 - `prisma/Math-Firstmiddle/Maktaa-3/lesson-euclidean-division.ts` — سكربت درس القسمة الإقليدية والمساواة المعبرة عنها.
@@ -106,8 +117,9 @@
 - `prisma/Math-Firstmiddle/Maktaa-4/lesson-axial-symmetry-properties.ts` — سكربت درس خواص التناظر المحوري.
 - `prisma/Math-Firstmiddle/Maktaa-4/lesson-axial-symmetry-shape-construction.ts` — سكربت درس استعمال التناظر المحوري لإنشاء الأشكال.
 - `prisma/Math-Firstmiddle/Maktaa-4/lesson-segment-axis-angle-bisector.ts` — سكربت درس محور قطعة مستقيم ومنصف زاوية.
+- `prisma/Math-Firstmiddle/Maktaa-2/seed-future-engineer-game.ts` — سكربت لإضافة لعبة "مهندسو المستقبل".
 - `prisma/verify-lesson.ts` — سكربت للتحقق من وجود درس معين وتفاصيله في قاعدة البيانات.
-- `prisma/seed-island-game.ts` — سكربت لإضافة درس تجريبي من نوع "لعبة جزيرة الأعداد".
+- `prisma/Math-Firstmiddle/Maktaa-1/seed-island-game.ts` — سكربت لإضافة درس تجريبي من نوع "لعبة جزيرة الأعداد".
 - `prisma/seed-game-lesson.ts` — سكربت لإضافة درس تجريبي من نوع لعبة.
 - `prisma/fix-user-details.ts` — سكربت لإصلاح بيانات المستخدم وربطه بالمادة والمستوى الصحيحين.
 - `prisma/debug-teacher-content.ts` — سكربت تشخيصي لعرض حالة دروس المعلم وأسباب إخفائها.

@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlaceHolderImages } from "@/lib/placeholder-images";
-import { ArrowLeft, Lock, Loader2, BookOpen, School, Library, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ArrowLeft, Lock, Loader2, BookOpen, School, Library, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Gamepad } from "lucide-react";
 import { useLessons } from "@/hooks";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
@@ -53,7 +53,7 @@ export default function LessonsPage() {
     const lessonImage = getLessonImage(lesson.id);
 
     return (
-      <Card key={lesson.id} className="flex flex-col overflow-hidden hover:shadow-lg transition-all duration-300">
+      <Card key={lesson.id} className={`flex flex-col overflow-hidden hover:shadow-lg transition-all duration-300 ${lesson.contentType === 'GAME' ? 'bg-blue-50' : ''}`}>
         <CardHeader className="relative p-0">
           {lessonImage && (
             <div className="relative aspect-video w-full">
@@ -68,11 +68,19 @@ export default function LessonsPage() {
           )}
           <div className="p-6">
             <div className="flex justify-between items-start gap-2">
-              <div className="flex gap-2 flex-wrap">
-                <Badge variant="secondary">{lesson.subject?.name}</Badge>
-                <Badge variant={lesson.type === 'public' ? 'default' : 'outline'}>
-                  {lesson.type === 'public' ? 'عام' : 'خاص'}
-                </Badge>
+              <div className="flex gap-2 flex-wrap items-center">
+                {lesson.contentType === 'GAME' && (
+                  <div className="flex items-center gap-2">
+                    <Gamepad className="h-5 w-5 text-blue-600" />
+                    <Badge className="bg-blue-100 text-blue-800 border-0">لعبة</Badge>
+                  </div>
+                )}
+                <div className="flex gap-2 flex-wrap">
+                  <Badge variant="secondary">{lesson.subject?.name}</Badge>
+                  <Badge variant={lesson.type === 'public' ? 'default' : 'outline'}>
+                    {lesson.type === 'public' ? 'عام' : 'خاص'}
+                  </Badge>
+                </div>
               </div>
               <p className="text-xs text-muted-foreground whitespace-nowrap">
                 بواسطة: {lesson.author ? `${lesson.author.firstName} ${lesson.author.lastName}` : (lesson.teacherName || 'غير معروف')}

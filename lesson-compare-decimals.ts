@@ -207,17 +207,27 @@ async function main() {
     </div>
   `;
 
+  const lessonTitle = 'مقارنة عددين عشريين وترتيب أعداد عشرية';
+
+  // حذف الدرس القديم لتجنب التكرار
+  await prisma.lesson.deleteMany({
+    where: {
+      title: lessonTitle,
+      authorId: teacher.id,
+    },
+  });
+
   // 5. Create Lesson
   const lesson = await prisma.lesson.create({
     data: {
-      title: 'مقارنة عددين عشريين وترتيب أعداد عشرية',
+      title: lessonTitle,
       content: lessonContent,
       subjectId: subject.id,
       levelId: level.id,
       authorId: teacher.id,
       status: 'approved',
-      published: true,
       type: 'public',
+      lessonFileIds: [],
       exercises: {
         create: [
           // 🟢 تمارين الدعم (70%)
@@ -233,7 +243,10 @@ async function main() {
               { question: "6", result: "=", tolerance: 0 }
             ],
             displayOrder: 1,
-            maxScore: 6
+            maxScore: 6,
+            exerciseFileIds: JSON.stringify([]),
+            questionFileIds: JSON.stringify([]),
+            modelAnswerFileIds: JSON.stringify([])
           },
           {
             type: 'support_with_results',
@@ -244,7 +257,10 @@ async function main() {
               { question: "3", result: "5,2", tolerance: 0 }
             ],
             displayOrder: 2,
-            maxScore: 3
+            maxScore: 3,
+            exerciseFileIds: JSON.stringify([]),
+            questionFileIds: JSON.stringify([]),
+            modelAnswerFileIds: JSON.stringify([])
           },
           {
             type: 'support_with_results',
@@ -253,7 +269,10 @@ async function main() {
               { question: "1", result: "3,75, 3,8, 4,15, 4,2", tolerance: 0 }
             ],
             displayOrder: 3,
-            maxScore: 4
+            maxScore: 4,
+            exerciseFileIds: JSON.stringify([]),
+            questionFileIds: JSON.stringify([]),
+            modelAnswerFileIds: JSON.stringify([])
           },
           {
             type: 'support_with_results',
@@ -262,7 +281,10 @@ async function main() {
               { question: "1", result: "12,33, 12,3, 12,03, 12", tolerance: 0 }
             ],
             displayOrder: 4,
-            maxScore: 4
+            maxScore: 4,
+            exerciseFileIds: JSON.stringify([]),
+            questionFileIds: JSON.stringify([]),
+            modelAnswerFileIds: JSON.stringify([])
           },
           // 🔴 التمارين الرئيسية (30%)
           {
@@ -270,7 +292,10 @@ async function main() {
             question: 'التمرين 08: أطوال 5 أقلام بالسنتمترات: أ(12,5)، ب(12,25)، ج(13)، د(12,75)، هـ(12,5).\nالمطلوب:\n1) رتب الأقلام تصاعدياً حسب الطول.\n2) ما هو أطول قلم؟\n3) ما هو أقصر قلم؟',
             modelAnswer: '1) الترتيب: 12,25 < 12,5 = 12,5 < 12,75 < 13\n2) أطول قلم: ج (13 cm)\n3) أقصر قلم: ب (12,25 cm)',
             displayOrder: 5,
-            maxScore: 5
+            maxScore: 5,
+            exerciseFileIds: JSON.stringify([]),
+            questionFileIds: JSON.stringify([]),
+            modelAnswerFileIds: JSON.stringify([])
           },
           {
             type: 'main',
@@ -278,6 +303,9 @@ async function main() {
             modelAnswer: '1) الترتيب: ج > أ > د > ب > هـ\n2) الأكثر حرارة: ج\n3) الأقل حرارة: هـ',
             displayOrder: 6,
             maxScore: 5
+            exerciseFileIds: JSON.stringify([]),
+            questionFileIds: JSON.stringify([]),
+            modelAnswerFileIds: JSON.stringify([])
           },
           {
             type: 'main',
@@ -285,6 +313,9 @@ async function main() {
             modelAnswer: '1) محمد < فاطمة < أحمد < سارة < عمر\n2) الفائز: عمر\n3) الأخير: محمد',
             displayOrder: 7,
             maxScore: 5
+            exerciseFileIds: JSON.stringify([]),
+            questionFileIds: JSON.stringify([]),
+            modelAnswerFileIds: JSON.stringify([])
           }
         ]
       }
